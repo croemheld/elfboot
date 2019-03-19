@@ -1,0 +1,14 @@
+#
+# General
+#
+
+version = 0.1
+
+#
+# Graphics
+#
+
+enable_edid = true
+
+screen_width  = 1024
+screen_height =  768
