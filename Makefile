@@ -13,6 +13,7 @@ export SRC
 
 DIR_ISO                := $(CWD)/$(ISO)
 DIR_BOOT               := $(DIR_ISO)/boot
+DIR_KERNEL             := $(DIR_ISO)/kernel
 
 IMAGE_BOOT_SECTOR      := $(BOOT).bin
 IMAGE_BOOT_LOADER      := $(BOOT)/$(IMAGE_BOOT_SECTOR)
@@ -51,8 +52,10 @@ $(IMAGE): build bootloader
 .PHONY: build
 build:
 	mkdir -p $(DIR_BOOT)
+	mkdir -p $(DIR_KERNEL)
 	cp lorem.txt $(DIR_BOOT)
 	cp cmdline.txt $(DIR_ISO)
+	cp boot.bin $(DIR_KERNEL)
 
 .PHONY: bootloader
 bootloader:

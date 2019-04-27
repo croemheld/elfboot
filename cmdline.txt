@@ -10,5 +10,5 @@ version = 0.1
 
 enable_edid = true
 
-screen_width  = 1024
-screen_height =  768
+monitor_width  = 1024
+monitor_height =  768
