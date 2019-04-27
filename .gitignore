@@ -1,0 +1,18 @@
+#
+# Ignore documents for research purposes
+#
+
+./docs/*
+
+#
+# Ignore binary files and virtual disk images
+#
+
+./objs/*
+./*.img
+
+#
+# Ignore bochsrc
+#
+
+./bochsrc
