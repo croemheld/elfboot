@@ -1,0 +1,1 @@
+#include <asm/boot.h>
