@@ -16,3 +16,9 @@
 #
 
 /bochsrc
+
+#
+# Ignore toolchain binaries
+#
+
+/toolchain/cross/*

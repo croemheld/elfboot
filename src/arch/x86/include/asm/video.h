@@ -27,11 +27,6 @@ struct timing_description {
 	uint8_t  display_type;
 } __attribute__((packed));
 
-struct monitor {
-	uint16_t width;
-	uint16_t height;
-} __attribute__((packed));
-
 struct edid_data {
 	uint64_t padding;
 	uint16_t manufacture_id;
