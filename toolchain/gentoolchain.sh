@@ -48,6 +48,11 @@ cd $CROSS_COMPILER_PREFIX
 
 mkdir -p "$CROSS_COMPILER_TARGET-binutils"
 cd "$CROSS_COMPILER_TARGET-binutils"
+
+patch -p1 < ../../../$CROSS_BINPACKET.patch
+
+exit 1
+
 ../$CROSS_BINPACKET/configure 			\
 	--target=$CROSS_COMPILER_TARGET		\
 	--prefix=$CROSS_COMPILER_PREFIX		\
@@ -57,10 +62,14 @@ cd "$CROSS_COMPILER_TARGET-binutils"
 make
 make install
 
+echo "Successfully installed $CROSS_BINPACKET"
+
 cd $CROSS_COMPILER_PREFIX
 
 mkdir -p "$CROSS_COMPILER_TARGET-gcc"
 cd "$CROSS_COMPILER_TARGET-gcc"
+contrib/download_prerequisites
+patch -p1 < ../../../$CROSS_GCCPACKET.patch
 ../$CROSS_GCCPACKET/configure 			\
 	--target=$CROSS_COMPILER_TARGET		\
 	--prefix=$CROSS_COMPILER_PREFIX		\
@@ -69,8 +78,13 @@ cd "$CROSS_COMPILER_TARGET-gcc"
 	--without-headers
 
 make all-gcc
-make all-target-libgcc
 make install-gcc
+
+echo "Successfully installed $CROSS_GCCPACKET"
+
+make all-target-libgcc
 make install-target-libgcc
+
+echo "Successfully installed $CROSS_GCCPACKET libgcc subpackage"
 
 exit 0

@@ -3,13 +3,25 @@ ELFBOOT := elfboot
 ARCH    := x86
 BITS    := 32
 
-ELFBOOT_DIR   := $(PWD)
-
 TARGET  := i686
 
-TOOLCHAIN_DIR := $(ELFBOOT_DIR)/toolchain
-PATH    := $(TOOLCHAIN_DIR)/cross/$(TARGET)-$(ELFBOOT)/bin:$(PATH)
+export ELFBOOT
+export TARGET
 
-CC      := $(TARGET)-$(ELFBOOT)-gcc
-LD      := $(TARGET)-$(ELFBOOT)-ld
+CC      := /home/croemheld/Repositories/elfboot/toolchain/cross/bin/$(TARGET)-$(ELFBOOT)-gcc
+LD      := /home/croemheld/Repositories/elfboot/toolchain/cross/bin/$(TARGET)-$(ELFBOOT)-ld
 
+CCFLAGS  := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+LDFLAGS  := -O2 -nostdlib -lgcc
+
+all: test.c
+	$(CC) -c test.c -o test.o $(CCFLAGS)
+	$(LD) test.o -o test.bin $(LDFLAGS)
+
+.PHONY: toolchain
+toolchain: toolchain/gentoolchain.sh
+	$(MAKE) -C toolchain
+
+.PHONY: clean-toolchain
+clean-toolchain:
+	$(MAKE) -C toolchain clean

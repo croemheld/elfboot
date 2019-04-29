@@ -1,0 +1,50 @@
+diff -ru binutils-2.31.1/bfd/config.bfd binutils-2.31.1-elfboot/bfd/config.bfd
+--- binutils-2.31.1/bfd/config.bfd	2018-07-09 09:44:53.000000000 +0200
++++ binutils-2.31.1-elfboot/bfd/config.bfd	2019-04-29 11:04:34.434269426 +0200
+@@ -646,6 +646,11 @@
+     targ_selvecs=
+     targ64_selvecs=x86_64_elf64_vec
+     ;;
++  i[3-7]86-*-elfboot*)
++    targ_defvec=i386_elf32_vec
++    targ_selvecs=
++    targ64_selvecs=x86_64_elf64_vec
++    ;;
+ #ifdef BFD64
+   x86_64-*-cloudabi*)
+     targ_defvec=x86_64_elf64_cloudabi_vec
+diff -ru binutils-2.31.1/config.sub binutils-2.31.1-elfboot/config.sub
+--- binutils-2.31.1/config.sub	2018-07-06 09:13:31.000000000 +0200
++++ binutils-2.31.1-elfboot/config.sub	2019-04-29 11:03:04.902416367 +0200
+@@ -1376,7 +1376,7 @@
+ 	     | powermax* | dnix* | nx6 | nx7 | sei* | dragonfly* \
+ 	     | skyos* | haiku* | rdos* | toppers* | drops* | es* \
+ 	     | onefs* | tirtos* | phoenix* | fuchsia* | redox* | bme* \
+-	     | midnightbsd*)
++	     | midnightbsd* | elfboot*)
+ 	# Remember, each alternative MUST END IN *, to match a version number.
+ 		;;
+ 	qnx*)
+diff -ru binutils-2.31.1/gas/configure.tgt binutils-2.31.1-elfboot/gas/configure.tgt
+--- binutils-2.31.1/gas/configure.tgt	2018-06-24 20:38:57.000000000 +0200
++++ binutils-2.31.1-elfboot/gas/configure.tgt	2019-04-29 11:03:04.902416367 +0200
+@@ -230,6 +230,7 @@
+     esac ;;
+   i386-*-lynxos*)			fmt=elf em=lynx ;;
+   i386-*-redox*)			fmt=elf ;;
++  i386-*-elfboot*)      fmt=elf ;;
+   i386-*-solaris*)			fmt=elf em=solaris ;;
+   i386-*-freebsd* \
+   | i386-*-kfreebsd*-gnu)		fmt=elf em=freebsd ;;
+diff -ru binutils-2.31.1/ld/configure.tgt binutils-2.31.1-elfboot/ld/configure.tgt
+--- binutils-2.31.1/ld/configure.tgt	2018-07-09 09:44:53.000000000 +0200
++++ binutils-2.31.1-elfboot/ld/configure.tgt	2019-04-29 11:05:05.114261493 +0200
+@@ -260,6 +260,8 @@
+ 			targ_extra_emuls=elf_x86_64 ;;
+ x86_64-*-redox*)	targ_emul=elf_x86_64
+ 			targ_extra_emuls=elf_i386 ;;
++i[3-7]86-*-elfboot*)	targ_emul=elf_i386
++			targ_extra_emuls=elf_x86_64 ;;
+ i[3-7]86-*-sysv[45]*)	targ_emul=elf_i386
+ 			targ_extra_emuls=elf_iamcu ;;
+ i[3-7]86-*-solaris2*)	targ_emul=elf_i386_sol2
