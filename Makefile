@@ -1,30 +1,41 @@
 ELFBOOT := elfboot
 
-ARCH    := x86
-BITS    := 32
+ELFBOOT_ARCH   := x86
+ELFBOOT_BITS   := 32
 
-TARGET  := i686
+ELFBOOT_TARGET := i686
+ELFBOOT_TCHAIN := elfboot-toolchain
 
-export ELFBOOT
-export TARGET
+ELFBOOT_CROSS_COMPILER := $(shell command -v $(CC) 2> /dev/null)
 
-CROSS_COMPILER_PATH := $(PWD)/toolchain/$(TARGET)-$(ELFBOOT)/bin
+# Export the modified PATH variable
+export PATH := $(CURDIR)/$(ELFBOOT_TCHAIN)/bin:$(PATH)
 
-export PATH := $(CROSS_COMPILER_PATH):$(PATH)
+# Export relevant variables needed for the toolchain
+export ELFBOOT_ARCH
+export ELFBOOT_TARGET
 
-CC       := $(TARGET)-$(ELFBOOT)-gcc
+# Programs for compiling and linking
+CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 
-CFLAGS   := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
-LDFLAGS  := -O2 -nostdlib -lgcc
+# Flags for compiler and linker
+CFLAGS  := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+LDFLAGS := -O2 -nostdlib -lgcc
 
-INCLUDE  := -Isrc/arch/$(ARCH)/include \
-	    -Isrc/include
+# Includes
+ELFBOOT_INCLUDE := -Isrc/include			\
+		   -Isrc/arch/$(ELFBOOT_ARCH)/include
 
+# Source and object file tree
 objtree  := .
 srctree  := .
 
-.PHONY: all
-all: real-all
+PHONY :=
+CLEAN :=
+
+PHONY += all
+all: build
 
 OBJS     :=
 
@@ -46,39 +57,56 @@ objtree := $$(patsubst %/$(1),%,$$(objtree))
 endef
 
 $(eval $(call build_subdir,src))
-$(eval $(call build_subdir,src/arch/$(ARCH)))
+$(eval $(call build_subdir,src/arch/$(ELFBOOT_ARCH)))
 
 define compile_file
-srcfile := $$(wildcard $$(basename $(1)).*)
+srcname := $$(basename $(1))
+srcfile := $$(wildcard $$(basename).*)
 
 ifneq ($$(srcfile),"")
 
 $(1): $$(srcfile)
-	@echo "[ CC ] $$@"
-# $(CC) -c $$(srcfile) -o $(1) $(CFLAGS) $(INCLUDE)
+	@echo "[ CC ] $$@ from $$(srcfile)"
+# $$(CC) -c $$(srcfile) -o $(1) $$(CFLAGS) $$(ELFBOOT_INCLUDE)
 
 endif
 endef
 
-$(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
+$(foreach file, $(OBJS), $(eval $(call compile_file, $(file))))
 
-.PHONY: real-all
-real-all: $(OBJS)
-	@echo "real-all"
-# $(CC) test.c -o test.o $(CFLAGS)
+PHONY += build
+build: toolchain $(OBJS)
+	@echo "build"
 
-.PHONY: clean
-clean:
-	echo "Bye"
+PHONY += toolchain
+toolchain:
+	$(MAKE) -C $(ELFBOOT_TCHAIN)/Makefile	
 
-.PHONY: test
-test:
-	echo "Test"
+PHONY += toolchain-check
+toolchain-check:
+ifndef ELFBOOT_CROSS_COMPILER
+	$(error "Please run 'make toolchain' first.")
+endif
 
-.PHONY: toolchain
-toolchain: toolchain/gentoolchain.sh
-	$(MAKE) -C toolchain
+PHONY += clean-elfboot
+CLEAN += clean-elfboot
+clean-elfboot:
+	@for objfile in $(OBJS); do			\
+		if [[ -e $$objfile ]]; then		\
+			@echo "[ RM ] $$file";		\
+			rm -f $$objfile;		\
+		fi					\
+	done
 
-.PHONY: clean-toolchain
+PHONY += clean-toolchain
+CLEAN += clean-toolchain
 clean-toolchain:
-	$(MAKE) -C toolchain clean
+	@echo "Clean $(ELFBOOT_TCHAIN)..."
+	$(MAKE) -C $(ELFBOOT_TCHAIN)/Makefile clean
+
+PHONY += clean
+clean:
+	@echo " Please use one of the following targets:"
+	@echo " $(CLEAN)"
+
+.PHONY: $(PHONY)
