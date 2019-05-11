@@ -1,0 +1,3 @@
+[submodule "elfboot-toolchain"]
+	path = elfboot-toolchain
+	url = git@github.com:croemheld/elfboot-toolchain.git
