@@ -16,8 +16,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdarg.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include <uapi/asm/bootparam.h>
 #include <uapi/asm/processor-flags.h>
