@@ -61,26 +61,26 @@ $(eval $(call build_subdir,src/arch/$(ELFBOOT_ARCH)))
 
 define compile_file
 srcname := $$(basename $(1))
-srcfile := $$(wildcard $$(basename).*)
+srcfile := $$(wildcard $$(srcname).*)
 
-ifneq ($$(srcfile),"")
+ifneq (, $$(srcfile))
 
 $(1): $$(srcfile)
-	@echo "[ CC ] $$@ from $$(srcfile)"
-# $$(CC) -c $$(srcfile) -o $(1) $$(CFLAGS) $$(ELFBOOT_INCLUDE)
+	@echo "[ CC ] $$@"
+	@$$(CC) -c $$< -o $$@ $$(CFLAGS) $$(ELFBOOT_INCLUDE)
 
 endif
 endef
 
-$(foreach file, $(OBJS), $(eval $(call compile_file, $(file))))
+$(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
 
 PHONY += build
-build: toolchain $(OBJS)
+build: toolchain-check $(OBJS)
 	@echo "build"
 
 PHONY += toolchain
 toolchain:
-	$(MAKE) -C $(ELFBOOT_TCHAIN)/Makefile	
+	$(MAKE) -C $(ELFBOOT_TCHAIN)
 
 PHONY += toolchain-check
 toolchain-check:
@@ -102,7 +102,7 @@ PHONY += clean-toolchain
 CLEAN += clean-toolchain
 clean-toolchain:
 	@echo "Clean $(ELFBOOT_TCHAIN)..."
-	$(MAKE) -C $(ELFBOOT_TCHAIN)/Makefile clean
+	$(MAKE) -C $(ELFBOOT_TCHAIN) clean
 
 PHONY += clean
 clean:
