@@ -6,10 +6,9 @@ ELFBOOT_BITS   := 32
 ELFBOOT_TARGET := i686
 ELFBOOT_TCHAIN := elfboot-toolchain
 
-ELFBOOT_CROSS_COMPILER := $(shell command -v $(CC) 2> /dev/null)
-
 # Export the modified PATH variable
-export PATH := $(CURDIR)/$(ELFBOOT_TCHAIN)/bin:$(PATH)
+export PATH  := $(CURDIR)/$(ELFBOOT_TCHAIN)/bin:$(PATH)
+export SHELL := env PATH=$(PATH) /bin/bash
 
 # Export relevant variables needed for the toolchain
 export ELFBOOT_ARCH
@@ -27,17 +26,22 @@ LDFLAGS := -O2 -nostdlib -lgcc
 ELFBOOT_INCLUDE := -Isrc/include			\
 		   -Isrc/arch/$(ELFBOOT_ARCH)/include
 
+# Recipe variables
+PHONY :=
+CLEAN :=
+BUILD :=
+
+PHONY += all
+all: toolchain-check
+	@echo " Please use one of the following targets:"
+	@echo " $(BUILD)"
+
+
+OBJS     :=
+
 # Source and object file tree
 objtree  := .
 srctree  := .
-
-PHONY :=
-CLEAN :=
-
-PHONY += all
-all: build
-
-OBJS     :=
 
 define build_subdir
 objtree := $$(objtree)/$(1)
@@ -56,17 +60,18 @@ srctree := $$(patsubst %/$(1),%,$$(srctree))
 objtree := $$(patsubst %/$(1),%,$$(objtree))
 endef
 
-$(eval $(call build_subdir,src))
 $(eval $(call build_subdir,src/arch/$(ELFBOOT_ARCH)))
+$(eval $(call build_subdir,src))
 
 define compile_file
 srcname := $$(basename $(1))
-srcfile := $$(wildcard $$(srcname).*)
+sofiles := $$(wildcard $$(srcname).*)
+srcfile := $$(filter-out $(1),$$(sofiles))
 
 ifneq (, $$(srcfile))
 
 $(1): $$(srcfile)
-	@echo "[ CC ] $$@"
+	@echo " [ CC ] $$@ from $$<"
 	@$$(CC) -c $$< -o $$@ $$(CFLAGS) $$(ELFBOOT_INCLUDE)
 
 endif
@@ -74,18 +79,21 @@ endef
 
 $(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
 
-PHONY += build
-build: toolchain-check $(OBJS)
-	@echo "build"
+PHONY += elfboot
+BUILD += elfboot
+elfboot: clean-elfboot toolchain-check $(OBJS)
+	@echo " [ LD ] $(OBJS)"
+# @$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
 
 PHONY += toolchain
+BUILD += toolchain
 toolchain:
 	$(MAKE) -C $(ELFBOOT_TCHAIN)
 
 PHONY += toolchain-check
 toolchain-check:
-ifndef ELFBOOT_CROSS_COMPILER
-	$(error "Please run 'make toolchain' first.")
+ifeq (, $(shell type $(CC) 2> /dev/null))
+	$(error Please run 'make toolchain' first)
 endif
 
 PHONY += clean-elfboot
@@ -93,7 +101,7 @@ CLEAN += clean-elfboot
 clean-elfboot:
 	@for objfile in $(OBJS); do			\
 		if [[ -e $$objfile ]]; then		\
-			@echo "[ RM ] $$file";		\
+			echo " [ RM ] $$objfile";		\
 			rm -f $$objfile;		\
 		fi					\
 	done
