@@ -12,6 +12,13 @@
 
 #define REALMODE_ADDRESS_LIMIT                    0xFFFF
 
+#define IMG_ADDRESS                               0x7C00
+#define IMG_MAX_ADDRESS                           0x00010000
+#define IMG_MAX_SIZE                             (IMG_MAX_ADDRESS - IMG_ADDRESS)
+
+#define IVT_ADDRESS                               0x0000
+#define IVT_MAX_SIZE                              0x0400
+
 #ifndef __ASSEMBLER__
 
 #include <stdbool.h>
@@ -19,100 +26,20 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <asm/asm.h>
+#include <asm/bios.h>
+#include <asm/edd.h>
+#include <asm/printf.h>
+#include <asm/segment.h>
+#include <asm/tty.h>
+#include <asm/video.h>
+
+#include <asm/linkage.h>
+
 #include <uapi/asm/bootparam.h>
 #include <uapi/asm/processor-flags.h>
 
-#include <boot/asm.h>
-#include <boot/bios.h>
-#include <boot/cmdline.h>
-#include <boot/disk.h>
-#include <boot/edd.h>
-#include <boot/elf.h>
-#include <boot/elf32.h>
-#include <boot/elf64.h>
-#include <boot/iso.h>
-#include <boot/printf.h>
-#include <boot/regs.h>
-#include <boot/segment.h>
-#include <boot/string.h>
-#include <boot/tty.h>
-#include <boot/video.h>
-
-#include <boot/linkage.h>
-
 #define ARRAY_SIZE(x)                             (sizeof(x) / sizeof(*(x)))
-
-/*
- * Conversions
- */
-
-static inline void *uinttvptr(uint32_t val)
-{
-	return (void *)val;
-}
-
-static inline uint32_t vptrtuint(void *ptr)
-{
-	return (uint32_t)ptr;
-}
-
-static inline void *vptradd(void *ptr, uint32_t offset)
-{
-	return ptr + offset;
-}
-
-/* 
- * Basic port I/O 
- */
-
-static inline void outb(uint8_t v, uint16_t port)
-{
-	__asm__ volatile("outb %0, %1" :: "a" (v), "dN" (port));
-}
-
-static inline uint8_t inb(uint16_t port)
-{
-	uint8_t v;
-
-	__asm__ volatile("inb %1, %0" : "=a" (v) : "dN" (port));
-
-	return v;
-}
-
-static inline void outw(uint16_t v, uint16_t port)
-{
-	__asm__ volatile("outw %0, %1" :: "a" (v), "dN" (port));
-}
-
-static inline uint16_t inw(uint16_t port)
-{
-	uint16_t v;
-
-	__asm__ volatile("inw %1, %0" : "=a" (v) : "dN" (port));
-
-	return v;
-}
-
-static inline void outl(uint32_t v, uint16_t port)
-{
-	__asm__ volatile("outl %0, %1" :: "a" (v), "dN" (port));
-}
-
-static inline uint32_t inl(uint16_t port)
-{
-	uint32_t v;
-
-	__asm__ volatile("inl %1, %0" : "=a" (v) : "dN" (port));
-
-	return v;
-}
-
-static inline void io_delay(void)
-{
-	const uint16_t delay_port = 0x80;
-
-	__asm__ volatile("outb %%al, %0" :: "dN" (delay_port));
-}
 
 /* These functions are used to reference data in other segments. */
 

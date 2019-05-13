@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <uapi/cr0S/const.h>
+#include <uapi/elfboot/const.h>
 
 #define X86_EFLAGS_CF_BIT                          0 
 #define X86_EFLAGS_CF                             _BITUL(X86_EFLAGS_CF_BIT)

@@ -1,8 +1,4 @@
-#include <asm/boot.h>
-
-#include "ata.h"
-#include "edd.h"
-#include "device.h"
+#include <elfboot/device.h>
 
 /*
  * List of all mounted devices

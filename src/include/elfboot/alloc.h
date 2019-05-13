@@ -6,6 +6,13 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <asm/printf.h>
+
+#include <elfboot/e820.h>
+#include <elfboot/string.h>
+
+#include <uapi/elfboot/common.h>
+
 #include <list.h>
 
 struct alloc_node {

@@ -1,6 +1,4 @@
-#include <asm/boot.h>
-#include "bda.h"
-#include "regs.h"
+#include <asm/e820.h>
 
 uint16_t e820_count;
 struct e820_entry e820_table[E820_MAX_ENTRIES];

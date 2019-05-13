@@ -1,10 +1,16 @@
-#ifndef __BOOT_ACPI_H__
-#define __BOOT_ACPI_H__
+#ifndef __X86_ACPI_H__
+#define __X86_ACPI_H__
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
+
+#include <asm/bda.h>
+
+#include <elfboot/string.h>
+
+#include <uapi/elfboot/common.h>
 
 #define ACPI_EBDA_RANGE                           1024
 #define ACPI_HMEM_BASE                            0xE0000
@@ -53,4 +59,4 @@ struct acpi_xsdt {
 	uint64_t sdt_ptr[];
 } __attribute__((packed));
 
-#endif /* __BOOT_ACPI_H__ */
+#endif /* __X86_ACPI_H__ */

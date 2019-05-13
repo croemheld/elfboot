@@ -8,6 +8,8 @@
 
 #include <elfboot/string.h>
 
+#include <uapi/asm/processor-flags.h>
+
 struct biosregs {
 	union {
 		struct {

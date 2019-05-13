@@ -1,6 +1,4 @@
-#include <asm/boot.h>
-#include "regs.h"
-#include "video.h"
+#include <asm/video.h>
 
 int get_vesa_info(struct vesa_info *vesa_info)
 {

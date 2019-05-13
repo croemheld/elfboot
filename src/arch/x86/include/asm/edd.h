@@ -1,12 +1,17 @@
-#ifndef __BOOT_EDD_H__
-#define __BOOT_EDD_H__
+#ifndef __X86_EDD_H__
+#define __X86_EDD_H__
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
 
-#include <uapi/cr0S/const.h>
+#include <asm/bios.h>
+
+#include <elfboot/string.h>
+
+#include <uapi/elfboot/const.h>
+#include <uapi/elfboot/common.h>
 
 #define EDD_MAGIC1			0x55AA
 #define EDD_MAGIC2			0xAA55
@@ -159,4 +164,4 @@ struct edd_device_info {
 
 int edd_read_device_info(uint8_t devno, struct edd_device_info *edi);
 
-#endif /* __BOOT_EDD_H__ */
+#endif /* __X86_EDD_H__ */

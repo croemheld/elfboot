@@ -1,11 +1,11 @@
-#include <asm/boot.h>
+#include <elfboot/vfs.h>
 
 #include <list.h>
 #include <tree.h>
 
 TREE_HEAD(vfs_mountpoints);
 
-static void vfs_add_mountpoint(struct tree_node *new, struct tree_node *parent)
+static void __unused vfs_add_mountpoint(struct tree_node *new, struct tree_node *parent)
 {
 	struct tree_node *pos;
 
@@ -35,7 +35,7 @@ vfs_inc_count:
 	vfs_mountpoints.count++;
 }
 
-static void vfs_del_mountpoint(struct tree_node *node)
+static void __unused vfs_del_mountpoint(struct tree_node *node)
 {
 	struct tree_node *pos;
 
@@ -68,7 +68,7 @@ static void vfs_del_mountpoint(struct tree_node *node)
 	bfree(node);
 }
 
-void vfs_mount(const char *path, struct device *device)
+void vfs_mount(const char *path __unused, struct device *device __unused)
 {
 	
 }

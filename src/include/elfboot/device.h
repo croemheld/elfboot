@@ -1,15 +1,17 @@
-#ifndef __BOOT_DEVICE_H__
-#define __BOOT_DEVICE_H__
+#ifndef __ELFBOOT_DEVICE_H__
+#define __ELFBOOT_DEVICE_H__
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
 
-#include <list.h>
+#include <asm/edd.h>
 
-#include "edd.h"
-#include "disk.h"
+#include <elfboot/mm.h>
+#include <elfboot/disk.h>
+
+#include <list.h>
 
 /*
  * Structure prototype for device
@@ -42,4 +44,4 @@ static inline bool device_is_lba_enabled(struct device *device)
 
 struct device *device_create(uint8_t disk_drive);
 
-#endif /* __BOOT_DEVICE_H__ */
+#endif /* __ELFBOOT_DEVICE_H__ */

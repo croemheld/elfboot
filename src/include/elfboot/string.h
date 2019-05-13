@@ -6,15 +6,13 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-void *memcpy(void *dst, const void *src, size_t len);
-
 void *memset(void *dst, int c, size_t len);
 
-void *segcpy(uint16_t dseg, uint16_t doff, uint16_t sseg, uint16_t soff, size_t len);
+void *memcpy(void *dst, const void *src, size_t len);
 
-void farcpy(void *dst, const void *src, size_t len);
+void *memmove(void *dst, const void *src, size_t len);
 
-int memcmp(const void *s1, const void *s2, size_t len);
+int memcmp(const void *str1, const void *str2, size_t len);
 
 int strcmp(const char *str1, const char *str2);
 
@@ -27,6 +25,12 @@ size_t strlen(const char *str);
 char *strstr(const char *str1, const char *str2);
 
 char *strchr(const char *str, int c);
+
+size_t strspn(const char *str1, const char *str2);
+
+size_t strcspn(const char *str1, const char *str2);
+
+char *strtok(char *str, const char *delim);
 
 uint32_t simple_strtoull(const char *cp, char **endp, unsigned int base);
 

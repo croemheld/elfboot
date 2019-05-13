@@ -1,17 +1,15 @@
-#include <asm/boot.h>
-#include "bda.h"
-#include "acpi.h"
+#include <asm/acpi.h>
 
 static uint8_t acpi_rsdp_checksum(void *buffer, int length)
 {
 	uint8_t *end, sum;
-	uint8_t *address = buffer;
+	uint8_t *addr = buffer;
 
-	end = vptradd(address, length);
+	end = vptradd(addr, length);
 	sum = 0;
 
-	while(address < end)
-		sum += *(address++);
+	while(addr < end)
+		sum += *(addr++);
 
 	return sum;
 }
@@ -19,12 +17,12 @@ static uint8_t acpi_rsdp_checksum(void *buffer, int length)
 struct rsdp_descriptor *acpi_scan_rsdp_memory(uint32_t base, uint32_t length)
 {
 	struct rsdp_descriptor *rsdp;
-	void *address, *end;
+	void *addr, *end;
 
-	end = uinttvptr(base + length);
+	end  = uinttvptr(base + length);
 
-	for(address = start; address < end; address = vptradd(address, 16)) {
-		rsdp = address;
+	for(addr = uinttvptr(base); addr < end; addr = vptradd(addr, 16)) {
+		rsdp = addr;
 
 		if (strncmp(rsdp->signature, ACPI_RSDP_SIGNATURE, 8))
 			continue;
@@ -36,7 +34,7 @@ struct rsdp_descriptor *acpi_scan_rsdp_memory(uint32_t base, uint32_t length)
 			&& acpi_rsdp_checksum(rsdp, ACPI_RSDP_XCHECKSUM_LENGTH))
 			continue;
 
-		return address;
+		return addr;
 	}
 
 	return NULL;

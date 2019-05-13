@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <asm/bios.h>
+
+#include <uapi/elfboot/common.h>
+
 struct timing_description {
 	uint8_t  horizontal_frequency;
 	uint8_t  vertical_frequency;

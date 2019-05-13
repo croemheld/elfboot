@@ -3,6 +3,9 @@
 
 #ifdef __ASSEMBLER__
 
+#define LOCAL(fname)                                                           \
+fname:
+
 #define GLOBAL(fname)                                                          \
     .global fname;                                                             \
 fname:

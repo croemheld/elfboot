@@ -1,5 +1,4 @@
-#include <asm/boot.h>
-#include "alloc.h"
+#include <elfboot/alloc.h>
 
 LIST_HEAD(alloc_free);
 

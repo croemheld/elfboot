@@ -2,7 +2,7 @@
 
 void *memset(void *dst, int c, size_t len)
 {
-	int i;
+	size_t i;
 	unsigned char *buf = dst;
 
 	for(i = 0; i < len; i++)
@@ -13,7 +13,7 @@ void *memset(void *dst, int c, size_t len)
 
 void *memcpy(void *dst, const void *src, size_t len)
 {
-	int i;
+	size_t i;
 	unsigned char *dstbuf = dst;
 	const unsigned char *srcbuf = src;
 
@@ -25,7 +25,7 @@ void *memcpy(void *dst, const void *src, size_t len)
 
 void *memmove(void *dst, const void *src, size_t len)
 {
-	int i;
+	size_t i;
 	unsigned char *dstbuf = dst;
 	const unsigned char *srcbuf = src;
 
@@ -33,7 +33,7 @@ void *memmove(void *dst, const void *src, size_t len)
 		for(i = 0; i < len; i++)
 			dstbuf[i] = srcbuf[i];
 	} else {
-		for(i = len - 1; i >= 0; i--)
+		for(i = len - 1; i; i--)
 			dstbuf[i] = srcbuf[i];
 	}
 

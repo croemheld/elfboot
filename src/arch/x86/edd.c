@@ -1,6 +1,4 @@
-#include <asm/boot.h>
-#include "regs.h"
-#include "edd.h"
+#include <asm/edd.h>
 
 static void edd_read_legacy_params(uint8_t devno, struct edd_device_info *edi)
 {

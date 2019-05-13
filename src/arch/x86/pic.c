@@ -1,4 +1,4 @@
-#include <asm/boot.h>
+#include <elfboot/io.h>
 
 #define PIC_MASTER_CMD                            0x20
 #define PIC_SLAVE_CMD                             0xA0

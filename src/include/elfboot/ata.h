@@ -6,8 +6,15 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#include "disk.h"
-#include "device.h"
+#include <asm/printf.h>
+
+#include <elfboot/device.h>
+#include <elfboot/disk.h>
+#include <elfboot/alloc.h>
+#include <elfboot/scsi.h>
+#include <elfboot/io.h>
+
+#include <uapi/elfboot/common.h>
 
 /*
  * ATA status registers
@@ -181,9 +188,9 @@ struct ata_regs {
 
 struct ata_params {
 	void *buf;
-	int bufsize;
+	uint32_t bufsize;
 	void *cmd;
-	int cmdsize;
+	uint32_t cmdsize;
 	int write;
 	struct ata_regs regs;
 } __attribute__((packed));
@@ -221,10 +228,13 @@ static inline uint32_t lba_to_chs_sector(uint64_t lba, uint32_t hpc,
 #define lba_to_sect(lba, hpc, spt)	\
 	lba_to_chs_sector(lba, hpc, spt)
 
+struct device;
+
 int ata_read_sectors(struct device *device, void *buffer, uint64_t lba,
 		     int sectnum);
 
-#define ata_read_sector(d, b, l)                  ata_read_sectors(d, b, l, 1)
+#define ata_read_sector(d, b, l) \
+	ata_read_sectors(d, b, l, 1)
 
 void ata_firmware_init(void);
 

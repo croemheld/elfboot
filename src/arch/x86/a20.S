@@ -1,5 +1,4 @@
-#include <boot/boot.h>
-#include <boot/linkage.h>
+#include <asm/linkage.h>
 
 .code16
 

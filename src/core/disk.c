@@ -1,8 +1,5 @@
-#include <asm/boot.h>
-
-#include "device.h"
-#include "ata.h"
-#include "disk.h"
+#include <elfboot/disk.h>
+#include <elfboot/device.h>
 
 /* List of disk devices */
 LIST_HEAD(disk_devices);
@@ -32,9 +29,11 @@ void disk_firmware_unregister(struct disk_operations *ops)
 
 /* -------------------------------------------------------------------------- */
 
-int disk_probe_firmware2(struct device *device)
+int disk_probe_firmware2(struct device *device __unused)
 {
-	struct disk_operations *ops;
+	struct disk_operations *ops __unused;
+
+	return 0;
 }
 
 int disk_probe_firmware(struct device *device)

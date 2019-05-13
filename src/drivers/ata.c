@@ -1,12 +1,4 @@
-#include <asm/boot.h>
-
-#include "device.h"
-#include "disk.h"
-#include "alloc.h"
-#include "edd.h"
-#include "scsi.h"
-#include "ata.h"
-
+#include <elfboot/ata.h>
 /*
  * We are currently in the early-boot stage of our OS. At this point, it 
  * wouldn't make sense to support writing to devices, since we only want 
@@ -253,30 +245,30 @@ static int ata_open(const char *name __unused, struct device *device)
 	return ata_identify(device);
 }
 
-static int ata_read(struct device *device, uint64_t sector, 
-		    uint64_t size, char *buffer)
+static int ata_read(struct device *device __unused, uint64_t sector __unused, 
+		    uint64_t size __unused, char *buffer __unused)
 {
 	return -1;
 }
 
-static int ata_write(struct device *device, uint64_t sector, 
-		     uint64_t size, const char *buffer)
+static int ata_write(struct device *device __unused, uint64_t sector __unused, 
+		     uint64_t size __unused, const char *buffer __unused)
 {
 	return -1;
 }
 
-static int ata_close(struct device *device)
+static int ata_close(struct device *device __unused)
 {
 	return -1;
 }
 
-static int atapi_open(const char *name __unused, struct device *device)
+static int atapi_open(const char *name __unused, struct device *device __unused)
 {
 	return ata_identify(device);
 }
 
-static int atapi_read(struct device *device, uint64_t sector, 
-		    uint64_t size, char *buffer)
+static int atapi_read(struct device *device __unused, uint64_t sector __unused, 
+		    uint64_t size, char *buffer __unused)
 {
 	uint8_t *cmd;
 	struct ata_params params;
@@ -299,15 +291,15 @@ static int atapi_read(struct device *device, uint64_t sector,
 	return 0;
 }
 
-static int atapi_write(struct device *device, uint64_t sector, 
-		     uint64_t size, const char *buffer)
+static int atapi_write(struct device *device __unused, uint64_t sector __unused, 
+		     uint64_t size __unused, const char *buffer __unused)
 {
 	bprintf("ATAPI write not supported!\n");
 
 	return -1;
 }
 
-static int atapi_close(struct device *device)
+static int atapi_close(struct device *device __unused)
 {
 	return -1;
 }

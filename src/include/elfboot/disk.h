@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <elfboot/ata.h>
+
 #include <list.h>
 
 #define DISK_SECTOR_SIZE                          0x200
