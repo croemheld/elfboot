@@ -7,8 +7,8 @@
 #include <stdarg.h>
 
 #include <asm/printf.h>
+#include <asm/memory.h>
 
-#include <elfboot/e820.h>
 #include <elfboot/string.h>
 
 #include <uapi/elfboot/common.h>

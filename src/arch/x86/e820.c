@@ -1,4 +1,4 @@
-#include <asm/e820.h>
+#include <asm/memory.h>
 
 uint16_t e820_count;
 struct e820_entry e820_table[E820_MAX_ENTRIES];

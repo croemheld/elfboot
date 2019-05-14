@@ -8,3 +8,4 @@ elfboot-y += e820.o
 elfboot-y += opmode.o
 elfboot-y += pic.o
 elfboot-y += video.o
+elfboot-y += tty.o

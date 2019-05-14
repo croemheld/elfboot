@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include <asm/bios.h>
+
+#include <elfboot/io.h>
+
 void putc(int ch);
 
 void puts(const char *str);

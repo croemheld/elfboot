@@ -8,7 +8,18 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#include <elfboot/e820.h>
+#define E820_MAX_ENTRIES                          16
+#define SMAP                                      0x534d4150
+
+/*
+ * E820 memory map structure
+ */
+
+struct e820_entry {
+	uint64_t addr;
+	uint64_t size;
+	uint32_t type;
+} __attribute__((packed));
 
 /*
  * Boot params structure
