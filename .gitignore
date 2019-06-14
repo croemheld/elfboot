@@ -2,23 +2,25 @@
 # Ignore documents for research purposes
 #
 
-/docs/*
+.docs/*
 
 #
 # Ignore binary files and virtual disk images
 #
 
-/objs/*
-/iso/*
-/*.img
-/*.ini
-/*.o
+.objs/*
+.iso/*
+*.img
+*.ini
+*.o
+*.bin
+*.iso
 
 #
 # Ignore CScope files
 #
 
-/cscope.*
+.cscope.*
 
 #
 # Ignore bochsrc
