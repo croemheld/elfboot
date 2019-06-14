@@ -17,6 +17,8 @@ struct memblock {
 	struct memblock_type memory;
 };
 
+void memblock_dump(void);
+
 int memblock_add(uint32_t base, uint32_t size);
 
 int memblock_reserve(uint32_t base, uint32_t size);

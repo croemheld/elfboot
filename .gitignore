@@ -9,7 +9,16 @@
 #
 
 /objs/*
+/iso/*
 /*.img
+/*.ini
+/*.o
+
+#
+# Ignore CScope files
+#
+
+/cscope.*
 
 #
 # Ignore bochsrc

@@ -1,18 +1,21 @@
 #include <elfboot/core.h>
+#include <elfboot/printf.h>
 
-uint16_t e820_count;
-struct e820_entry e820_table[E820_MAX_ENTRIES];
+#include <asm/bios.h>
+#include <asm/e820.h>
+
+#include <uapi/asm/bootparam.h>
 
 static const char *memory_types[] = {
-	"Invalid entry",
-	"Available memory",
-	"Reserved memory",
-	"ACPI reclaimable memory",
-	"ACPI NVS memory",
-	"Bad memory"
+	[E820_MEMORY_TYPE_INVALID] = "Invalid entry",
+	[E820_MEMORY_TYPE_AVAILABLE] = "Available memory",
+	[E820_MEMORY_TYPE_RESERVED] = "Reserved memory",
+	[E820_MEMORY_TYPE_ACPI_RECLAIMABLE] = "ACPI reclaimable memory",
+	[E820_MEMORY_TYPE_ACPI_NVS] = "ACPI NVS memory",
+	[E820_MEMORY_TYPE_BAD_MEMORY] = "Bad memory"
 };
 
-void memory_dump(void)
+void e820_memory_dump(struct boot_params *boot_params)
 {
 	int i;
 	uint32_t addr, size, type;
@@ -20,18 +23,18 @@ void memory_dump(void)
 
 	bprintf("%10s | %10s | %s\n", "Address", "Size", "Type");
 
-	for(i = 0; i < e820_count; i++) {
-		entry = fetch_e820_entry(i);
+	for(i = 0; i < boot_params->e820_table.nr_entries; i++) {
+		entry = &boot_params->e820_table.entries[i];
 
-		addr = entry->addr;
-		size = entry->size;
+		addr = entry->addr_32;
+		size = entry->size_32;
 		type = entry->type;
 
 		bprintf("%08p | %08p | %s\n", addr, size, memory_types[type]);
 	}
 }
 
-static uint16_t detect_memory_e820(struct e820_entry *table)
+static uint16_t detect_memory_e820(struct e820_table *table)
 {
 	struct biosregs ireg, oreg;
 	struct e820_entry *desc;
@@ -39,7 +42,7 @@ static uint16_t detect_memory_e820(struct e820_entry *table)
 
 	static struct e820_entry buf;
 
-	desc = table;
+	desc = table->entries;
 
 	initregs(&ireg);
 	ireg.ax  = 0xe820;
@@ -73,12 +76,14 @@ static void e820_memblock_setup(void)
 
 void detect_memory(struct boot_params *boot_params)
 {
-	uint16_t nr_entries = detect_memory_e820(&boot_params.e820_table);
+	uint16_t nr_entries = detect_memory_e820(&boot_params->e820_table);
 
 	if (!nr_entries)
 		return;
 
 	boot_params->e820_table.nr_entries = nr_entries;
+
+	e820_memory_dump(boot_params);
 
 	e820_memblock_setup();
 }

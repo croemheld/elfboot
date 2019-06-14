@@ -1,4 +1,27 @@
+#include <elfboot/core.h>
+#include <elfboot/screen.h>
+#include <elfboot/console.h>
+
+#include <drivers/vga.h>
+
+#include <asm/bios.h>
 #include <asm/video.h>
+
+#include <uapi/elfboot/common.h>
+
+#include <uapi/asm/bootparam.h>
+
+struct screen root_screen = {
+	.name = "VGA",
+	.width = 80,
+	.height = 25,
+	.xunit = 1, 
+	.yunit = 1, 
+	.bpu = sizeof(uint16_t),
+	.fgcolor.vga = SCREEN_COLOR_VGA(SCREEN_COLOR_VGA_WHITE), 
+	.bgcolor.vga = SCREEN_COLOR_VGA(SCREEN_COLOR_VGA_BLACK), 
+	.fbaddr = VGA_FRAMEBUFFER_ADDRESS
+};
 
 int get_vesa_info(struct vesa_info *vesa_info)
 {

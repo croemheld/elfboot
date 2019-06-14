@@ -1,47 +1,29 @@
 #ifndef __ELFBOOT_DEVICE_H__
 #define __ELFBOOT_DEVICE_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <asm/edd.h>
-
-#include <elfboot/mm.h>
-#include <elfboot/disk.h>
-
-#include <list.h>
+#include <elfboot/core.h>
 
 /*
  * Structure prototype for device
  */
 
+struct device;
+
+struct device_driver {
+	const char *name;
+	int (*probe)(struct device *);
+	int (*open)(const char *, struct device *);
+	int (*read)(struct device *, uint64_t, uint64_t, char *);
+	int (*write)(struct device *, uint64_t, uint64_t, const char *);
+	int (*close)(struct device *);
+	struct list_head list;
+}
+
 struct device {
 	const char *name;
-	uint8_t disk_drive;
-	struct list_head list;
-	struct edd_device_info *edi;
-	struct edd_disk_drive_params *params;
-	struct disk *disk;
-	uint16_t *device_info;
+	int fd;
+	struct device_driver *driver;
+	void *data;
 };
-
-static inline int device_is_atapi(struct device *device)
-{
-	return device->params->drive_options & EDD_DISK_DRIVE_MASK_ATAPI;
-}
-
-static inline bool device_is_slave(struct device *device)
-{
-	return device->params->flags & EDD_DISK_DRIVE_MASK_SLAVE;
-}
-
-static inline bool device_is_lba_enabled(struct device *device)
-{
-	return device->params->flags & EDD_DISK_DRIVE_MASK_LBA;
-}
-
-struct device *device_create(uint8_t disk_drive);
 
 #endif /* __ELFBOOT_DEVICE_H__ */

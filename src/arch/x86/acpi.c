@@ -1,4 +1,10 @@
+#include <elfboot/core.h>
+#include <elfboot/string.h>
+
+#include <asm/bda.h>
 #include <asm/acpi.h>
+
+#include <uapi/elfboot/common.h>
 
 static uint8_t acpi_rsdp_checksum(void *buffer, int length)
 {

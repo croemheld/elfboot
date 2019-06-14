@@ -6,6 +6,12 @@ ELFBOOT_BITS   := 32
 ELFBOOT_TARGET := i686
 ELFBOOT_TCHAIN := elfboot-toolchain
 
+ELFBOOT_ISO     := $(CURDIR)/iso
+ELFBOOT_BOOT    := boot
+ELFBOOT_ISOBOOT := $(ELFBOOT_ISO)/$(ELFBOOT_BOOT)
+
+ELFBOOT_BINARY  := $(ELFBOOT_BOOT)/$(ELFBOOT).bin
+
 # Export the modified PATH variable
 export PATH  := $(CURDIR)/$(ELFBOOT_TCHAIN)/bin:$(PATH)
 export SHELL := env PATH=$(PATH) /bin/bash
@@ -85,8 +91,14 @@ $(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
 PHONY += elfboot
 BUILD += elfboot
 elfboot: clean-elfboot toolchain-check $(OBJS)
-	@echo "  LD      $(OBJS)"
+	mkdir -p $(ELFBOOT_ISOBOOT)
 	@$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
+	cp $(ELFBOOT).bin $(ELFBOOT_ISOBOOT)
+	genisoimage -R -b $(ELFBOOT_BINARY)				\
+		-input-charset utf-8					\
+		-no-emul-boot						\
+		-V elfboot						\
+		-v -o $(ELFBOOT).iso $(ELFBOOT_ISO)
 
 PHONY += toolchain
 BUILD += toolchain

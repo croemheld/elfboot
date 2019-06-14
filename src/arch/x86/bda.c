@@ -1,4 +1,8 @@
+#include <elfboot/core.h>
+
 #include <asm/bda.h>
+
+#include <uapi/elfboot/common.h>
 
 struct bios_data_area *bios_get_bda(void)
 {

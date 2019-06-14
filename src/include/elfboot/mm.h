@@ -2,6 +2,7 @@
 #define __ELFBOOT_MM_H__
 
 #include <elfboot/core.h>
+#include <elfboot/memblock.h>
 
 #include <uapi/elfboot/const.h>
 

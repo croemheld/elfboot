@@ -1,4 +1,9 @@
+#include <elfboot/core.h>
+
+#include <asm/bios.h>
 #include <asm/edd.h>
+
+#include <uapi/elfboot/common.h>
 
 static void edd_read_legacy_params(uint8_t devno, struct edd_device_info *edi)
 {

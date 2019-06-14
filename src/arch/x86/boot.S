@@ -141,6 +141,6 @@ _setup16:
 	# Finally, call bootloader main routine
 
 	movb    %dl, %al
-	call    bmain
+	call    main
 
 	jmp     .
