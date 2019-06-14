@@ -187,19 +187,23 @@ static void bmalloc_create_free_list(uint32_t addr, size_t size)
 		ablk, ablk->size);
 }
 
-void bmalloc_init(struct e820_entry *e820_table, uint16_t e820_count)
+void bmalloc_init(void)
 {
-	struct e820_entry *entry;
+	uint32_t i;
+	struct memblock_region *region;
 
-	array_for_each_entry(entry, e820_table, e820_count) {
+	for_each_free_memblock(i, region) {
 
 		/*
-		 * The bootloader is running in 32-bit protected mode with full 
-		 * access to 4 GiB of physical memory. As such we simply add all
-		 * available memory regions to our memory allocator.
+		 * Filter out regions smaller than the minimum 
+		 * size defined by the ALLOC_NODE_MIN_SIZE macro.
+		 *
+		 * TODO CRO: Make ALLOC_NODE_MIN_SIZE configurable.
 		 */
 		
-		if (entry->type == E820_MEMORY_TYPE_AVAILABLE)
-			bmalloc_create_free_list(entry->addr, entry->size);
+		if (region->size < ALLOC_NODE_MIN_SIZE)
+			continue;
+
+		bmalloc_create_free_list(region->base, region->size);
 	}
 }

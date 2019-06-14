@@ -1,5 +1,5 @@
-#ifndef __ASM_H__
-#define __ASM_H__
+#ifndef __X86_ASM_H__
+#define __X86_ASM_H__
 
 #ifdef __GCC_ASM_FLAG_OUTPUTS__
 
@@ -13,4 +13,4 @@
 
 #endif
 
-#endif /* __ASM_H__ */
+#endif /* __X86_ASM_H__ */

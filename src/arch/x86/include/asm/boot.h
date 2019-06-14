@@ -21,10 +21,8 @@
 
 #ifndef __ASSEMBLER__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
+#include <elfboot/linkage.h>
 
 #include <asm/asm.h>
 #include <asm/bios.h>
@@ -34,71 +32,8 @@
 #include <asm/tty.h>
 #include <asm/video.h>
 
-#include <asm/linkage.h>
 
 #include <uapi/asm/bootparam.h>
-#include <uapi/asm/processor-flags.h>
-
-#define ARRAY_SIZE(x)                             (sizeof(x) / sizeof(*(x)))
-
-/* These functions are used to reference data in other segments. */
-
-static inline uint16_t get_ds(void)
-{
-	uint16_t seg;
-
-	__asm__ volatile("movw %%ds, %0" : "=rm" (seg));
-
-	return seg;
-}
-
-static inline void set_fs(uint16_t seg)
-{
-	__asm__ volatile("movw %0, %%fs" :: "rm" (seg));
-}
-
-static inline uint16_t get_fs(void)
-{
-	uint16_t seg;
-
-	__asm__ volatile("movw %%fs, %0" : "=rm" (seg));
-
-	return seg;
-}
-
-static inline void set_gs(uint16_t seg)
-{
-	__asm__ volatile("movw %0, %%gs" :: "rm" (seg));
-}
-
-static inline uint16_t get_gs(void)
-{
-	uint16_t seg;
-
-	__asm__ volatile("movw %%gs, %0" : "=rm" (seg));
-
-	return seg;
-}
-
-/*
- * Number utility functions
- */
-
-static inline int is_digit(int ch)
-{
-	return (ch >= '0') && (ch <= '9');
-}
-
-static inline int is_xdigit(int ch)
-{
-	if (is_digit(ch))
-		return true;
-
-	if ((ch >= 'a') && (ch <= 'f'))
-		return true;
-
-	return (ch >= 'A') && (ch <= 'F');
-}
 
 /* Retrieve e820 memory map */
 void detect_memory(struct boot_params *boot_params);

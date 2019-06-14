@@ -1,11 +1,7 @@
 #ifndef __X86_BIOS_H__
 #define __X86_BIOS_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
+#include <elfboot/core.h>
 #include <elfboot/string.h>
 
 #include <uapi/asm/processor-flags.h>

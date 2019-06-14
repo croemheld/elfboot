@@ -19,7 +19,10 @@ CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 
 # Flags for compiler and linker
-CFLAGS  := -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+CFLAGS  := -std=gnu99 -ffreestanding -m16 -Wextra -g -Os	\
+	   -Wall -Wstrict-prototypes -march=i386 -mregparm=3	\
+	   -fno-strict-aliasing -fomit-frame-pointer -fno-pic	\
+	   -mno-mmx -mno-sse
 LDFLAGS := -O2 -nostdlib -lgcc
 
 # Includes
@@ -71,7 +74,7 @@ srcfile := $$(filter-out $(1),$$(sofiles))
 ifneq (, $$(srcfile))
 
 $(1): $$(srcfile)
-	@echo " [ CC ] $$@ from $$<"
+	@echo "  CC      $$@"
 	@$$(CC) -c $$< -o $$@ $$(CFLAGS) $$(ELFBOOT_INCLUDE)
 
 endif
@@ -82,8 +85,8 @@ $(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
 PHONY += elfboot
 BUILD += elfboot
 elfboot: clean-elfboot toolchain-check $(OBJS)
-	@echo " [ LD ] $(OBJS)"
-# @$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
+	@echo "  LD      $(OBJS)"
+	@$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
 
 PHONY += toolchain
 BUILD += toolchain
@@ -101,7 +104,7 @@ CLEAN += clean-elfboot
 clean-elfboot:
 	@for objfile in $(OBJS); do			\
 		if [[ -e $$objfile ]]; then		\
-			echo " [ RM ] $$objfile";		\
+			echo "  CLEAN   $$objfile";		\
 			rm -f $$objfile;		\
 		fi					\
 	done

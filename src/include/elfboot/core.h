@@ -1,6 +1,10 @@
 #ifndef __CORE_H__
 #define __CORE_H__
 
+#include <elfboot/types.h>
+
+#include <uapi/elfboot/errno.h>
+
 #define min(x, y)                                 ((x < y) ? x : y)
 #define max(x, y)                                 ((x > y) ? x : y)
 

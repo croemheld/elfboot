@@ -1,10 +1,27 @@
-#ifndef __BOOT_STRING_H__
-#define __BOOT_STRING_H__
+#ifndef __ELFBOOT_STRING_H__
+#define __ELFBOOT_STRING_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
+
+/*
+ * Number utility functions
+ */
+
+static inline int is_digit(int ch)
+{
+	return (ch >= '0') && (ch <= '9');
+}
+
+static inline int is_xdigit(int ch)
+{
+	if (is_digit(ch))
+		return true;
+
+	if ((ch >= 'a') && (ch <= 'f'))
+		return true;
+
+	return (ch >= 'A') && (ch <= 'F');
+}
 
 void *memset(void *dst, int c, size_t len);
 
@@ -36,4 +53,4 @@ uint32_t simple_strtoull(const char *cp, char **endp, unsigned int base);
 
 int simple_strtol(const char *cp, char **endp, unsigned int base);
 
-#endif /* __BOOT_STRING_H__ */
+#endif /* __ELFBOOT_STRING_H__ */

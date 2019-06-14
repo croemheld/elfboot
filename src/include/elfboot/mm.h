@@ -1,12 +1,14 @@
 #ifndef __ELFBOOT_MM_H__
 #define __ELFBOOT_MM_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
 
-#include <uapi/asm/bootparam.h>
+#include <uapi/elfboot/const.h>
+
+#define PAGE_SHIFT		12
+#define PAGE_SIZE		_BITUL(PAGE_SHIFT)
+#define PAGE_MASK		(PAGE_SIZE - 1)
+#define PAGE_ADDRESS(x)		((x) & ~(PAGE_MASK))
 
 void *bmalloc(size_t size);
 
@@ -18,12 +20,6 @@ void bfree(void *dptr);
 
 void *brealloc(void *dptr, size_t size);
 
-void bmalloc_init(struct e820_entry *e820_table, uint16_t e820_count);
-
-void bootmem_reserve(uint64_t addr, uint64_t size);
-
-void bootmem_release(uint64_t addr, uint64_t size);
-
-void bootmem_init(struct boot_params *boot_params);
+void bmalloc_init(void);
 
 #endif /* __ELFBOOT_MM_H__ */

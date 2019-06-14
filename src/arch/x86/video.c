@@ -79,3 +79,24 @@ uint16_t get_current_vesa_mode(void)
 
 	return oreg.bx;
 }
+
+static int video_default_mode(void)
+{
+	struct biosregs ireg, oreg;
+
+	initregs(&ireg);
+	ireg.al = 0x03;
+
+	bioscall(0x10, &ireg, &oreg);
+
+	return oreg.al;
+}
+
+void detect_videos(struct boot_params *boot_params)
+{
+	(void)boot_params;
+
+	video_default_mode();
+
+	console_init(&root_screen);
+}

@@ -1,12 +1,7 @@
-#ifndef __BOOT_BDA_H__
-#define __BOOT_BDA_H__
+#ifndef __X86_BDA_H__
+#define __X86_BDA_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <uapi/elfboot/common.h>
+#include <elfboot/core.h>
 
 #define BDA_ADDRESS                               0x400
 #define BDA_MAX_SIZE                              0x100
@@ -118,4 +113,4 @@ uint32_t bios_get_ebda_addr(void);
 
 void *bios_get_ebda_ptr(void);
 
-#endif /* __BOOT_BDA_H__ */
+#endif /* __X86_BDA_H__ */

@@ -1,15 +1,11 @@
 #include <asm/boot.h>
 #include <asm/linkage.h>
 
+.code16
+
 .section .text
 
 GLOBAL(bioscall)
-.code32
-
-	call    rmmode_jmp
-
-.code16
-
 	cmpb    %al, 2f
 	je      1f
 	movb    %al, 2f
@@ -69,10 +65,6 @@ GLOBAL(bioscall)
 	popw    %gs
 	popw    %fs
 	popfl
-
-	call    pmmode_jmp
-
-.code32
 	
 	retl
 ENDPROC(bioscall)

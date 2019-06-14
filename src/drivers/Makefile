@@ -1,3 +1,3 @@
-elfboot-y += ata.o
-elfboot-y += pata.o
-elfboot-y += scsi.o
+elfboot-d += block
+elfboot-d += char
+elfboot-d += screen
