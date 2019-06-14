@@ -1,17 +1,9 @@
 #ifndef __X86_EDD_H__
 #define __X86_EDD_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <asm/bios.h>
-
-#include <elfboot/string.h>
+#include <elfboot/core.h>
 
 #include <uapi/elfboot/const.h>
-#include <uapi/elfboot/common.h>
 
 #define EDD_MAGIC1			0x55AA
 #define EDD_MAGIC2			0xAA55

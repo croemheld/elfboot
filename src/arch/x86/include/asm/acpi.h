@@ -2,6 +2,7 @@
 #define __X86_ACPI_H__
 
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 
 #define ACPI_EBDA_RANGE                           1024
 #define ACPI_HMEM_BASE                            0xE0000
@@ -26,7 +27,7 @@ struct rsdp_descriptor {
 	uint64_t xsdt_addr;
 	uint8_t  ext_checksum;
 	uint8_t  _reserved[3];
-} __attribute__((packed));
+} __packed;
 
 struct acpi_sdt_hdr {
 	char signature[4];
@@ -38,16 +39,16 @@ struct acpi_sdt_hdr {
 	uint32_t oem_revision;
 	uint32_t creator_id;
 	uint32_t creator_revision;
-} __attribute__((packed));
+} __packed;
 
 struct acpi_rsdt {
 	struct acpi_sdt_hdr acpi_hdr;
 	uint32_t sdt_ptr[];
-} __attribute__((packed));
+} __packed;
 
 struct acpi_xsdt {
 	struct acpi_sdt_hdr acpi_hdr;
 	uint64_t sdt_ptr[];
-} __attribute__((packed));
+} __packed;
 
 #endif /* __X86_ACPI_H__ */

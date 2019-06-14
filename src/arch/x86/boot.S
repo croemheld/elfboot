@@ -4,11 +4,6 @@
 
 .code16
 
-	.extern _PARTITION_CHS_HEAD
-	.extern _PARTITION_CHS_SECTOR
-	.extern _PARTITION_CHS_CYLINDER
-	.extern _PARTITION_BLOCKS
-
 .section .rodata, "a", @progbits
 
 bios_error_msg:
@@ -93,8 +88,6 @@ ENDPROC(.bios_error)
 #
 
 _setup16:
-	cli
-
 	xorw    %ax, %ax
 	movw    %ax, %ds
 	movw    %ax, %es
@@ -109,11 +102,41 @@ _setup16:
 	call    enable_a20
 	jc      .bios_error
 
-	# Prepare to jump into protected mode
+	# Prepare to jump into unreal mode
 
-	call    pmmode_jmp
+	lgdt    boot_gdt_desc
 
-.code32
+	cli
+
+	movl    %cr0, %eax
+	orl     $0x1, %eax
+	movl    %eax, %cr0
+
+	jmpl    $BOOT_GDT_CODE16, $.protcseg
+
+.protcseg:
+	movw    $BOOT_GDT_DATA16, %ax
+	movw    %ax, %ds
+	movw    %ax, %es
+	movw    %ax, %fs
+	movw    %ax, %gs
+	movw    %ax, %ss
+
+	movl    %cr0,  %eax
+	andl    $(~1), %eax
+	movl    %eax,  %cr0
+
+	jmpl    $0, $.unrealcseg
+
+.unrealcseg:
+	xorw    %ax, %ax
+	movw    %ax, %ds
+	movw    %ax, %es
+	movw    %ax, %fs
+	movw    %ax, %gs
+	movw    %ax, %ss
+
+	sti
 
 	# Finally, call bootloader main routine
 

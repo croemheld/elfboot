@@ -2,6 +2,7 @@
 #define __X86_BDA_H__
 
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 
 #define BDA_ADDRESS                               0x400
 #define BDA_MAX_SIZE                              0x100
@@ -103,7 +104,7 @@ struct bios_data_area {
 	uint8_t  _reserved4[32];
 	uint8_t  userspace[16];
 	uint8_t  print_screen;
-} __attribute__((packed));
+} __packed;
 
 struct bios_data_area *bios_get_bda(void);
 

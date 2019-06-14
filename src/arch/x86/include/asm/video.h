@@ -1,14 +1,8 @@
-#ifndef __BOOT_VIDEO_H__
-#define __BOOT_VIDEO_H__
+#ifndef __X86_VIDEO_H__
+#define __X86_VIDEO_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <asm/bios.h>
-
-#include <uapi/elfboot/common.h>
+#include <elfboot/core.h>
+#include <elfboot/linkage.h>
 
 struct timing_description {
 	uint8_t  horizontal_frequency;
@@ -29,7 +23,7 @@ struct timing_description {
 	uint8_t  horizontal_border;
 	uint8_t  vertical_border;
 	uint8_t  display_type;
-} __attribute__((packed));
+} __packed;
 
 struct edid_data {
 	uint64_t padding;
@@ -56,7 +50,7 @@ struct edid_data {
 	struct timing_description timing_description4;
 	uint8_t  unused;
 	uint8_t  checksum;
-} __attribute__((packed));
+} __packed;
 
 struct vesa_info {
 	char signature[4];
@@ -71,7 +65,7 @@ struct vesa_info {
 	uint32_t product_revision;
 	uint8_t  _reserved[222];
 	uint8_t  oem_data[256];
-} __attribute__((packed));
+} __packed;
 
 struct vesa_mode {
 	uint16_t attributes;
@@ -107,6 +101,6 @@ struct vesa_mode {
 	uint32_t off_screen_memory_offset;
 	uint16_t off_screen_memory_size;
 	uint8_t  _reserved2[206];
-} __attribute__((packed));
+} __packed;
 
-#endif /* __BOOT_VIDEO_H__ */
+#endif /* __X86_VIDEO_H__ */

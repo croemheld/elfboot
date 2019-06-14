@@ -24,15 +24,6 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
-#include <asm/asm.h>
-#include <asm/bios.h>
-#include <asm/edd.h>
-#include <asm/printf.h>
-#include <asm/segment.h>
-#include <asm/tty.h>
-#include <asm/video.h>
-
-
 #include <uapi/asm/bootparam.h>
 
 /* Retrieve e820 memory map */

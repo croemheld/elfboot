@@ -1,12 +1,9 @@
-#ifndef __ISO_H__
-#define __ISO_H__
+#ifndef __FS_ISO_H__
+#define __FS_ISO_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
 
-#include <uapi/cr0S/const.h>
+#include <uapi/elfboot/const.h>
 
 #define ISO_SECTOR_SHIFT                          11
 #define ISO_SECTOR_SIZE                           _BITUL(ISO_SECTOR_SHIFT)
@@ -79,7 +76,7 @@
  * ISO- directory
  */
 
-struct iso_dir_date {
+struct iso9660_dir_date {
 	uint8_t year;
 	uint8_t month;
 	uint8_t day;
@@ -89,14 +86,14 @@ struct iso_dir_date {
 	uint8_t timezone;
 } __attribute__((packed));
 
-struct iso_dir {
+struct iso9660_dir {
 	uint8_t length;
 	uint8_t attr_lenght;
 	uint32_t extent;
 	uint32_t extent_msb;
 	uint32_t size;
 	uint32_t size_msb;
-	struct iso_dir_date date;
+	struct iso9660_dir_date date;
 	uint8_t flags;
 	uint16_t interleave;
 	uint32_t volume_sequence_number;
@@ -108,7 +105,7 @@ struct iso_dir {
  * Primary Volume Descriptor
  */
 
-struct iso_pvd_date {
+struct iso9660_pvd_date {
 	char year[4];
 	char month[2];
 	char day[2];
@@ -119,7 +116,7 @@ struct iso_pvd_date {
 	uint8_t timezone;
 } __attribute__((packed));
 
-struct iso_pvd {
+struct iso9660_pvd {
 	uint8_t type;
 	char id[5];
 	uint8_t version;
@@ -142,7 +139,7 @@ struct iso_pvd {
 	uint32_t opt_path_table_l_extent;
 	uint32_t path_table_m_extent;
 	uint32_t opt_path_table_m_extent;
-	struct iso_dir root_directory;
+	struct iso9660_dir root_directory;
 	char volume_set_id[128];
 	char publisher_id[128];
 	char preparer_id[128];
@@ -150,18 +147,18 @@ struct iso_pvd {
 	char copyright_file_id[38];
 	char abstract_file_id[36];
 	char bibliographic_file_id[37];
-	struct iso_pvd_date creation_date;
-	struct iso_pvd_date modification_date;
-	struct iso_pvd_date expiration_date;
-	struct iso_pvd_date effective_date;
+	struct iso9660_pvd_date creation_date;
+	struct iso9660_pvd_date modification_date;
+	struct iso9660_pvd_date expiration_date;
+	struct iso9660_pvd_date effective_date;
 	uint8_t fs_version;
 	uint8_t _reserved4;
 	char application_data[512];
 	char _reserved5[653];
 } __attribute__((packed));
 
-void iso_print_records(uint8_t devno, struct iso_dir *parent);
+void iso_print_records(uint8_t devno, struct iso9660_dir *parent);
 
 int iso_load_file(uint8_t devno, uint32_t offset, const char *path);
 
-#endif /* __ISO_H__ */
+#endif /* __FS_ISO_H__ */

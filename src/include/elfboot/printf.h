@@ -1,10 +1,7 @@
-#ifndef __BOOT_PRINTF_H__
-#define __BOOT_PRINTF_H__
+#ifndef __ELFBOOT_PRINTF_H__
+#define __ELFBOOT_PRINTF_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
 
 int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp);
 
@@ -14,4 +11,6 @@ int sprintf(char* buffer, const char *format, ...);
 
 int bprintf(const char *format, ...);
 
-#endif /* __BOOT_PRINTF_H__ */
+#define brpintln(fmt, ...)	bprintf(fmt "\n", ##__VA_ARGS__)
+
+#endif /* __ELFBOOT_PRINTF_H__ */

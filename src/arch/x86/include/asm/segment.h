@@ -1,11 +1,13 @@
 #ifndef __X86_SEGMENT_H__
 #define __X86_SEGMENT_H__
 
-#define BOOT_GDT_CODE32                           0x08
-#define BOOT_GDT_DATA32                           0x10
+#define BOOT_GDT_NULL		0x00
 
-#define BOOT_GDT_CODE16                           0x18
-#define BOOT_GDT_DATA16                           0x20
+#define BOOT_GDT_CODE16		0x08
+#define BOOT_GDT_DATA16		0x10
+
+#define BOOT_GDT_CODE32		0x18
+#define BOOT_GDT_DATA32		0x20
 
 #ifdef __ASSEMBLER__
 
