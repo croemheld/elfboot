@@ -1,4 +1,11 @@
 #
+# Ignore configuration file
+#
+
+/elfboot.config
+*config.h
+
+#
 # Ignore documents for research purposes
 #
 
@@ -8,7 +15,6 @@
 # Ignore binary files and virtual disk images
 #
 
-.objs/*
 .iso/*
 *.img
 *.ini

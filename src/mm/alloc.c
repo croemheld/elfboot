@@ -59,7 +59,7 @@ void *bmalloc(size_t size)
 	if (!dptr)
 		return NULL;
 
-	if ((ablk->size - size) >= ALLOC_NODE_MIN_SIZE) {
+	if ((ablk->size - size) >= CONFIG_MALLOC_MIN_SIZE) {
 		nblk = dptr + size;
 
 		nblk->size = ablk->size - size - ALLOC_NODE_HDR_SIZE;
@@ -184,8 +184,7 @@ static void bmalloc_create_free_list(uint32_t addr, size_t size)
 
 	list_add_tail(&ablk->node, &alloc_free);
 
-	bprintf("Adding free memory list at %08p, size %08p bytes\n", 
-		ablk, ablk->size);
+	bprintf("Add alloc_node at %08p, size %08p bytes\n", ablk, ablk->size);
 }
 
 void bmalloc_init(void)
@@ -197,12 +196,12 @@ void bmalloc_init(void)
 
 		/*
 		 * Filter out regions smaller than the minimum 
-		 * size defined by the ALLOC_NODE_MIN_SIZE macro.
+		 * size defined by the CONFIG_MALLOC_MIN_SIZE macro.
 		 *
-		 * TODO CRO: Make ALLOC_NODE_MIN_SIZE configurable.
+		 * TODO CRO: Make CONFIG_MALLOC_MIN_SIZE configurable.
 		 */
 		
-		if (region->size < ALLOC_NODE_MIN_SIZE)
+		if (region->size < CONFIG_MALLOC_MIN_SIZE)
 			continue;
 
 		bmalloc_create_free_list(region->base, region->size);

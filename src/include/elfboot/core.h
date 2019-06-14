@@ -2,6 +2,7 @@
 #define __CORE_H__
 
 #include <elfboot/types.h>
+#include <elfboot/config.h>
 
 #include <uapi/elfboot/errno.h>
 

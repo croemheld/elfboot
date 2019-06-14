@@ -23,6 +23,7 @@ export ELFBOOT_TARGET
 # Programs for compiling and linking
 CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+PY := python3
 
 # Flags for compiler and linker
 CFLAGS  := -std=gnu99 -ffreestanding -m16 -Wextra -g -Os	\
@@ -90,15 +91,20 @@ $(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
 
 PHONY += elfboot
 BUILD += elfboot
-elfboot: clean-elfboot toolchain-check $(OBJS)
-	mkdir -p $(ELFBOOT_ISOBOOT)
+elfboot: elfboot-config toolchain-check $(OBJS)
+	@echo "  GENISO  $(ELFBOOT).iso"
+	@mkdir -p $(ELFBOOT_ISOBOOT)
 	@$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
-	cp $(ELFBOOT).bin $(ELFBOOT_ISOBOOT)
-	genisoimage -R -b $(ELFBOOT_BINARY)				\
+	@cp $(ELFBOOT).bin $(ELFBOOT_ISOBOOT)
+	@genisoimage -R -b $(ELFBOOT_BINARY)				\
 		-input-charset utf-8					\
 		-no-emul-boot						\
 		-V elfboot						\
 		-v -o $(ELFBOOT).iso $(ELFBOOT_ISO)
+
+elfboot-config:
+	@$(PY) tools/genconf.py -i $(ELFBOOT).config			\
+			       -o src/include/elfboot/config.h
 
 PHONY += toolchain
 BUILD += toolchain

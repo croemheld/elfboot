@@ -3,13 +3,13 @@
 #include <elfboot/screen.h>
 #include <elfboot/console.h>
 
-static struct console root_console = {
+static struct console boot_console = {
 	.active = 1,
 	.xpos = 0,
 	.ypos = 0,
 };
 
-static struct console *active_console = &root_console;
+static struct console *active_console = &boot_console;
 
 static void store_console(struct console *cons __unused)
 {
@@ -81,5 +81,5 @@ void console_init(struct screen *screen)
 	if (screen_setup(screen))
 		return;
 
-	root_console.screen = screen;
+	boot_console.screen = screen;
 }
