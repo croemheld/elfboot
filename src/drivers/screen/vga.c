@@ -78,9 +78,9 @@ static int vga_update_cursor(struct screen *screen __unused, int x, int y)
 	uint16_t lpos = x + y * screen->width;
 
 	outb(0x3D4, 0x0F);
-	outb(0x3D5, ((lpos >> 0) & 0xFF));
-	outb(0x3D4, 0x0F);
-	outb(0x3D5, ((lpos >> 8) & 0xFF));
+	outb(0x3D5, (lpos >> 0) & 0xFF);
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (lpos >> 8) & 0xFF);
 
 	return 0;
 }
