@@ -1,7 +1,7 @@
+#include <elfboot/core.h>
 #include <elfboot/vfs.h>
-
-#include <list.h>
-#include <tree.h>
+#include <elfboot/list.h>
+#include <elfboot/tree.h>
 
 TREE_HEAD(vfs_mountpoints);
 

@@ -1,14 +1,8 @@
 #ifndef __TREE_H__
 #define __TREE_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <list.h>
-
-#include <uapi/elfboot/common.h>
+#include <elfboot/core.h>
+#include <elfboot/list.h>
 
 struct tree_node {
 	void *data;

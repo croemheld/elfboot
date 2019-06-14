@@ -1,9 +1,7 @@
 #ifndef __X86_PROCESSOR_FLAGS_H__
 #define __X86_PROCESSOR_FLAGS_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <elfboot/core.h>
 
 #include <uapi/elfboot/const.h>
 

@@ -1,4 +1,5 @@
 #include <elfboot/core.h>
+#include <elfboot/mm.h>
 #include <elfboot/printf.h>
 
 #include <asm/bios.h>
@@ -15,22 +16,22 @@ static const char *memory_types[] = {
 	[E820_MEMORY_TYPE_BAD_MEMORY] = "Bad memory"
 };
 
-void e820_memory_dump(struct boot_params *boot_params)
+void e820_memory_dump(struct e820_table *table)
 {
 	int i;
-	uint32_t addr, size, type;
+	uint32_t addr, type, end;
 	struct e820_entry *entry;
 
-	bprintf("%10s | %10s | %s\n", "Address", "Size", "Type");
+	bprintln("Number of e820 memory map entries: %u",  table->nr_entries);
 
-	for(i = 0; i < boot_params->e820_table.nr_entries; i++) {
-		entry = &boot_params->e820_table.entries[i];
+	for(i = 0; i < table->nr_entries; i++) {
+		entry = &table->entries[i];
 
 		addr = entry->addr_32;
-		size = entry->size_32;
+		end  = addr + entry->size_32;
 		type = entry->type;
 
-		bprintf("%08p | %08p | %s\n", addr, size, memory_types[type]);
+		bprintln("[%08p - %08p], %s", addr, end, memory_types[type]);
 	}
 }
 
@@ -69,9 +70,19 @@ static uint16_t detect_memory_e820(struct e820_table *table)
 	return count;
 }
 
-static void e820_memblock_setup(void)
+static void e820_memblock_setup(struct e820_table *table)
 {
+	int i;
+	struct e820_entry *entry;
 
+	for(i = 0; i < table->nr_entries; i++) {
+		entry = &table->entries[i];
+
+		if (entry->type != E820_MEMORY_TYPE_AVAILABLE)
+			continue;
+
+		memblock_add(entry->addr_32, entry->size_32);
+	}
 }
 
 void detect_memory(struct boot_params *boot_params)
@@ -83,7 +94,7 @@ void detect_memory(struct boot_params *boot_params)
 
 	boot_params->e820_table.nr_entries = nr_entries;
 
-	e820_memory_dump(boot_params);
+	e820_memory_dump(&boot_params->e820_table);
 
-	e820_memblock_setup();
+	e820_memblock_setup(&boot_params->e820_table);
 }

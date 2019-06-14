@@ -1,6 +1,8 @@
 #ifndef __ELFBOOT_MEMBLOCK_H__
 #define __ELFBOOT_MEMBLOCK_H__
 
+#define MEMBLOCK_MAX_REGIONS		32
+
 struct memblock_region {
 	uint32_t base;
 	uint32_t size;
@@ -16,6 +18,16 @@ struct memblock_type {
 struct memblock {
 	struct memblock_type memory;
 };
+
+extern struct memblock memblock;
+
+#define for_each_memblock_type(i, type, region)			\
+	for (i = 0, region = &type->regions[0];			\
+	     i < type->cnt;					\
+	     i++, region = &type->regions[i])
+
+#define for_each_free_memblock(i, region)			\
+	for_each_memblock_type(i, (&memblock.memory), region)
 
 void memblock_dump(void);
 

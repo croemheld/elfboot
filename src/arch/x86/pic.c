@@ -1,3 +1,4 @@
+#include <elfboot/core.h>
 #include <elfboot/io.h>
 
 #define PIC_MASTER_CMD                            0x20

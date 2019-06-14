@@ -1,24 +1,25 @@
 #include <elfboot/core.h>
 #include <elfboot/device.h>
+#include <elfboot/list.h>
 
 /*
- * List of all mounted devices
+ * List of all available device drivers
  */
 
-LIST_HEAD(devices);
+LIST_HEAD(device_drivers);
 
 int device_probe(struct device *device)
 {
 	if (device->driver->probe)
-		return device->driver->probe(name, device);
+		return device->driver->probe(device);
 
 	return -ENOTSUP;
 }
 
-int device_open(const char *name, struct device *device)
+int device_open(struct device *device, const char *name)
 {
 	if (device->driver->open)
-		return device->driver->open(name, device);
+		return device->driver->open(device, name);
 
 	return -ENOTSUP;
 }
@@ -49,3 +50,12 @@ int device_close(struct device *device)
 	return -ENOTSUP;
 }
 
+void device_driver_register(struct device_driver *driver)
+{
+	list_add(&driver->list, &device_drivers);
+}
+
+void device_driver_unregister(struct device_driver *driver)
+{
+	list_del(&driver->list);
+}

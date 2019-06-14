@@ -1,7 +1,7 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
-#include <elfboot/console.h>
 #include <elfboot/screen.h>
+#include <elfboot/console.h>
 
 static struct console root_console = {
 	.active = 1,

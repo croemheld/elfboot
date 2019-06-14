@@ -6,6 +6,8 @@
 
 #include <uapi/elfboot/common.h>
 
+#define SCREEN_SPACE_CHAR		' '
+
 enum scroll_direction {
 	SCROLL_UP,
 	SCROLL_DOWN,
@@ -133,7 +135,7 @@ int screen_update_cursor(struct screen *screen, int x, int y);
 
 int screen_setup(struct screen *screen);
 
-int screen_init(void);
+void screen_init(void);
 
 void screen_driver_register(struct screen_ops *ops);
 

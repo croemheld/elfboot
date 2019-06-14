@@ -1,19 +1,12 @@
 #ifndef __BOOT_ALLOC_H__
 #define __BOOT_ALLOC_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
-
-#include <asm/printf.h>
-#include <asm/memory.h>
-
+#include <elfboot/core.h>
+#include <elfboot/printf.h>
 #include <elfboot/string.h>
+#include <elfboot/list.h>
 
 #include <uapi/elfboot/common.h>
-
-#include <list.h>
 
 struct alloc_node {
 	struct list_head node;

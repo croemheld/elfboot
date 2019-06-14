@@ -23,11 +23,23 @@ static inline int is_xdigit(int ch)
 	return (ch >= 'A') && (ch <= 'F');
 }
 
-void *memset(void *dst, int c, size_t len);
+/*
+ * copy.S
+ */
 
 void *memcpy(void *dst, const void *src, size_t len);
 
+void *memset(void *dst, int c, size_t len);
+
+void *memset16(void *dst, uint16_t c, size_t len);
+
+void *memset32(void *dst, uint32_t c, size_t len);
+
 void *memmove(void *dst, const void *src, size_t len);
+
+/*
+ * string.c
+ */
 
 int memcmp(const void *str1, const void *str2, size_t len);
 

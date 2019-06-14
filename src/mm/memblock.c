@@ -1,14 +1,66 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/string.h>
+#include <elfboot/printf.h>
+
+static struct memblock_region memory[MEMBLOCK_MAX_REGIONS];
+
+struct memblock memblock = {
+	.memory.cnt = 1,
+	.memory.max = MEMBLOCK_MAX_REGIONS,
+	.memory.regions = memory
+};
+
+static void __memblock_dump(struct memblock_type *type)
+{
+	uint32_t i, base, size, rend;
+	struct memblock_region *region;
+
+	bprintln("Number of memblock regions: %u", type->cnt);
+
+	for_each_memblock_type(i, type, region) {
+		base = region->base;
+		size = region->size;
+		rend = base + size;
+
+		bprintln("[%08p - %08p], %08p bytes", base, rend, size);
+	}
+}
+
+void memblock_dump(void)
+{
+	__memblock_dump(&memblock.memory);
+}
 
 static inline uint32_t memblock_cap_size(uint32_t base, uint32_t *size)
 {
-	return *size = min(*size, PHYS_ADDR_MAX - base);
+	/* 
+	 * If the size goes over the maximum of the physical address space, 
+	 * then use the remaining size as the new size for our region.
+	 */
+	return *size = min(*size, (uint32_t)(~0ULL) - base);
+}
+
+static void memblock_adjust_range(uint32_t *base, uint32_t *size)
+{
+	uint32_t nbase, limit;
+
+	/*
+	 * The memblock allocator only supports the management of page-sized
+	 * memory chunks. Therefore, all base and size values passed to the
+	 * public functions need to be trimmed down or rounded up.
+	 */
+
+	nbase = PAGE_ADDRESS(*base);
+	limit = round_up(*base + *size, PAGE_SIZE);
+
+	*base = nbase;
+	*size = limit - nbase;
 }
 
 static void memblock_merge_regions(struct memblock_type *type)
 {
-	int i = 0;
+	uint32_t i = 0;
 	struct memblock_region *this, *next;
 
 	while (i < type->cnt - 1) {
@@ -39,12 +91,31 @@ static void memblock_insert_region(struct memblock_type *type, int idx,
 	type->total_size += size;
 }
 
+static void memblock_remove_region(struct memblock_type *type, uint32_t r)
+{
+	type->total_size -= type->regions[r].size;
+	memmove(&type->regions[r], &type->regions[r + 1],
+		(type->cnt - (r + 1)) * sizeof(type->regions[r]));
+	type->cnt--;
+
+	/* Special case for empty arrays */
+	if (type->cnt == 0) {
+		type->cnt = 1;
+		type->regions[0].base = 0;
+		type->regions[0].size = 0;
+	}
+}
+
 static int memblock_add_range(struct memblock_type *type, uint32_t base,
 			      uint32_t size)
 {
-	int nr_new;
+	int count;
 	struct memblock_region *region;
-	uint32_t idx, rbase, rend, end = base + memblock_cap_size(base, &size);
+	uint32_t idx, rbase, rend, end;
+
+	/* Adjust to page granularity */
+	memblock_adjust_range(&base, &size);
+	end = base + memblock_cap_size(base, &size);
 
 	if (!size)
 		return 0;
@@ -56,7 +127,7 @@ static int memblock_add_range(struct memblock_type *type, uint32_t base,
 		return 0;
 	}
 
-	nr_new = 0;
+	count = 0;
 
 	for_each_memblock_type(idx, type, region) {
 		rbase = region->base;
@@ -64,48 +135,47 @@ static int memblock_add_range(struct memblock_type *type, uint32_t base,
 
 		if (rbase >= end)
 			break;
+
 		if (rend <= base)
 			continue;
-		/*
-		 * @region overlaps.  If it separates the lower part of new
-		 * area, insert that portion.
-		 */
+
 		if (rbase > base) {
-			nr_new++;
+			count++;
 			memblock_insert_region(type, idx++, base, rbase - base);
 		}
-		/* area below @rend is dealt with, forget about it */
+
 		base = min(rend, end);
 	}
 
-	/* insert the remaining portion */
 	if (base < end) {
-		nr_new++;
+		count++;
 		memblock_insert_region(type, idx, base, end - base);
 	}
 
-	if (!nr_new)
+	if (!count)
 		return 0;
 
 	memblock_merge_regions(type);
+
+	return count;
 }
 
 static int memblock_isolate_range(struct memblock_type *type,
 				  uint32_t base, uint32_t size,
 				  int *start_rgn, int *end_rgn)
 {
-	uint32_t idx;
+	uint32_t idx, end, rbase, rend;
 	struct memblock_region *region;
-	uint32_t end = base + memblock_cap_size(base, &size);
 
 	*start_rgn = *end_rgn = 0;
+	end = base + memblock_cap_size(base, &size);
 
 	if (!size)
 		return 0;
 
 	for_each_memblock_type(idx, type, region) {
-		uint32_t rbase = region->base;
-		uint32_t rend = rbase + region->size;
+		rbase = region->base;
+		rend  = rbase + region->size;
 
 		if (rbase >= end)
 			break;
@@ -136,6 +206,9 @@ static int memblock_remove_range(struct memblock_type *type,
 				 uint32_t base, uint32_t size)
 {
 	int i, ret, start_rgn, end_rgn;
+
+	/* Adjust to page granularity */
+	memblock_adjust_range(&base, &size);
 
 	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
 	if (ret)

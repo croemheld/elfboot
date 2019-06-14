@@ -1,4 +1,5 @@
 #include <elfboot/alloc.h>
+#include <elfboot/memblock.h>
 
 LIST_HEAD(alloc_free);
 

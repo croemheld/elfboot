@@ -1,45 +1,8 @@
-#include <asm/boot.h>
+#include <elfboot/core.h>
+#include <elfboot/string.h>
 
-void *memset(void *dst, int c, size_t len)
-{
-	size_t i;
-	unsigned char *buf = dst;
-
-	for(i = 0; i < len; i++)
-		buf[i] = (unsigned char)c;
-
-	return buf;
-}
-
-void *memcpy(void *dst, const void *src, size_t len)
-{
-	size_t i;
-	unsigned char *dstbuf = dst;
-	const unsigned char *srcbuf = src;
-
-	for(i = 0; i < len; i++)
-		dstbuf[i] = srcbuf[i];
-
-	return dstbuf;
-}
-
-void *memmove(void *dst, const void *src, size_t len)
-{
-	size_t i;
-	unsigned char *dstbuf = dst;
-	const unsigned char *srcbuf = src;
-
-	if (dstbuf < srcbuf) {
-		for(i = 0; i < len; i++)
-			dstbuf[i] = srcbuf[i];
-	} else {
-		for(i = len - 1; i; i--)
-			dstbuf[i] = srcbuf[i];
-	}
-
-	return dst;
-}
-
+/* TODO CRO: Write in assembly */
+#include <asm/asm.h>
 int memcmp(const void *str1, const void *str2, size_t len)
 {
 	bool diff;
