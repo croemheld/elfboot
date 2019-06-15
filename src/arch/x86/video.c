@@ -1,6 +1,7 @@
 #include <elfboot/core.h>
 #include <elfboot/screen.h>
 #include <elfboot/console.h>
+#include <elfboot/printf.h>
 
 #include <drivers/vga.h>
 

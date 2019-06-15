@@ -1,17 +1,85 @@
 #include <elfboot/core.h>
 #include <elfboot/string.h>
 
-/* TODO CRO: Write in assembly */
-#include <asm/asm.h>
-
-int memcmp(const void *str1, const void *str2, size_t len)
+void* memcpy(void *dst, const void *src, size_t n)
 {
-	bool diff;
+	unsigned char *d = (unsigned char *)dst;
+	unsigned char *s = (unsigned char *)src;
 
-	__asm__ volatile("repe; cmpsb" CC_SET(nz) 
-		: CC_OUT(nz) (diff), "+D" (str1), "+S" (str2), "+c" (len));
+	for(size_t i = 0; i < n; i++)
+		d[i] = s[i];
 
-	return diff;
+	return dst;
+}
+
+void* memset(void *dst, int c, size_t len)
+{
+	unsigned char *d = (unsigned char *)dst;
+
+	for(size_t i = 0; i < len; i++)
+		d[i] = (unsigned char)c;
+
+	return dst; 
+}
+
+void* memset16(void *dst, int c, size_t len)
+{	
+	size_t i;
+	unsigned char *d = (unsigned char *)dst;
+
+	for (i = 0; i < (len & (~1)); i+= 2)
+		memcpy(d + i, &c, 2);
+
+	for ( ; i < len; i++)
+		d[i] = ((unsigned char *)&c)[i & 1];
+
+	return dst;
+}
+
+void* memset32(void *dst, int c, size_t len)
+{	
+	size_t i;
+	unsigned char *d = (unsigned char *)dst;
+
+	for (i = 0; i < (len & (~3)); i+= 4)
+		memcpy(d + i, &c, 4);
+
+	for ( ; i < len; i++)
+		d[i] = ((unsigned char *)&c)[i & 3];
+
+	return dst;
+}
+
+void* memmove(void *dst, const void *src, size_t n)
+{
+	size_t i;
+	unsigned char *d = (unsigned char *)dst;
+	unsigned char *s = (unsigned char *)src;
+
+	if(d < s) {
+		for (i = 0; i < n; i++)
+			d[i] = s[i];
+	} else {
+		for (i = n; i > 0; i--)
+			d[i - 1] = s[i - 1];
+	}
+
+	return dst;
+}
+
+int memcmp(const void *p1, const void *p2, size_t n)
+{
+	unsigned char *a = (unsigned char *)p1;
+	unsigned char *b = (unsigned char *)p2;
+
+	for(size_t i = 0; i < n; i++) {
+		if(a[i] < b[i]) 
+			return -1;
+		if(a[i] > b[i])
+			return 1;
+	}
+
+	return 0;
 }
 
 int strcmp(const char *str1, const char *str2)

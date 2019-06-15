@@ -104,9 +104,9 @@ _setup16:
 
 	# Prepare to jump into unreal mode
 
-	lgdt    boot_gdt_desc
-
 	cli
+
+	lgdt    boot_gdt_desc
 
 	movl    %cr0, %eax
 	orl     $0x1, %eax
@@ -137,6 +137,10 @@ _setup16:
 	movw    %ax, %ss
 
 	sti
+
+	movw    $0x0f01, %bx
+	movl    $0x000b8000, %eax
+	movw    %bx, (%eax)
 
 	# Finally, call bootloader main routine
 

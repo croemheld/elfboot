@@ -103,6 +103,4 @@ struct vesa_mode {
 	uint8_t  _reserved2[206];
 } __packed;
 
-void detect_videos_vesa(void);
-
 #endif /* __X86_VIDEO_H__ */

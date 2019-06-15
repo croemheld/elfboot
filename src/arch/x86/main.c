@@ -38,12 +38,6 @@ void main(uint8_t disk_drive)
 	/* Detect and set video modes */
 	detect_videos(&boot_params);
 
-	bprintln("fksölagheqohrnfkjqögklejrgöveqöjfrijgäirhqlhgjrnbvqrwjöklfrhqwkljfgklqwjfölkejröelwqkjröwlqkejröwelqkjrlökwqejrk");
-
-	asm volatile("xchg %bx, %bx");
-
-	bprintf("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n");
-
 	/* Get memory map */
 	detect_memory(&boot_params);
 
@@ -60,8 +54,4 @@ void main(uint8_t disk_drive)
 
 	/* SLOB memory allocator */
 	bmalloc_init();
-
-	asm volatile("xchg %bx, %bx");
-
-	detect_videos_vesa();
 }

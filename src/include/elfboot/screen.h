@@ -127,6 +127,14 @@ static inline void *screen_line(struct screen *screen, int ypos)
 	return screen_unit(screen, 0, ypos);
 }
 
+/*
+ * Returns the number of bytes for one line.
+ */
+static inline size_t screen_bpl(struct screen *screen)
+{
+	return screen->width * screen->bpu;
+}
+
 int screen_clear(struct screen *screen);
 
 int screen_scroll(struct screen *screen, int direction, int units);

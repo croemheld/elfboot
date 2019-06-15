@@ -47,7 +47,8 @@ static int vga_clear(struct screen *screen)
 static int vga_scroll(struct screen *screen, int direction, int units)
 {
 	void *dst, *src;
-	int lines = screen->height - units;
+	uint16_t val;
+	int lines;
 
 	if (!units)
 		return 0;
@@ -55,10 +56,16 @@ static int vga_scroll(struct screen *screen, int direction, int units)
 	if (direction != SCROLL_UP)
 		return -ENOTSUP;
 
+	val = vga_char_value(screen, SCREEN_SPACE_CHAR);
 	dst = screen_line(screen, 0);
 	src = screen_line(screen, units);
 
-	memmove(dst, src, screen->width * screen->bpu * lines);
+	lines = screen->height - units;
+	memmove(dst, src, screen_bpl(screen) * lines);
+
+	dst = screen_line(screen, lines);
+
+	memset16(dst, val, screen_bpl(screen) * units);
 
 	return units;
 }

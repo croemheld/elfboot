@@ -82,6 +82,8 @@ GLOBAL(memset32)
 ENDPROC(memset32)
 
 GLOBAL(memmove)
+	xchg    %bx, %bx
+
 	pushl   %esi
 	pushl   %edi
 
@@ -91,24 +93,22 @@ GLOBAL(memmove)
 
 	cmpl    %edx, %eax
 	je      .memmove_done
-	jb      .memmove_fast
+	jl      .memmove_fast
 
 .memmove_slow:
 	std
 
-	subl    $4, %ecx
 	addl    %ecx, %esi
+	subl    $4, %esi
 	addl    %ecx, %edi
-
-	popl    %ecx
-	pushl   %ecx
+	subl    $4, %edi
 
 	shrl    $2, %ecx
-	rep; movsl
+	rep movsl
 
 	popl    %ecx
 	andl    $3, %ecx
-	rep; movsb
+	rep movsb
 
 	cld
 
@@ -116,11 +116,11 @@ GLOBAL(memmove)
 
 .memmove_fast:
 	shrl    $2, %ecx
-	rep; movsl
+	rep movsl
 
 	popl    %ecx
 	andl    $3, %ecx
-	rep; movsb
+	rep movsb
 
 .memmove_done:
 	popl    %edi
