@@ -94,13 +94,14 @@ GLOBAL(memmove)
 	jb      .memmove_fast
 
 .memmove_slow:
-
 	std
 
+	subl    $4, %ecx
 	addl    %ecx, %esi
-	subl    $4, %esi
 	addl    %ecx, %edi
-	subl    $4, %edi
+
+	popl    %ecx
+	pushl   %ecx
 
 	shrl    $2, %ecx
 	rep; movsl

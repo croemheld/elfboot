@@ -3,6 +3,7 @@
 
 /* TODO CRO: Write in assembly */
 #include <asm/asm.h>
+
 int memcmp(const void *str1, const void *str2, size_t len)
 {
 	bool diff;

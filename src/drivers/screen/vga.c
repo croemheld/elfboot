@@ -22,9 +22,12 @@ static inline uint16_t vga_char_value(struct screen *screen, unsigned char c)
 
 static void vga_fill_line(struct screen *screen, int y, unsigned char c)
 {
-	uint16_t value = vga_char_value(screen, c);
+	uint16_t value, *line;
 
-	memset16(screen_line(screen, y), value, screen->width * screen->bpu);
+	line  = screen_line(screen, y);
+	value = vga_char_value(screen, c);
+
+	memset16(line, value, screen->width * screen->bpu * screen->xunit);
 }
 
 
@@ -43,20 +46,19 @@ static int vga_clear(struct screen *screen)
  */
 static int vga_scroll(struct screen *screen, int direction, int units)
 {
-	uint16_t *dst, *src;
-	int i, limit = screen->height - units;
+	void *dst, *src;
+	int lines = screen->height - units;
 
-	if (direction == SCROLL_DOWN)
+	if (!units)
+		return 0;
+
+	if (direction != SCROLL_UP)
 		return -ENOTSUP;
 
-	for (i = 0; i < limit; i++) {
-		dst = screen_line(screen, i);
-		src = screen_line(screen, i + units);
-		memcpy(dst, src, screen->width * screen->bpu);
-	}
+	dst = screen_line(screen, 0);
+	src = screen_line(screen, units);
 
-	for (i = limit; i < screen->height; i++)
-		vga_fill_line(screen, i, SCREEN_SPACE_CHAR);
+	memmove(dst, src, screen->width * screen->bpu * lines);
 
 	return units;
 }
@@ -73,14 +75,14 @@ static int vga_putc(struct screen *screen, char c, int x, int y)
 /*
  * TODO CRO: Any other approach?
  */
-static int vga_update_cursor(struct screen *screen __unused, int x, int y)
+static int vga_update_cursor(struct screen *screen, int x, int y)
 {
 	uint16_t lpos = x + y * screen->width;
 
 	outb(0x3D4, 0x0F);
-	outb(0x3D5, (lpos >> 0) & 0xFF);
+	outb(0x3D5, (lpos >> 0) & 0xff);
 	outb(0x3D4, 0x0E);
-	outb(0x3D5, (lpos >> 8) & 0xFF);
+	outb(0x3D5, (lpos >> 8) & 0xff);
 
 	return 0;
 }

@@ -127,6 +127,8 @@ static inline void *screen_line(struct screen *screen, int ypos)
 	return screen_unit(screen, 0, ypos);
 }
 
+int screen_clear(struct screen *screen);
+
 int screen_scroll(struct screen *screen, int direction, int units);
 
 int screen_putc(struct screen *screen, char c, int x, int y);

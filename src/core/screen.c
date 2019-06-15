@@ -7,6 +7,14 @@
 
 LIST_HEAD(screen_drivers);
 
+int screen_clear(struct screen *screen)
+{
+	if (screen->ops->clear)
+		return screen->ops->clear(screen);
+
+	return -ENOTSUP;
+}
+
 int screen_scroll(struct screen *screen, int direction, int units)
 {
 	if (screen->ops->scroll)

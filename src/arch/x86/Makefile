@@ -10,3 +10,4 @@ elfboot-y += main.o
 elfboot-y += pic.o
 elfboot-y += pmjump.o
 elfboot-y += video.o
+elfboot-y += video-vesa.o

@@ -1,10 +1,7 @@
 #ifndef __ELFBOOT_IO_H__
 #define __ELFBOOT_IO_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
 
 /* 
  * Basic port I/O 

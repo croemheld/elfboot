@@ -15,6 +15,5 @@ struct alloc_node {
 };
 
 #define ALLOC_NODE_HDR_SIZE                    offsetof(struct alloc_node, data)
-#define ALLOC_NODE_MIN_SIZE                       ALLOC_NODE_HDR_SIZE + 32
 
 #endif /* __BOOT_ALLOC_H__ */

@@ -120,9 +120,11 @@ endif
 PHONY += clean-elfboot
 CLEAN += clean-elfboot
 clean-elfboot:
+	@rm -f $(ELFBOOT).bin $(ELFBOOT).iso
+	@rm -rf $(ELFBOOT_ISO)
 	@for objfile in $(OBJS); do			\
 		if [[ -e $$objfile ]]; then		\
-			echo "  CLEAN   $$objfile";		\
+			echo "  CLEAN   $$objfile";	\
 			rm -f $$objfile;		\
 		fi					\
 	done

@@ -33,7 +33,7 @@ static void console_handle_newline(struct console *cons)
 	cons->ypos += cons->screen->yunit;
 
 	if (cons->ypos == cons->screen->height) {
-		screen_scroll(cons->screen, SCROLL_UP, 1);
+		screen_scroll(cons->screen, SCROLL_UP, cons->screen->yunit);
 		cons->ypos -= cons->screen->yunit;
 	}
 }
