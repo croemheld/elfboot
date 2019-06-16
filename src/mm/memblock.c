@@ -21,7 +21,7 @@ static void __memblock_dump(struct memblock_type *type)
 	for_each_memblock_type(i, type, region) {
 		base = region->base;
 		size = region->size;
-		rend = base + size;
+		rend = base + size - 1;
 
 		bprintln("[%08p - %08p], %08p bytes", base, rend, size);
 	}

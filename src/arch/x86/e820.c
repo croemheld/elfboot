@@ -28,7 +28,7 @@ void e820_memory_dump(struct e820_table *table)
 		entry = &table->entries[i];
 
 		addr = entry->addr_32;
-		end  = addr + entry->size_32;
+		end  = addr + entry->size_32 - 1;
 		type = entry->type;
 
 		bprintln("[%08p - %08p], %s", addr, end, memory_types[type]);

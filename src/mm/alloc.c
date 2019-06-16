@@ -1,6 +1,8 @@
 #include <elfboot/alloc.h>
 #include <elfboot/memblock.h>
 
+#include <uapi/elfboot/common.h>
+
 LIST_HEAD(alloc_free);
 
 static void bfree_merge_free_list(void)
@@ -184,7 +186,8 @@ static void bmalloc_create_free_list(uint32_t addr, size_t size)
 
 	list_add_tail(&ablk->node, &alloc_free);
 
-	bprintf("Add alloc_node at %08p, size %08p bytes\n", ablk, ablk->size);
+	bprintf("alloc_node at [%08p - %08p], size %08p bytes\n", 
+		&ablk->data, vptradd(&ablk->data, ablk->size - 1), ablk->size);
 }
 
 void bmalloc_init(void)
@@ -197,8 +200,6 @@ void bmalloc_init(void)
 		/*
 		 * Filter out regions smaller than the minimum 
 		 * size defined by the CONFIG_MALLOC_MIN_SIZE macro.
-		 *
-		 * TODO CRO: Make CONFIG_MALLOC_MIN_SIZE configurable.
 		 */
 		
 		if (region->size < CONFIG_MALLOC_MIN_SIZE)
