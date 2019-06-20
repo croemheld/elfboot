@@ -3,6 +3,11 @@
 
 #include <elfboot/core.h>
 
+#include <uapi/elfboot/common.h>
+
+#define ALIGNEDPTR(p, a)		ALIGNED((uintptr_t)(p), a)
+#define ALIGNEDMEM(d, s, a)		(ALIGNEDPTR(d, a) && ALIGNEDPTR(s, a))
+
 /*
  * Number utility functions
  */

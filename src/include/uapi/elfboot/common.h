@@ -1,10 +1,7 @@
 #ifndef __UAPI_COMMON_H__
 #define __UAPI_COMMON_H__
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include <elfboot/core.h>
 
 #define __packed                                  __attribute__((packed))
 #define __unused                                  __attribute__((unused))
@@ -27,6 +24,15 @@
 	array_for_each_entry(pos, array, count)				\
 		(callback)((pos));					\
 } while (0)
+
+/*
+ * Alignment for power of 2 bytes
+ */
+
+#define ALIGN(x, a)			((x) & ~(a - 1))
+#define BOUNDARY(x, a)			((x) &  (a - 1))
+
+#define ALIGNED(x, a)			(BOUNDARY(x, a) == 0)
 
 /*
  * Conversions

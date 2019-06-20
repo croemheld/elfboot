@@ -56,9 +56,9 @@ static int vga_scroll(struct screen *screen, int direction, int units)
 	if (direction != SCROLL_UP)
 		return -ENOTSUP;
 
-	val = vga_char_value(screen, SCREEN_SPACE_CHAR);
 	dst = screen_line(screen, 0);
 	src = screen_line(screen, units);
+	val = vga_char_value(screen, SCREEN_SPACE_CHAR);
 
 	lines = screen->height - units;
 	memmove(dst, src, screen_bpl(screen) * lines);

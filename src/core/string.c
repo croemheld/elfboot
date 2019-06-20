@@ -1,66 +1,238 @@
 #include <elfboot/core.h>
 #include <elfboot/string.h>
 
-void* memcpy(void *dst, const void *src, size_t n)
-{
-	unsigned char *d = (unsigned char *)dst;
-	unsigned char *s = (unsigned char *)src;
+/*
+ * The mem*_aligned functions assume that both the
+ * destination and the source pointers are pointing 
+ * which are to regions aligned on an atleast 2-byte
+ * boundary. 
+ * 
+ * For unaligned pointers, the commonly byte-by-byte 
+ * memcpy_unaligned function is called.
+ */
 
-	for(size_t i = 0; i < n; i++)
+static void* memcpy_unaligned(void *dst, const void *src, size_t len)
+{
+	size_t i;
+	uint8_t *d = dst;
+	const uint8_t *s = src;
+
+	for (i = 0; i < len; i++)
 		d[i] = s[i];
 
 	return dst;
 }
 
+static void* memcpy_aligned16(void *dst, const void *src, size_t len)
+{
+	size_t i, j = len / 2;
+	uint16_t *d = dst;
+	const uint16_t *s = src;
+
+	for (i = 0; i < j; i++)
+		d[i] = s[i];
+
+	/* Copy the rest of the unaligned bytes */
+	memcpy_unaligned(&d[i], &s[i], len - (i * 2));
+
+	return dst;
+}
+
+static void* memcpy_aligned32(void *dst, const void *src, size_t len)
+{
+	size_t i, j = len / 4;
+	uint32_t *d = dst;
+	const uint32_t *s = src;
+
+	for (i = 0; i < j; i++)
+		d[i] = s[i];
+
+	/* Copy the rest of the unaligned bytes */
+	memcpy_unaligned(&d[i], &s[i], len - (i * 4));
+
+	return dst;
+}
+
+void* memcpy(void *dst, const void *src, size_t len)
+{
+	if (ALIGNEDMEM(dst, src, sizeof(uint32_t)))
+		return memcpy_aligned32(dst, src, len);
+
+	if (ALIGNEDMEM(dst, src, sizeof(uint16_t)))
+		return memcpy_aligned16(dst, src, len);
+
+	return memcpy_unaligned(dst, src, len);
+}
+
 void* memset(void *dst, int c, size_t len)
 {
-	unsigned char *d = (unsigned char *)dst;
+	size_t i;
+	uint8_t *d = dst;
 
-	for(size_t i = 0; i < len; i++)
-		d[i] = (unsigned char)c;
+	for (i = 0; i < len; i++)
+		d[i] = (uint8_t)c;
 
-	return dst; 
+	return dst;
 }
 
 void* memset16(void *dst, int c, size_t len)
 {	
-	size_t i;
-	unsigned char *d = (unsigned char *)dst;
+	size_t i, j = len / 2;
+	uint8_t *db = dst;
+	uint16_t *d = dst;
 
-	for (i = 0; i < (len & (~1)); i+= 2)
-		memcpy(d + i, &c, 2);
+	for (i = 0; i < j; i++)
+		d[i] = (uint16_t)c;
 
-	for ( ; i < len; i++)
-		d[i] = ((unsigned char *)&c)[i & 1];
+	for (i *= 2; i < len; i++)
+		db[i] = ((uint8_t *)&c)[i & 1];
 
 	return dst;
 }
 
 void* memset32(void *dst, int c, size_t len)
 {	
-	size_t i;
-	unsigned char *d = (unsigned char *)dst;
+	size_t i, j = len / 4;
+	uint8_t *db = dst;
+	uint32_t *d = dst;
 
-	for (i = 0; i < (len & (~3)); i+= 4)
-		memcpy(d + i, &c, 4);
+	for (i = 0; i < j; i++)
+		d[i] = (uint32_t)c;
 
-	for ( ; i < len; i++)
-		d[i] = ((unsigned char *)&c)[i & 3];
+	for (i *= 4; i < len; i++)
+		db[i] = ((uint8_t *)&c)[i & 3];
 
 	return dst;
 }
 
-void* memmove(void *dst, const void *src, size_t n)
-{
-	size_t i;
-	unsigned char *d = (unsigned char *)dst;
-	unsigned char *s = (unsigned char *)src;
+/*
+ * memmove:
+ *
+ * We distinguish between several cases:
+ * 
+ * - The regions to be copied to not overlap. In this
+ *   case, we simply call memcpy and let it handle the
+ *   copy process.
+ *   
+ * - The regions do overlap with | dst - src | == 1.
+ *   In this situation, we have to copy the bytes indi-
+ *   vidually in order to prevent acidental overriding.
+ *   
+ * - The regions do overlap with | dst - src | > 1.
+ *   For this case, we try to copy multiple bytes to
+ *   the destination. We support 2- and 4-byte memmove.
+ *   Note: 4-byte memmove is only possible if the dif-
+ *   ference | dst - src | >= 4.
+ */
 
-	if(d < s) {
-		for (i = 0; i < n; i++)
+static void *memmove16(void *dst, const void *src, size_t len)
+{
+	size_t i, j = len / 2;
+	uint8_t *db = dst;
+	uint16_t *d = dst;
+	const uint8_t *sb = src;
+	const uint16_t *s = src;
+
+	for (i = 0; i < j; i++)
+		d[i] = s[i];
+
+	for (i *= 2; i < len; i++)
+		db[i] = sb[i];
+
+	return dst;
+}
+
+static void *memmove16_reverse(void *dst, const void *src, size_t len)
+{
+	size_t i, tsz = sizeof(uint16_t), j = BOUNDARY(len, tsz);
+	uint8_t *db = dst;
+	uint16_t *d = dst;
+	const uint8_t *sb = src;
+	const uint16_t *s = src;
+
+	for (i = len; i > (len - j); i--)
+		db[i - 1] = sb[i - 1];
+
+	for (i /= 2; i > 0; i--)
+		d[i - 1] = s[i - 1];
+
+	return dst;
+}
+
+static void *memmove32(void *dst, const void *src, size_t len)
+{
+	size_t i, j = len / 4;
+	uint8_t *db = dst;
+	uint32_t *d = dst;
+	const uint8_t *sb = src;
+	const uint32_t *s = src;
+
+	for (i = 0; i < j; i++)
+		d[i] = s[i];
+
+	for (i *= 4; i < len; i++)
+		db[i] = sb[i];
+
+	return dst;
+}
+
+static void *memmove32_reverse(void *dst, const void *src, size_t len)
+{
+	size_t i, tsz = sizeof(uint32_t), j = BOUNDARY(len, tsz);
+	uint8_t *db = dst;
+	uint32_t *d = dst;
+	const uint8_t *sb = src;
+	const uint32_t *s = src;
+
+	for (i = len; i > (len - j); i--)
+		db[i - 1] = sb[i - 1];
+
+	for (i /= 4; i > 0; i--)
+		d[i - 1] = s[i - 1];
+
+	return dst;
+}
+
+void* memmove(void *dst, const void *src, size_t len)
+{
+	size_t i, diff, size;
+	uint8_t *d = dst;
+	const uint8_t *s = src;
+
+	if (dst == src)
+		return dst;
+
+	if (dst < src) {
+		diff = src - dst;
+
+		if (dst + len <= src)
+			return memcpy(dst, src, len);
+
+		size = sizeof(uint32_t);
+		if (ALIGNEDMEM(dst, src, size) && diff >= size)
+			return memmove32(dst, src, len);
+
+		size = sizeof(uint16_t);
+		if (ALIGNEDMEM(dst, src, size) && diff >= size)
+			return memmove16(dst, src, len);
+
+		for (i = 0; i < len; i++)
 			d[i] = s[i];
 	} else {
-		for (i = n; i > 0; i--)
+		diff = dst - src;
+
+		if (src + len <= dst)
+			return memcpy(dst, src, len);
+
+		size = sizeof(uint32_t);
+		if (ALIGNEDMEM(dst, src, size) && diff >= size)
+			return memmove32_reverse(dst, src, len);
+
+		size = sizeof(uint16_t);
+		if (ALIGNEDMEM(dst, src, size) && diff >= size)
+			return memmove16_reverse(dst, src, len);
+
+		for (i = len; i > 0; i--)
 			d[i - 1] = s[i - 1];
 	}
 
@@ -69,13 +241,15 @@ void* memmove(void *dst, const void *src, size_t n)
 
 int memcmp(const void *p1, const void *p2, size_t n)
 {
-	unsigned char *a = (unsigned char *)p1;
-	unsigned char *b = (unsigned char *)p2;
+	size_t i;
+	const uint8_t *a = p1;
+	const uint8_t *b = p2;
 
-	for(size_t i = 0; i < n; i++) {
-		if(a[i] < b[i]) 
+	for (i = 0; i < n; i++) {
+		if (a[i] < b[i]) 
 			return -1;
-		if(a[i] > b[i])
+
+		if (a[i] > b[i])
 			return 1;
 	}
 
@@ -84,8 +258,8 @@ int memcmp(const void *p1, const void *p2, size_t n)
 
 int strcmp(const char *str1, const char *str2)
 {
-	const unsigned char *s1 = (const unsigned char *)str1;
-	const unsigned char *s2 = (const unsigned char *)str2;
+	const char *s1 = str1;
+	const char *s2 = str2;
 
 	int delta = 0;
 
