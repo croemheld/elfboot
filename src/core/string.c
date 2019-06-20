@@ -144,7 +144,7 @@ static void *memmove16(void *dst, const void *src, size_t len)
 
 static void *memmove16_reverse(void *dst, const void *src, size_t len)
 {
-	size_t i, tsz = sizeof(uint16_t), j = BOUNDARY(len, tsz);
+	size_t i, j = BOUNDARY(len, sizeof(uint16_t));
 	uint8_t *db = dst;
 	uint16_t *d = dst;
 	const uint8_t *sb = src;
@@ -178,7 +178,7 @@ static void *memmove32(void *dst, const void *src, size_t len)
 
 static void *memmove32_reverse(void *dst, const void *src, size_t len)
 {
-	size_t i, tsz = sizeof(uint32_t), j = BOUNDARY(len, tsz);
+	size_t i, j = BOUNDARY(len, sizeof(uint32_t));
 	uint8_t *db = dst;
 	uint32_t *d = dst;
 	const uint8_t *sb = src;
