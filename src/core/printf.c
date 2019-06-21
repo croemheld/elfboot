@@ -26,7 +26,7 @@ typedef enum {
 
 void put_char(formatter *f, char c)
 {
-	if(f->buffer < f->end)
+	if (f->buffer < f->end)
 		*f->buffer++ = c;
 }
 
@@ -35,12 +35,12 @@ void put_string(formatter *f, const char *str)
 	int width = f->width;
 	char pad_char = (f->flags & PADDING_NUL) ? '0' : ' ';
 
-	if(~f->flags & PADDING_NEG) {
+	if (~f->flags & PADDING_NEG) {
 		while(--width >= 0)
 			put_char(f, pad_char);
 	}
 
-	if(!f->precision)
+	if (!f->precision)
 		while(*str)
 			put_char(f, *str++);
 	else {
@@ -89,9 +89,9 @@ void put_hexadecimal(formatter *f, char type, uint32_t n)
 	do {
 		uint8_t digit = n & 0xf;
 
-		if(digit < 10)
+		if (digit < 10)
 			c = '0' + digit;
-		else if(type == 'x')
+		else if (type == 'x')
 			c = 'A' + digit - 10;
 		else
 			c = 'A' + digit - 10;
@@ -121,10 +121,10 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 	while(1) {
 		char c = *format++;
 
-		if(!c)
+		if (!c)
 			break;
 
-		if(c != '%') {
+		if (c != '%') {
 			put_char(&f, c);
 			continue;
 		}
@@ -133,10 +133,10 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 
 		f.flags = 0;
 
-		if(c == '-') {
+		if (c == '-') {
 			f.flags |= PADDING_NEG;
 			c = *format++;
-		} else if(c == '0') {
+		} else if (c == '0') {
 			f.flags |= PADDING_NUL;
 			c = *format++;
 		}
@@ -145,17 +145,17 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 		f.strlen = -1;
 		f.precision = false;
 
-		if(c == '.') {
+		if (c == '.') {
 			f.precision = true;
 			c = *format++;
 
-			if(c == '*') {
+			if (c == '*') {
 				f.strlen = va_arg(*argp, int);
 				c = *format++;
 			}
 		}
 
-		if(is_digit(c)) {
+		if (is_digit(c)) {
 			int width = 0;
 
 			do {
@@ -163,13 +163,13 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 				c = *format++;
 			} while(is_digit(c));
 
-			if(f.precision && !(f.strlen > 0))
+			if (f.precision && !(f.strlen > 0))
 				f.strlen = width;
 			else
 				f.width = width;
 		}
 
-		if(c == 'l')
+		if (c == 'l')
 			c = *format++;
 
 		char type = c;
@@ -192,10 +192,10 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			{
 				char *s = va_arg(*argp, char *);
 
-				if(!s)
+				if (!s)
 					s = "(null)";
 
-				if(f.width > 0) {
+				if (f.width > 0) {
 					char *ptr = s;
 
 					while(*ptr)
@@ -214,7 +214,7 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 
 				n = va_arg(*argp, int);
 
-				if(n < 0) {
+				if (n < 0) {
 					put_char(&f, '-');
 					n = -n;
 				}
@@ -257,7 +257,7 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 	}
 
 
-	if(f.buffer < f.end + 1)
+	if (f.buffer < f.end + 1)
 		*f.buffer = '\0';
 
 	return f.buffer - buffer;

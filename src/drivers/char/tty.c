@@ -33,7 +33,7 @@ int tty_close(struct device *device __unused)
 }
 
 static struct device_driver tty_driver = {
-	.name = "tty",
+	.type = DEVICE_TTY,
 	.probe = tty_probe,
 	.open = tty_open,
 	.read = tty_read,

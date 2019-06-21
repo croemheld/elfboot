@@ -95,7 +95,7 @@ _setup16:
 	movw    %ax, %gs
 	movw    %ax, %ss
 
-	movw    $BOOT_STACK_ADDR, %sp
+	movw    $BOOT_STACK_ADDR_START, %sp
 
 	# Enable A20 line
 

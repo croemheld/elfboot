@@ -2,6 +2,8 @@
 #include <elfboot/device.h>
 #include <elfboot/list.h>
 
+#include <drivers/ata.h>
+
 /*
  * List of all available device drivers
  */
@@ -48,6 +50,30 @@ int device_close(struct device *device)
 		return device->driver->close(device);
 
 	return -ENOTSUP;
+}
+
+int device_install_firmware(struct device *device)
+{
+	struct device_driver *driver;
+
+	list_for_each_entry(driver, &device_drivers, list) {
+		if (device->params.type != driver->type)
+			continue;
+
+		if (driver->probe(device))
+			continue;
+
+		device->driver = driver;
+
+		return 0;
+	}
+
+	return -EFAULT;
+}
+
+void devices_init(void)
+{
+	ata_firmware_init();
 }
 
 void device_driver_register(struct device_driver *driver)

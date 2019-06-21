@@ -40,6 +40,9 @@ void *bmalloc(size_t size)
 	struct alloc_node *ablk, *nblk;
 	void *dptr;
 
+	if (!size)
+		return NULL;
+
 	ablk = dptr = NULL;
 
 	list_for_each_entry(ablk, &alloc_free, node) {

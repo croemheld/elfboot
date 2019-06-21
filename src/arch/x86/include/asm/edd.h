@@ -2,19 +2,12 @@
 #define __X86_EDD_H__
 
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 
 #include <uapi/elfboot/const.h>
 
 #define EDD_MAGIC1			0x55AA
 #define EDD_MAGIC2			0xAA55
-
-#define EDD_DISK_DRIVE_BIT_SLAVE	4
-#define EDD_DISK_DRIVE_MASK_SLAVE 	_BITUL(EDD_DISK_DRIVE_BIT_SLAVE)
-#define EDD_DISK_DRIVE_BIT_LBA		6
-#define EDD_DISK_DRIVE_MASK_LBA 	_BITUL(EDD_DISK_DRIVE_BIT_LBA)
-
-#define EDD_DISK_DRIVE_BIT_ATAPI	6
-#define EDD_DISK_DRIVE_MASK_ATAPI	_BITUL(EDD_DISK_DRIVE_BIT_ATAPI)
 
 struct edd_disk_drive_params {
 	uint16_t io_base;
@@ -29,7 +22,12 @@ struct edd_disk_drive_params {
 	uint16_t _reserved;
 	uint8_t  revision;
 	uint8_t  checksum;
-} __attribute__((packed));
+} __packed;
+
+#define EDD_DISK_DRIVE_PARAM_SLAVE_BIT	4
+#define EDD_DISK_DRIVE_PARAM_SLAVE	_BITUL(EDD_DISK_DRIVE_PARAM_SLAVE_BIT)
+#define EDD_DISK_DRIVE_PARAM_LBA_BIT	6
+#define EDD_DISK_DRIVE_PARAM_LBA	_BITUL(EDD_DISK_DRIVE_PARAM_LBA_BIT)
 
 /*
  * Drive parameters
@@ -60,26 +58,26 @@ struct edd_device_params {
 			uint16_t base_address;
 			uint16_t reserved1;
 			uint32_t reserved2;
-		} __attribute__((packed)) isa;
+		} __packed isa;
 		struct {
 			uint8_t bus;
 			uint8_t slot;
 			uint8_t function;
 			uint8_t channel;
 			uint32_t reserved;
-		} __attribute__((packed)) pci;
+		} __packed pci;
 		struct {
 			uint64_t _reserved;
-		} __attribute__((packed)) ibnd;
+		} __packed ibnd;
 		struct {
 			uint64_t _reserved;
-		} __attribute__((packed)) xprs;
+		} __packed xprs;
 		struct {
 			uint64_t _reserved;
-		} __attribute__((packed)) htpt;
+		} __packed htpt;
 		struct {
 			uint64_t _reserved;
-		} __attribute__((packed)) unknown;
+		} __packed unknown;
 	} interface_path;
 	union {
 		struct {
@@ -88,7 +86,7 @@ struct edd_device_params {
 			uint16_t _reserved2;
 			uint32_t _reserved3;
 			uint64_t _reserved4;
-		} __attribute__ ((packed)) ata;
+		} __packed ata;
 		struct {
 			uint8_t device;
 			uint8_t lun;
@@ -96,49 +94,61 @@ struct edd_device_params {
 			uint8_t _reserved2;
 			uint32_t _reserved3;
 			uint64_t _reserved4;
-		} __attribute__ ((packed)) atapi;
+		} __packed atapi;
 		struct {
 			uint16_t id;
 			uint64_t lun;
 			uint16_t _reserved1;
 			uint32_t _reserved2;
-		} __attribute__ ((packed)) scsi;
+		} __packed scsi;
 		struct {
 			uint64_t serial_number;
 			uint64_t _reserved;
-		} __attribute__ ((packed)) usb;
+		} __packed usb;
 		struct {
 			uint64_t eui;
 			uint64_t _reserved;
-		} __attribute__ ((packed)) i1394;
+		} __packed i1394;
 		struct {
 			uint64_t wwid;
 			uint64_t lun;
-		} __attribute__ ((packed)) fibre;
+		} __packed fibre;
 		struct {
 			uint64_t identity_tag;
 			uint64_t _reserved;
-		} __attribute__ ((packed)) i2o;
+		} __packed i2o;
 		struct {
 			uint32_t array_number;
 			uint32_t _reserved1;
 			uint64_t _reserved2;
-		} __attribute__ ((packed)) raid;
+		} __packed raid;
 		struct {
 			uint8_t device;
 			uint8_t _reserved1;
 			uint16_t _reserved2;
 			uint32_t _reserved3;
 			uint64_t _reserved4;
-		} __attribute__ ((packed)) sata;
+		} __packed sata;
 		struct {
 			uint64_t _reserved1;
 			uint64_t _reserved2;
-		} __attribute__ ((packed)) unknown;
+		} __packed unknown;
 	} device_path;
 	uint8_t _reserved4;
 	uint8_t checksum;
-} __attribute__((packed));
+} __packed;
+
+/* Host bus type has strlen = 4 */
+#define EDD_DEVICE_HOST_BUS_ISA		"ISA"
+#define EDD_DEVICE_HOST_BUS_PCI		"PCI"
+
+/* Interface type hat strlen = 8 */
+#define EDD_DEVICE_INTERFACE_ATA	"ATA"
+#define EDD_DEVICE_INTERFACE_ATAPI	"ATAPI"
+#define EDD_DEVICE_INTERFACE_SCSI	"SCSI"
+#define EDD_DEVICE_INTERFACE_USB	"USB"
+#define EDD_DEVICE_INTERFACE_1394	"1394"
+#define EDD_DEVICE_INTERFACE_FIBRE	"FIBRE"
 
 /*
  * Device information
@@ -152,7 +162,7 @@ struct edd_device_info {
 	uint8_t legacy_max_head;
 	uint8_t legacy_sectors_per_track;
 	struct edd_device_params params;
-} __attribute__((packed));
+} __packed;
 
 int edd_read_device_info(uint8_t devno, struct edd_device_info *edi);
 
