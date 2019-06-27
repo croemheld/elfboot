@@ -9,7 +9,7 @@
 # Ignore documents for research purposes
 #
 
-.docs/*
+/docs/*
 
 #
 # Ignore binary files and virtual disk images
