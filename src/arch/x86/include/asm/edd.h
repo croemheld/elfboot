@@ -3,6 +3,7 @@
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
+#include <elfboot/string.h>
 
 #include <uapi/elfboot/const.h>
 
@@ -36,10 +37,26 @@ struct edd_disk_drive_params {
 struct edd_device_params {
 	uint16_t length;
 	uint16_t info_flags;
-	uint32_t num_default_cylinders;
-	uint32_t num_default_heads;
-	uint32_t sectors_per_track;
-	uint64_t number_of_sectors;
+
+#define EDD_DEVICE_PARAM_DMA_BIT	0
+#define EDD_DEVICE_PARAM_DMA		_BITUL(EDD_DEVICE_PARAM_DMA_BIT)
+#define EDD_DEVICE_PARAM_CHS_VALID_BIT	1
+#define EDD_DEVICE_PARAM_CHS_VALID	_BITUL(EDD_DEVICE_PARAM_CHS_VALID_BIT)
+#define EDD_DEVICE_PARAM_REMOVABLE_BIT	2
+#define EDD_DEVICE_PARAM_REMOVABLE	_BITUL(EDD_DEVICE_PARAM_REMOVABLE_BIT)
+#define EDD_DEVICE_PARAM_WRVERIFY_BIT	3
+#define EDD_DEVICE_PARAM_WRVERIFY	_BITUL(EDD_DEVICE_PARAM_WRVERIFY_BIT)
+#define EDD_DEVICE_PARAM_CHLINE_BIT	4
+#define EDD_DEVICE_PARAM_CHLINE		_BITUL(EDD_DEVICE_PARAM_CHLINE_BIT)
+#define EDD_DEVICE_PARAM_LOCKED_BIT	5
+#define EDD_DEVICE_PARAM_LOCKED		_BITUL(EDD_DEVICE_PARAM_LOCKED_BIT)
+#define EDD_DEVICE_PARAM_CHS_MAX_BIT	6
+#define EDD_DEVICE_PARAM_CHS_MAX	_BITUL(EDD_DEVICE_PARAM_CHS_MAX_BIT)
+
+	uint32_t num_cylinders;
+	uint32_t num_heads;
+	uint32_t num_sectors;
+	uint64_t total_sectors;
 	uint16_t bytes_per_sector;
 
 	/* Version 2.0 */
@@ -52,7 +69,19 @@ struct edd_device_params {
 	uint8_t  device_path_info_length;
 	const uint8_t _reserved[3];
 	const char host_bus_type[4];
+
+#define EDD_DEVICE_HOST_BUS_ISA		"ISA"
+#define EDD_DEVICE_HOST_BUS_PCI		"PCI"
+
 	const char interface_type[8];
+
+#define EDD_DEVICE_INTERFACE_ATA	"ATA"
+#define EDD_DEVICE_INTERFACE_ATAPI	"ATAPI"
+#define EDD_DEVICE_INTERFACE_SCSI	"SCSI"
+#define EDD_DEVICE_INTERFACE_USB	"USB"
+#define EDD_DEVICE_INTERFACE_1394	"1394"
+#define EDD_DEVICE_INTERFACE_FIBRE	"FIBRE"
+
 	union {
 		struct {
 			uint16_t base_address;
@@ -138,18 +167,6 @@ struct edd_device_params {
 	uint8_t checksum;
 } __packed;
 
-/* Host bus type has strlen = 4 */
-#define EDD_DEVICE_HOST_BUS_ISA		"ISA"
-#define EDD_DEVICE_HOST_BUS_PCI		"PCI"
-
-/* Interface type hat strlen = 8 */
-#define EDD_DEVICE_INTERFACE_ATA	"ATA"
-#define EDD_DEVICE_INTERFACE_ATAPI	"ATAPI"
-#define EDD_DEVICE_INTERFACE_SCSI	"SCSI"
-#define EDD_DEVICE_INTERFACE_USB	"USB"
-#define EDD_DEVICE_INTERFACE_1394	"1394"
-#define EDD_DEVICE_INTERFACE_FIBRE	"FIBRE"
-
 /*
  * Device information
  */
@@ -164,6 +181,11 @@ struct edd_device_info {
 	struct edd_device_params params;
 } __packed;
 
-int edd_read_device_info(uint8_t devno, struct edd_device_info *edi);
+static inline int edd_device_is_type(const char *name, const char *type)
+{
+	return strncmp(name, type, strlen(type));
+}
+
+struct device *edd_device_create(uint8_t devno);
 
 #endif /* __X86_EDD_H__ */

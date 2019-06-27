@@ -107,7 +107,7 @@ char *bstrdup(const char *str)
 	return strdup;
 }
 
-static void __bfree(void *dptr)
+static void __bfree(const void *dptr)
 {
 	struct alloc_node *ablk, *fblk;
 
@@ -130,7 +130,7 @@ static void __bfree(void *dptr)
 	list_add_tail(&ablk->node, &alloc_free);
 }
 
-void bfree(void *dptr)
+void bfree(const void *dptr)
 {
 	if (!dptr)
 		return;

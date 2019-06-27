@@ -125,8 +125,14 @@
  */
 
 #define ATA_IO_TIMEOUT                            100000
-#define ATA_IDENTIFY_BUFFER_SIZE                  512
 #define ATA_IDENTIFY_WORD_COUNT                   (ATA_IDENTIFY_BUFFER_SIZE / 2)
+
+/* -------------------------------------------------------------------------- */
+
+#define ATA_SECTOR_WORDS		256
+#define ATA_SECTOR_SIZE			(ATA_SECTOR_WORDS * 2)
+
+#define ATA_IDENTIFY_SIZE		ATA_SECTOR_SIZE
 
 struct ata_scsi_packet {
 	union {
@@ -256,8 +262,7 @@ struct ata_params {
 #define ATA_SUPPORT_SANITIZE		0x1000
 #define ATA_MULTI_VALID			0x0100
 
-/*060*/ uint16_t lba_size_1;
-	uint16_t lba_size_2;
+/*060*/ uint32_t lba_size;
 	uint16_t obsolete62;
 /*063*/ uint16_t mwdmamodes;			/* multiword DMA modes */
 /*064*/ uint16_t apiomodes;			/* advanced PIO modes */
@@ -389,10 +394,7 @@ struct ata_params {
 /*096*/ uint16_t stream_transfer_time;
 /*097*/ uint16_t stream_access_latency;
 /*098*/ uint32_t stream_granularity;
-/*100*/ uint16_t lba_size48_1;
-	uint16_t lba_size48_2;
-	uint16_t lba_size48_3;
-	uint16_t lba_size48_4;
+/*100*/ uint64_t lba_size48;
 	uint16_t reserved104;
 /*105*/	uint16_t max_dsm_blocks;
 /*106*/	uint16_t pss;
@@ -406,8 +408,7 @@ struct ata_params {
 /*107*/ uint16_t isd;
 /*108*/ uint16_t wwn[4];
 	uint16_t reserved112[5];
-/*117*/ uint16_t lss_1;
-/*118*/ uint16_t lss_2;
+/*117*/ uint32_t lss;
 /*119*/ uint16_t support2;
 
 #define ATA_SUPPORT_WRITEREADVERIFY	0x0002

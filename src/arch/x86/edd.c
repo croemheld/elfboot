@@ -1,4 +1,7 @@
 #include <elfboot/core.h>
+#include <elfboot/mm.h>
+#include <elfboot/device.h>
+#include <elfboot/printf.h>
 
 #include <asm/bios.h>
 #include <asm/edd.h>
@@ -69,7 +72,7 @@ static int edd_read_device_params(uint8_t devno, struct edd_device_params *edp)
 	return 0;
 }
 
-int edd_read_device_info(uint8_t devno, struct edd_device_info *edi)
+static int edd_read_device_info(uint8_t devno, struct edd_device_info *edi)
 {
 	/*
 	 * Reading legacy parameters.
@@ -97,4 +100,79 @@ int edd_read_device_info(uint8_t devno, struct edd_device_info *edi)
 		return -1;
 
 	return 0;
+}
+
+static int edd_device_setup(struct device *device, struct edd_device_info *edi)
+{
+	struct edd_disk_drive_params *ddp;
+	const char *interface_type = edi->params.interface_type;
+
+	ddp = segment_offset_ptr(edi->params.dpte_ptr);
+
+	/* Determine device type via interface */
+	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATA))
+		device->type = DEVICE_ATA;
+
+	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATAPI))
+		device->type = DEVICE_ATAPI;
+
+	/*
+	 * All devices created by edd_device_create() are actual
+	 * physical devices such as ATA or SCSI. Virtual devices
+	 * such as TTY and streams do not rely on actual devices
+	 * and are handled separately.
+	 *
+	 * For all devices created here, the DEVICE_FLAGS_VIRTUAL
+	 * flag is cleared.
+	 */
+
+	/* Basic parameters for IO */
+	device_set_flag(device, DEVICE_FLAGS_IO_ADDRESS);
+	device->params.io_base = ddp->io_base;
+	device->params.control = ddp->control;
+
+	/* Device is slave */
+	if (ddp->flags & EDD_DISK_DRIVE_PARAM_SLAVE)
+		device_set_flag(device, DEVICE_FLAGS_SLAVE);
+
+	/* Device uses LBA addressing */
+	if (ddp->flags & EDD_DISK_DRIVE_PARAM_LBA)
+		device_set_flag(device, DEVICE_FLAGS_LBA);
+
+	/* Device has valid CHS information */
+	if (edi->params.info_flags & EDD_DEVICE_PARAM_CHS_VALID) {
+		device_set_flag(device, DEVICE_FLAGS_CHS_VALID);
+		device->params.num_cylinders = edi->params.num_cylinders;
+		device->params.num_heads = edi->params.num_heads;
+		device->params.num_sectors = edi->params.num_sectors;
+		device->params.total_sectors = edi->params.total_sectors;
+	}
+
+	/* Sector size is always valid */
+	device->params.sector_size = edi->params.bytes_per_sector;
+
+	return 0;
+}
+
+struct device *edd_device_create(uint8_t devno)
+{
+	struct edd_device_info edi;
+	struct device *device;
+
+	if (edd_read_device_info(devno, &edi))
+		return NULL;
+
+	device = bmalloc(sizeof(*device));
+	if (!device)
+		return NULL;
+
+	if (edd_device_setup(device, &edi))
+		goto edd_free_device;
+
+	return device;
+
+edd_free_device:
+	bfree(device);
+
+	return NULL;
 }

@@ -12,6 +12,14 @@ struct list_head {
 	struct list_head *prev, *next;
 };
 
+struct hlist_node {
+	struct hlist_node *next, **pprev;
+};
+
+struct hlist_head {
+	struct hlist_node *first;
+};
+
 #define list_entry(ptr, type, member)                                          \
     container_of(ptr, type, member)
 
@@ -58,6 +66,23 @@ struct list_head {
 
 #define LIST_HEAD(name)							\
 	struct list_head name = LIST_HEAD_INIT(name)
+
+static inline void INIT_LIST_HEAD(struct list_head *head)
+{
+	head->prev = head->next = head;
+}
+
+#define HLIST_HEAD_INIT							\
+	{ .first = NULL }
+
+#define HLIST_HEAD(name)						\
+	struct hlist_head name = HLIST_HEAD_INIT
+
+static inline void INIT_HLIST_NODE(struct hlist_node *node)
+{
+	node->next = NULL;
+	node->pprev = NULL;
+}	
 
 static inline int __list_add_valid(struct list_head *new, struct list_head *prev, 
 	struct list_head *next)

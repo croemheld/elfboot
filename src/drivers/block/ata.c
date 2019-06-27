@@ -6,6 +6,7 @@
 #include <elfboot/printf.h>
 #include <elfboot/list.h>
 
+#include <drivers/scsi.h>
 #include <drivers/ata.h>
 
 /*
@@ -123,13 +124,13 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 	ata_set_reg(device, ATA_REG_COMMAND, cmd->regs.cmd);
 
 	/* Pull the status register */
-	if (ata_wait(device, 1))
+	if (ata_wait(device, 0))
 		return -1;
 
 	status = ata_get_reg(device, ATA_REG_STATUS);
 
 	if (cmd->cmdsize) {
-		if (ata_wait(device, 1))
+		if (ata_wait(device, 0))
 			return -1;
 
 		irs = ata_get_reg(device, ATAPI_REG_IREASON);
@@ -144,7 +145,7 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 	/* Transfer data */
 	while (nread < cmd->bufsize 
 	       && (status & (ATA_SR_DRQ | ATA_SR_ERR)) == ATA_SR_DRQ) {
-		if (ata_wait(device, 1))
+		if (ata_wait(device, 0))
 			return -1;
 
 		if (cmd->cmdsize) {
@@ -174,7 +175,7 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 	}
 
 	if (cmd->write) {
-		if(ata_wait(device, 1))
+		if(ata_wait(device, 0))
 			return -1;
 
 		status = ata_get_reg(device, ATA_REG_STATUS);
@@ -203,23 +204,22 @@ static int ata_identify(struct device *device)
 	struct ata_command cmd;
 
 	initcommand(&cmd);
-	cmd.buf = bmalloc(ATA_IDENTIFY_BUFFER_SIZE);
+	cmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
 
 	if (!cmd.buf)
 		return -ENOMEM;
 
-	cmd.bufsize = ATA_IDENTIFY_BUFFER_SIZE;
+	cmd.bufsize = ATA_IDENTIFY_SIZE;
 
 	cmd.regs.disk = 0xE0;
 	cmd.regs.cmd = ATA_CMD_IDENTIFY;
 
 	r = ata_handle(device, &cmd);
 
-	if (r || cmd.bufsize != ATA_IDENTIFY_BUFFER_SIZE) {
-		bfree(cmd.buf);
+	if (r || cmd.bufsize != ATA_IDENTIFY_SIZE)
+		r = -EFAULT;
 
-		return -EFAULT;
-	}
+	bfree(cmd.buf);
 
 	return 0;
 }
@@ -230,12 +230,12 @@ static int atapi_identify(struct device *device)
 	struct ata_command cmd;
 
 	initcommand(&cmd);
-	cmd.buf = bmalloc(ATA_IDENTIFY_BUFFER_SIZE);
+	cmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
 
 	if (!cmd.buf)
 		return -ENOMEM;
 
-	cmd.bufsize = ATA_IDENTIFY_BUFFER_SIZE;
+	cmd.bufsize = ATA_IDENTIFY_SIZE;
 
 	cmd.regs.disk = 0xE0;
 	cmd.regs.cmd = ATA_CMD_IDENTIFY_PACKET;
@@ -247,6 +247,8 @@ static int atapi_identify(struct device *device)
 
 		return -EFAULT;
 	}
+
+	bfree(cmd.buf);
 
 	return 0;
 }
@@ -325,8 +327,6 @@ static int atapi_close(struct device *device __unused)
 	return -ENOTSUP;
 }
 
-/* -------------------------------------------------------------------------- */
-
 static struct device_driver ata_device_driver = {
 	.type = DEVICE_ATA,
 	.probe = ata_probe,
@@ -350,5 +350,5 @@ static struct device_driver atapi_device_driver = {
 void ata_firmware_init(void)
 {
 	device_driver_register(&ata_device_driver);
-	device_driver_register(&atapi_device_driver);
+	scsi_driver_register(&atapi_device_driver);
 }

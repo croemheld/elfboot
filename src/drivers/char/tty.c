@@ -22,7 +22,7 @@ int tty_read(struct device *device __unused, uint64_t block __unused,
 int tty_write(struct device *device, uint64_t block __unused, uint64_t size, 
 	      const char *buffer)
 {
-	struct console *cons = device->data;
+	struct console *cons = device->device_data;
 
 	return console_write(cons, buffer, size);
 }

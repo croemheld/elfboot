@@ -1,8 +1,18 @@
 #include <elfboot/core.h>
+#include <elfboot/mm.h>
 #include <elfboot/device.h>
+#include <elfboot/string.h>
+#include <elfboot/tree.h>
 #include <elfboot/list.h>
 
 #include <drivers/ata.h>
+#include <drivers/scsi.h>
+
+/*
+ * List of all opened devices
+ */
+
+LIST_HEAD(devices);
 
 /*
  * List of all available device drivers
@@ -52,13 +62,22 @@ int device_close(struct device *device)
 	return -ENOTSUP;
 }
 
-int device_install_firmware(struct device *device)
+int device_lookup_driver(struct device *device)
 {
 	struct device_driver *driver;
 
 	list_for_each_entry(driver, &device_drivers, list) {
-		if (device->params.type != driver->type)
-			continue;
+		/* 
+		 * TODO CRO: Unreliable driver check
+		 * 
+		 * This is unreliable: EDD reports the boot device as an ATAPI 
+		 * device, but we use an SCSI driver which uses ATAPI commands.
+		 *
+		 * However, EDD reports SCSI devices apart from ATAPI devices, 
+		 * which makes the type determination more complicated.
+		 */
+		// if (driver->type != device->type)
+		// 	continue;
 
 		if (driver->probe(device))
 			continue;
@@ -71,9 +90,38 @@ int device_install_firmware(struct device *device)
 	return -EFAULT;
 }
 
+int device_mount(struct device *device, const char *name)
+{
+	if (device_lookup_driver(device))
+		return -EFAULT;
+
+	device->name = bstrdup(name);
+	if (!device->name)
+		return -EFAULT;
+
+	list_add(&device->list, &devices);
+
+	return 0;
+}
+
+int device_umount(struct device *device)
+{
+	if (device->refcount)
+		return -EINVAL;
+
+	bfree(device->name);
+	device->type = 0;
+	device->refcount = 0;
+	device->driver = NULL;
+	list_del(&device->list);
+
+	return 0;
+}
+
 void devices_init(void)
 {
 	ata_firmware_init();
+	scsi_firmware_init();
 }
 
 void device_driver_register(struct device_driver *driver)

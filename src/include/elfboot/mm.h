@@ -17,7 +17,7 @@ void *bzalloc(size_t size);
 
 char *bstrdup(const char *str);
 
-void bfree(void *dptr);
+void bfree(const void *dptr);
 
 void *brealloc(void *dptr, size_t size);
 
