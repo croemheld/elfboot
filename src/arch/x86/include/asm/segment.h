@@ -11,14 +11,14 @@
 
 #ifdef __ASSEMBLER__
 
-#define GDT_SEG_NULL                                                           \
-    .quad 0
+#define GDT_SEG_NULL					\
+	.quad (0)
 
-#define GDT_SEG(base, limit, access, flags)                                    \
-    .word ((limit) & 0xFFFF), ((base) & 0xFFFF);                               \
-    .byte (((base) >> 16) & 0xFF), (access),                                   \
-          (flags), (((base) >> 24) & 0xFF)
+#define GDT_SEG(base, limit, access, flags)		\
+	.word ((limit) & 0xFFFF), ((base) & 0xFFFF);	\
+	.byte (((base) >> 16) & 0xFF), (access),	\
+		(flags), (((base) >> 24) & 0xFF)
 
-#endif /*__ASSEMBLER__ */
+#endif /* __ASSEMBLER__ */
 
 #endif /* __X86_SEGMENT_H__ */

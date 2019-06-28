@@ -7,6 +7,7 @@
 
 #include <asm/boot.h>
 #include <asm/bda.h>
+#include <asm/pic.h>
 #include <asm/video.h>
 #include <asm/edd.h>
 
@@ -43,6 +44,9 @@ int main(uint8_t disk_drive)
 	struct device *bootdev;
 
 	boot_params.disk_drive = disk_drive;
+
+	/* PIC remap */
+	pic_init();
 
 	/* Detect and set video modes */
 	detect_videos(&boot_params);

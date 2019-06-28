@@ -113,8 +113,11 @@ static int edd_device_setup(struct device *device, struct edd_device_info *edi)
 	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATA))
 		device->type = DEVICE_ATA;
 
-	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATAPI))
+	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATAPI)) {
 		device->type = DEVICE_ATAPI;
+		device_set_flag(device, DEVICE_FLAGS_LUN);
+		device->params.lun = edi->params.device_path.atapi.lun;
+	}
 
 	/*
 	 * All devices created by edd_device_create() are actual

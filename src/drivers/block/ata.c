@@ -100,7 +100,7 @@ static int ata_wait(struct device *device, int advanced)
 	return 0;
 }
 
-static int ata_handle(struct device *device, struct ata_command *cmd)
+static int ata_handle(struct device *device, struct ata_command *atacmd)
 {
 	int status, slave, hdsel, i;
 	uint8_t irs;
@@ -108,20 +108,20 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 
 	/* Determine the selected device */
 	slave = device_has_flag(device, DEVICE_FLAGS_SLAVE);
-	hdsel = (cmd->regs.disk & 0xef) | (slave << 4);
+	hdsel = (atacmd->regs.disk & 0xef) | (slave << 4);
 
 	ata_set_reg(device, ATA_REG_HDDEVSEL, hdsel);
 
 	/* Send parameters */
 	for (i = ATA_REG_SECTORS; i <= ATA_REG_LBA2; i++)
 		ata_set_reg(device, i, 
-			    cmd->regs.raw[7 + (i - ATA_REG_SECTORS)]);
+			    atacmd->regs.raw[7 + (i - ATA_REG_SECTORS)]);
 
 	for (i = ATA_REG_FEATURES; i <= ATA_REG_LBA2; i++)
 		ata_set_reg(device, i, 
-			    cmd->regs.raw[i - ATA_REG_FEATURES]);
+			    atacmd->regs.raw[i - ATA_REG_FEATURES]);
 
-	ata_set_reg(device, ATA_REG_COMMAND, cmd->regs.cmd);
+	ata_set_reg(device, ATA_REG_COMMAND, atacmd->regs.cmd);
 
 	/* Pull the status register */
 	if (ata_wait(device, 0))
@@ -129,7 +129,7 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 
 	status = ata_get_reg(device, ATA_REG_STATUS);
 
-	if (cmd->cmdsize) {
+	if (atacmd->cmdsize) {
 		if (ata_wait(device, 0))
 			return -1;
 
@@ -139,16 +139,16 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 		    && (irs & ATAPI_IREASON_MASK) == ATAPI_IREASON_CMD_OUT))
 			return -1;
 
-		ata_pio_write(device, cmd->cmd, cmd->cmdsize);
+		ata_pio_write(device, atacmd->cmd, atacmd->cmdsize);
 	}
 
 	/* Transfer data */
-	while (nread < cmd->bufsize 
+	while (nread < atacmd->bufsize 
 	       && (status & (ATA_SR_DRQ | ATA_SR_ERR)) == ATA_SR_DRQ) {
 		if (ata_wait(device, 0))
 			return -1;
 
-		if (cmd->cmdsize) {
+		if (atacmd->cmdsize) {
 			irs = ata_get_reg(device, ATAPI_REG_IREASON);
 
 			if ((irs & ATAPI_IREASON_MASK) != ATAPI_IREASON_DATA_IN)
@@ -157,24 +157,24 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 			cnt = ata_get_reg(device, ATAPI_REG_CNTHIGH) << 8
 				| ata_get_reg(device, ATAPI_REG_CNTLOW);
 
-			if (!(0 < cnt && cnt <= cmd->bufsize - nread
-			    && (!(cnt & 1) || cnt == cmd->bufsize - nread)))
+			if (!(0 < cnt && cnt <= atacmd->bufsize - nread
+			    && (!(cnt & 1) || cnt == atacmd->bufsize - nread)))
 				return -1;
 		} else
 			cnt = 512;
 
-		if (cnt > cmd->bufsize - nread)
-			cnt = cmd->bufsize - nread;
+		if (cnt > atacmd->bufsize - nread)
+			cnt = atacmd->bufsize - nread;
 
-		if (cmd->write)
-			ata_pio_write(device, cmd->buf + nread, cnt);
+		if (atacmd->write)
+			ata_pio_write(device, atacmd->buf + nread, cnt);
 		else 
-			ata_pio_read(device, cmd->buf + nread, cnt);
+			ata_pio_read(device, atacmd->buf + nread, cnt);
 
 		nread += cnt;
 	}
 
-	if (cmd->write) {
+	if (atacmd->write) {
 		if(ata_wait(device, 0))
 			return -1;
 
@@ -184,15 +184,15 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 			return -1;
 	}
 
-	cmd->bufsize = nread;
+	atacmd->bufsize = nread;
 
 	if (ata_wait(device, 0))
 		return -1;
 
 	for (i = ATA_REG_ERROR; i <= ATA_REG_STATUS; i++)
-		cmd->regs.raw[i - ATA_REG_FEATURES] = ata_get_reg(device, i);
+		atacmd->regs.raw[i - ATA_REG_FEATURES] = ata_get_reg(device, i);
 
-	if (cmd->regs.status & (ATA_SR_DRQ | ATA_SR_ERR))
+	if (atacmd->regs.status & (ATA_SR_DRQ | ATA_SR_ERR))
 		return -1;
 
 	return 0;
@@ -201,25 +201,25 @@ static int ata_handle(struct device *device, struct ata_command *cmd)
 static int ata_identify(struct device *device)
 {
 	int r;
-	struct ata_command cmd;
+	struct ata_command atacmd;
 
-	initcommand(&cmd);
-	cmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
+	initcommand(&atacmd);
+	atacmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
 
-	if (!cmd.buf)
+	if (!atacmd.buf)
 		return -ENOMEM;
 
-	cmd.bufsize = ATA_IDENTIFY_SIZE;
+	atacmd.bufsize = ATA_IDENTIFY_SIZE;
 
-	cmd.regs.disk = 0xE0;
-	cmd.regs.cmd = ATA_CMD_IDENTIFY;
+	atacmd.regs.disk = 0xE0;
+	atacmd.regs.cmd = ATA_CMD_IDENTIFY;
 
-	r = ata_handle(device, &cmd);
+	r = ata_handle(device, &atacmd);
 
-	if (r || cmd.bufsize != ATA_IDENTIFY_SIZE)
+	if (r || atacmd.bufsize != ATA_IDENTIFY_SIZE)
 		r = -EFAULT;
 
-	bfree(cmd.buf);
+	bfree(atacmd.buf);
 
 	return 0;
 }
@@ -227,28 +227,28 @@ static int ata_identify(struct device *device)
 static int atapi_identify(struct device *device)
 {
 	int r;
-	struct ata_command cmd;
+	struct ata_command atacmd;
 
-	initcommand(&cmd);
-	cmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
+	initcommand(&atacmd);
+	atacmd.buf = bmalloc(ATA_IDENTIFY_SIZE);
 
-	if (!cmd.buf)
+	if (!atacmd.buf)
 		return -ENOMEM;
 
-	cmd.bufsize = ATA_IDENTIFY_SIZE;
+	atacmd.bufsize = ATA_IDENTIFY_SIZE;
 
-	cmd.regs.disk = 0xE0;
-	cmd.regs.cmd = ATA_CMD_IDENTIFY_PACKET;
+	atacmd.regs.disk = 0xE0;
+	atacmd.regs.cmd = ATA_CMD_IDENTIFY_PACKET;
 
-	r = ata_handle(device, &cmd);
+	r = ata_handle(device, &atacmd);
 
 	if (r) {
-		bfree(cmd.buf);
+		bfree(atacmd.buf);
 
 		return -EFAULT;
 	}
 
-	bfree(cmd.buf);
+	bfree(atacmd.buf);
 
 	return 0;
 }
@@ -290,32 +290,36 @@ static int atapi_open(struct device *device __unused, const char *name __unused)
 	return -ENOTSUP;
 }
 
-static int atapi_read(struct device *device __unused, uint64_t sector __unused, 
-		    uint64_t size, char *buffer __unused)
+static int atapi_read(struct device *device, char *cmd, size_t cmdsize, 
+		      char *buffer, size_t size)
 {
-	uint8_t *cmdbuf;
-	struct ata_command cmd;
+	struct ata_command atacmd;
+	int r;
 
-	initcommand(&cmd);
-	cmd.regs.disk = 0;
-	cmd.regs.features = 0;
-	cmd.regs.atapi_ireason = 0;
-	cmd.regs.atapi_cnthigh = size >> 8;
-	cmd.regs.atapi_cntlow = size & 0xff;
-	cmd.regs.cmd = ATA_CMD_PACKET;
+	initcommand(&atacmd);
+	atacmd.regs.disk = 0;
+	atacmd.regs.features = 0;
+	atacmd.regs.atapi_ireason = 0;
+	atacmd.regs.atapi_cnthigh = size >> 8;
+	atacmd.regs.atapi_cntlow = size & 0xff;
+	atacmd.regs.cmd = ATA_CMD_PACKET;
 
-	cmdbuf = bmalloc(12);
+	atacmd.cmd = cmd;
+	atacmd.cmdsize = cmdsize;
+	atacmd.buf = buffer;
+	atacmd.bufsize = size;
 
-	if (!cmdbuf)
-		return -1;
+	r = ata_handle(device, &atacmd);
 
-	
+	if (r || atacmd.bufsize != size)
+		return r;
 
 	return 0;
 }
 
-static int atapi_write(struct device *device __unused, uint64_t sector __unused, 
-		     uint64_t size __unused, const char *buffer __unused)
+static int atapi_write(struct device *device __unused, char *cmd __unused, 
+		       size_t cmdsize __unused, const char *buffer __unused,
+		       size_t size __unused)
 {
 	bprintln("ATAPI write not supported!\n");
 
@@ -337,7 +341,7 @@ static struct device_driver ata_device_driver = {
 	.list = LIST_HEAD_INIT(ata_device_driver.list),
 };
 
-static struct device_driver atapi_device_driver = {
+static struct scsi_driver atapi_device_driver = {
 	.type = DEVICE_ATAPI,
 	.probe = atapi_probe,
 	.open = atapi_open,

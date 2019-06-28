@@ -16,6 +16,8 @@
 #define SCSI_CMD_READ12			0xA8
 #define SCSI_CMD_WRITE12		0xAA
 
+#define SCSI_LUN_SHIFT			5
+
 struct scsi_inquiry {
 	uint8_t  cmd;
 	uint8_t  lun;
@@ -131,17 +133,26 @@ struct scsi_xfer16 {
 	uint8_t  control;
 } __packed;
 
-/*
- * General information about SCSI device
- */
+struct scsi_driver {
+	int type;
+	int (*probe)(struct device *);
+	int (*open)(struct device *, const char *);
+	int (*read)(struct device *, char *, size_t, char *, size_t);
+	int (*write)(struct device *, char *, size_t, const char *, size_t);
+	int (*close)(struct device *);
+	struct list_head list;
 
-struct scsi_data {
-
+	/*
+	 * The following fields are filled
+	 * with driver specific information
+	 */
+	
+	void *driver_data;
 };
 
-void scsi_driver_register(struct device_driver *driver);
+void scsi_driver_register(struct scsi_driver *driver);
 
-void scsi_driver_unregister(struct device_driver *driver);
+void scsi_driver_unregister(struct scsi_driver *driver);
 
 void scsi_firmware_init(void);
 

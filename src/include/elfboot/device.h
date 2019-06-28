@@ -12,6 +12,7 @@ enum device_flags {
 	DEVICE_FLAGS_LBA,		/* 0 = only CHS, 1 = LBA */
 	DEVICE_FLAGS_CHS_VALID,		/* CHS values are usable */
 	DEVICE_FLAGS_IO_ADDRESS,	/* Device has IO address */
+	DEVICE_FLAGS_LUN,		/* Device associated LUN */
 };
 
 /*
@@ -22,6 +23,9 @@ struct device;
 
 struct device_params {
 	uint16_t flags;
+
+	/* LUN */
+	uint64_t lun;
 
 	/* CHS values */
 	uint32_t num_cylinders;
@@ -48,7 +52,7 @@ struct device_driver {
 
 	/*
 	 * The following fields are filled
-	 * with device specific information
+	 * with driver specific information
 	 */
 	
 	void *driver_data;
@@ -84,7 +88,7 @@ static inline int device_is_type(struct device *device, int type)
 
 static inline int device_has_flag(struct device *device, int flag)
 {
-	return device->params.flags & _BITUL(flag);
+	return (device->params.flags & _BITUL(flag)) != 0;
 }
 
 static inline int device_set_flag(struct device *device, int flag)
