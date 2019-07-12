@@ -67,18 +67,6 @@ int device_lookup_driver(struct device *device)
 	struct device_driver *driver;
 
 	list_for_each_entry(driver, &device_drivers, list) {
-		/* 
-		 * TODO CRO: Unreliable driver check
-		 * 
-		 * This is unreliable: EDD reports the boot device as an ATAPI 
-		 * device, but we use an SCSI driver which uses ATAPI commands.
-		 *
-		 * However, EDD reports SCSI devices apart from ATAPI devices, 
-		 * which makes the type determination more complicated.
-		 */
-		// if (driver->type != device->type)
-		// 	continue;
-
 		if (driver->probe(device))
 			continue;
 

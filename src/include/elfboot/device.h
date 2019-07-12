@@ -66,7 +66,8 @@ struct device {
 #define DEVICE_ATA			1
 #define DEVICE_ATAPI			2
 #define DEVICE_SCSI			3
-#define DEVICE_TTY			3
+
+#define DEVICE_TTY			4
 
 	int refcount;
 	struct list_head list;

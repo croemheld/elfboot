@@ -11,4 +11,6 @@
 #define __unused			__attribute__((unused))
 #define __packed			__attribute__((packed))
 
+#define __aligned(x)			__attribute__((aligned(x)))
+
 #endif /* __ELFBOOT_LINKAGE_H__ */

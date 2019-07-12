@@ -17,6 +17,7 @@
 #define SCSI_CMD_WRITE12		0xAA
 
 #define SCSI_LUN_SHIFT			5
+#define SCSI_RMB_SHIFT			7
 
 struct scsi_inquiry {
 	uint8_t  cmd;
@@ -31,6 +32,7 @@ struct scsi_inquiry {
 struct scsi_inquiry_data {
 	uint8_t  type;
 
+#define SCSI_DEVICE_TYPE_MASK		(_BITUL(5) - 1)
 #define SCSI_DEVICE_TYPE_DIRECT		0x00
 #define SCSI_DEVICE_TYPE_CDROM		0x05
 
@@ -74,8 +76,8 @@ struct scsi_read_capacity10 {
 	uint8_t  cmd;
 	uint8_t  lun;
 	uint32_t lba;
-	uint8_t _reserved1;
-	uint8_t _reserved2;
+	uint8_t  _reserved1;
+	uint8_t  _reserved2;
 	uint8_t  pmi;
 	uint8_t  control;
 	uint16_t pad;
@@ -148,6 +150,13 @@ struct scsi_driver {
 	 */
 	
 	void *driver_data;
+};
+
+struct scsi_data {
+	uint8_t  scsi_type;
+	uint8_t  removable;
+	uint64_t last_block;
+	uint64_t block_size;
 };
 
 void scsi_driver_register(struct scsi_driver *driver);

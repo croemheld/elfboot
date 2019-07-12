@@ -26,7 +26,7 @@ LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 PY := python3
 
 # Flags for compiler and linker
-CFLAGS  := -std=gnu99 -ffreestanding -m16 -Wextra -g -O3	\
+CFLAGS  := -std=gnu99 -ffreestanding -m16 -Wextra -g -Os	\
 	   -Wall -Wstrict-prototypes -march=i386 -mregparm=3	\
 	   -fno-strict-aliasing -fomit-frame-pointer -fno-pic	\
 	   -mno-mmx -mno-sse
@@ -139,5 +139,10 @@ PHONY += clean
 clean:
 	@echo " Please use one of the following targets:"
 	@echo " $(CLEAN)"
+
+PHONE += cscope
+cscope:
+	$(MAKE) -C src cscope
+	mv src/cscope.out .
 
 .PHONY: $(PHONY)

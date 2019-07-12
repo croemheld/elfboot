@@ -210,7 +210,7 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 
 			case 'd': 
 			{
-					long long n;
+				long long n;
 
 				n = va_arg(*argp, int);
 
