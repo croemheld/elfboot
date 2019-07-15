@@ -54,7 +54,7 @@ void put_string(formatter *f, const char *str)
 		put_char(f, pad_char);
 }
 
-void put_decimal(formatter *f, uint32_t n)
+void put_decimal(formatter *f, unsigned long long n)
 {
 	char buffer[32];
 	char *end = buffer + sizeof(buffer) - 1;
@@ -75,7 +75,7 @@ void put_decimal(formatter *f, uint32_t n)
 	put_string(f, str);
 }
 
-void put_hexadecimal(formatter *f, char type, uint32_t n)
+void put_hexadecimal(formatter *f, char type, unsigned long long n)
 {
 	char buffer[32];
 	char *end = buffer + sizeof(buffer) - 1;
@@ -115,11 +115,13 @@ void put_pointer(formatter *f, void *ptr)
 int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 {
 	formatter f;
+
 	f.buffer = buffer;
 	f.end = buffer + size - 1;
 
 	while(1) {
 		char c = *format++;
+		bool is_long_long = false;
 
 		if (!c)
 			break;
@@ -169,8 +171,14 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 				f.width = width;
 		}
 
-		if (c == 'l')
+		if (c == 'l') {
 			c = *format++;
+
+			if (c == 'l') {
+				c = *format++;
+				is_long_long = true;
+			}
+		}
 
 		char type = c;
 
@@ -212,7 +220,10 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			{
 				long long n;
 
-				n = va_arg(*argp, int);
+				if (is_long_long) {
+					n = va_arg(*argp, long long);
+				} else
+					n = va_arg(*argp, int);
 
 				if (n < 0) {
 					put_char(&f, '-');
@@ -225,9 +236,12 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 
 			case 'u': 
 			{
-				uint32_t n;
+				unsigned long long n;
 
-				n = va_arg(*argp, unsigned int);
+				if (is_long_long) {
+					n = va_arg(*argp, unsigned long long);
+				} else
+					n = va_arg(*argp, unsigned long);
 
 				put_decimal(&f, n);
 				break;
@@ -236,9 +250,13 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			case 'x':
 			case 'X': 
 			{
-				uint32_t n;
+				unsigned long long n;
 
-				n = va_arg(*argp, unsigned int);
+				if (is_long_long) {
+					n = va_arg(*argp, unsigned long long);
+
+				} else
+					n = va_arg(*argp, unsigned long);
 
 				put_hexadecimal(&f, type, n);
 				break;
