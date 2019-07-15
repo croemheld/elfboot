@@ -26,9 +26,9 @@ LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
 PY := python3
 
 # Flags for compiler and linker
-CFLAGS  := -std=gnu99 -ffreestanding -m16 -Wextra -g -Os	\
-	   -Wall -Wstrict-prototypes -march=i386 -mregparm=3	\
-	   -fno-strict-aliasing -fomit-frame-pointer -fno-pic	\
+CFLAGS  := -std=gnu99 -ffreestanding -Wextra -g -Os	\
+	   -Wall -Wstrict-prototypes -march=i386	\
+	   -fno-strict-aliasing -fno-pic		\
 	   -mno-mmx -mno-sse
 LDFLAGS := -O2 -nostdlib -lgcc
 
