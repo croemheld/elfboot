@@ -15,6 +15,12 @@ SECTIONS
 		SHORT(0xAA55);
 	}
 
+	.real ALIGN(0x10) : {
+		__real_start = .;
+		*(.real*)
+		__real_end = .;
+	}
+
 	.text ALIGN(0x10) : {
 		__text_start = .;
 		*(.text*)
