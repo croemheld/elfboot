@@ -1,0 +1,1 @@
+elfboot-y += random.o
