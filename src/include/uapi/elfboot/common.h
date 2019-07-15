@@ -3,9 +3,6 @@
 
 #include <elfboot/core.h>
 
-#define __packed                                  __attribute__((packed))
-#define __unused                                  __attribute__((unused))
-
 #define container_of(ptr, type, member)					\
     ({									\
         const typeof(((type *)0)->member) *__mptr = (ptr);		\

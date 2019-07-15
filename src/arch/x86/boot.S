@@ -95,7 +95,7 @@ _setup16:
 	movw    %ax, %gs
 	movw    %ax, %ss
 
-	movw    $BOOT_STACK_ADDR_START, %sp
+	movw    $STACK_ADDR_START, %sp
 
 	# Enable A20 line
 
@@ -103,6 +103,8 @@ _setup16:
 	jc      .bios_error
 
 	# Prepare to jump into unreal mode
+
+/*
 
 	cli
 
@@ -112,10 +114,10 @@ _setup16:
 	orl     $0x1, %eax
 	movl    %eax, %cr0
 
-	jmpl    $BOOT_GDT_CODE16, $.protcseg
+	jmpl    $GDT_CODE16, $.protcseg
 
 .protcseg:
-	movw    $BOOT_GDT_DATA16, %ax
+	movw    $GDT_DATA16, %ax
 	movw    %ax, %ds
 	movw    %ax, %es
 	movw    %ax, %fs
@@ -138,13 +140,24 @@ _setup16:
 
 	sti
 
-	movw    $0x0f01, %bx
-	movl    $0x000b8000, %eax
-	movw    %bx, (%eax)
-
 	# Finally, call bootloader main routine
 
 	movb    %dl, %al
+	call    main
+
+	jmp     .
+
+*/
+
+	# Prepare to jump into unreal mode
+
+	call    pmmode_jmp
+
+.code32
+
+	# Finally, call bootloader main routine
+
+	pushl   %edx
 	call    main
 
 	jmp     .

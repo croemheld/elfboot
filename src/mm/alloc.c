@@ -189,7 +189,7 @@ static void bmalloc_create_free_list(uint32_t addr, size_t size)
 
 	list_add_tail(&ablk->node, &alloc_free);
 
-	bprintf("alloc_node at [%08p - %08p], size %08p bytes\n", 
+	bprintln("alloc_node at [%08p - %08p], size %08p bytes", 
 		&ablk->data, vptradd(&ablk->data, ablk->size - 1), ablk->size);
 }
 

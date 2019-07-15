@@ -1,10 +1,10 @@
 #ifndef __X86_BOOT_H__
 #define __X86_BOOT_H__
 
-#define BOOT_IMAGE_ADDR                           0x7C00
-#define BOOT_STACK_ADDR_START                     0x2000
-#define BOOT_STACK_ADDR_END                       0x1000
-#define BOOT_STACK_SIZE	           (BOOT_STACK_ADDR_START - BOOT_STACK_ADDR_END)
+#define IMAGE_ADDR                                0x7C00
+#define STACK_ADDR_START                          0x2000
+#define STACK_ADDR_END                            0x1000
+#define STACK_SIZE	                     (STACK_ADDR_START - STACK_ADDR_END)
 
 #define SETUP_PHYS_ADDR                           0x8000
 #define SETUP_SEGMENT                             0x07E0

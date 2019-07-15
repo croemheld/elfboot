@@ -2,7 +2,7 @@
 
 .code16
 
-.section .text
+.section .real
 
 # enable_a20:
 #

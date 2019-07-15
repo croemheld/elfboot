@@ -29,7 +29,7 @@ static void bootmem_reserve_regions(void)
 	memblock_reserve(EBDA_ADDRESS, EBDA_MAX_SIZE);
 
 	/* Reserve memory for boot stack */
-	memblock_reserve(BOOT_STACK_ADDR_END, BOOT_STACK_SIZE);
+	memblock_reserve(STACK_ADDR_END, STACK_SIZE);
 
 	/* Reserve memory for the entire bootloader */
 	memblock_reserve(SECTION_START(boot), SECTION_SIZE(boot));
@@ -50,6 +50,9 @@ int main(uint8_t disk_drive)
 
 	/* Detect and set video modes */
 	detect_videos(&boot_params);
+
+	/* Hello World! */
+	bprintln("Starting elfboot x86 bootloader...");
 
 	/* Get memory map */
 	detect_memory(&boot_params);
@@ -76,7 +79,8 @@ int main(uint8_t disk_drive)
 	if (!bootdev)
 		return -EFAULT;
 
-	device_mount(bootdev, "/dev/boot");
+	if (device_mount(bootdev, "/dev/boot"))
+		return -EFAULT;
 
 	bprintln("Initialized boot device");
 
