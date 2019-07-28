@@ -1,74 +1,151 @@
 #include <elfboot/core.h>
+#include <elfboot/mm.h>
+#include <elfboot/linkage.h>
+#include <elfboot/string.h>
 #include <elfboot/vfs.h>
 #include <elfboot/list.h>
 #include <elfboot/tree.h>
 
-TREE_HEAD(vfs_mountpoints);
+/*
+ * List of available file systems
+ */
+LIST_HEAD(filesystems);
 
-static void __unused vfs_add_mountpoint(struct tree_node *new, struct tree_node *parent)
+/*
+ * Filesystem root node
+ */
+static struct fs_node *fs_root;
+
+/*
+ * Utility functions
+ */
+
+static char *vfs_basename(const char *path)
 {
-	struct tree_node *pos;
-
-	new->parent = parent;
-
-	if (tree_leaf(parent)) {
-		list_add(&new->siblings, &parent->children);
-		goto vfs_inc_count;
-	}
-
-	tree_for_each_child(pos, parent) {
-		if (strcmp(new->data, pos->data) < 0) {
-			if (pos->siblings.prev == &parent->children)
-				list_add(&new->siblings, &parent->children);
-			else
-				list_add(&new->siblings, pos->siblings.prev);
-
-			goto vfs_inc_count;
-		}
-	}
-
-	list_add(&new->siblings, parent->children.prev);
-
-vfs_inc_count:
-
-	parent->children_count++;
-	vfs_mountpoints.count++;
-}
-
-static void __unused vfs_del_mountpoint(struct tree_node *node)
-{
-	struct tree_node *pos;
+	char *name = strrchr(path, '/');
 
 	/*
-	 * Contrary to general tree structures, the removal of a node inside
-	 * the vfs mountpoint tree structure also leads to the removal of its
-	 * children.
+	 * This is extremely unsafe, as the path could
+	 * contain a trailling '/', which results in
+	 * this function returning an empty string.
 	 */
-	
-	if (!tree_leaf(node)) {
-		tree_for_each_child(pos, node) {
 
-			/* Recursively delete all child nodes */
-			vfs_del_mountpoint(pos);
-			vfs_mountpoints.count--;
-
-			/* Free the current nodes mount data */
-			bfree(pos->data);
-		}
-	}
-
-	node->parent->children_count += node->children_count - 1;
-
-	list_del(&node->children);
-	list_del(&node->siblings);
-
-	vfs_mountpoints.count--;
-
-	/* Free the node itself */
-	bfree(node);
+	return name ? name + 1 : (char *)path;
 }
 
-void vfs_mount(const char *path __unused, struct device *device __unused)
+static char *vfs_dirname(char *path)
 {
+	/*
+	 * vfs_dirname is modifying the path argument.
+	 *
+	 * If this behavior is not desired, create a copy
+	 * of the path before calling this function.
+	 */
 	
+	static const char dot[] = ".";
+	char *name;
+
+	name = path != NULL ? strrchr(path, '/') : NULL;
+
+	if (!name)
+		return (char *)dot;
+
+	name[0] = '\0';
+
+	return path;
+}
+
+
+/* 
+ * fs_node functions
+ */
+
+static int vfs_open(struct fs_node *node __unused)
+{
+	return -ENOTSUP;
+}
+
+static int vfs_close(struct fs_node *node __unused)
+{
+	return -ENOTSUP;
+}
+
+
+/* 
+ * fs_node functions for directories
+ */
+
+static struct fs_node *vfs_lookup(struct fs_node *node, const char *path)
+{
+	char *name, *part;
+
+	name = bstrdup(path);
+	if (!name)
+		return NULL;
+
+	part = strtok(name, "/");
+
+	while (part) {
+		if (!node->ops->lookup) {
+			bfree(name);
+			return NULL;
+		}
+
+		node = node->ops->lookup(node, part);
+		if (!node) {
+			bfree(name);
+			return NULL;
+		}
+
+		part = strtok(part, "/");
+	}
+
+	bfree(name);
+
+	return node;
+}
+
+static int vfs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __unused)
+{
+	return -ENOTSUP;
+}
+
+
+/* 
+ * fs_node function for files
+ */
+
+static int vfs_read(struct fs_node *node __unused, uint64_t sector __unused,
+		    char *buffer __unused)
+{
+	return -ENOTSUP;
+}
+
+static int vfs_write(struct fs_node *node __unused, uint64_t sector __unused,
+		     const char *buffer __unused)
+{
+	return -ENOTSUP;
+}
+
+/* -------------------------------------------------------------------------- */
+
+static int vfs_mount_fs(struct device *device __unused, struct fs *fs __unused,
+			const char *name __unused)
+{
+	return -ENOTSUP;
+}
+
+int vfs_mount(struct device *device __unused, const char *name __unused)
+{
+	return -ENOTSUP;
+}
+
+void vfs_register_fs(struct fs *fs)
+{
+	list_add(&fs->list, &filesystems);
+}
+
+void vfs_unregister_fs(struct fs *fs)
+{
+	list_del(&fs->list);
 }
