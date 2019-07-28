@@ -1,4 +1,5 @@
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 #include <elfboot/mm.h>
 #include <elfboot/screen.h>
 #include <elfboot/console.h>
