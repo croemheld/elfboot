@@ -60,6 +60,8 @@ char *strstr(const char *str1, const char *str2);
 
 char *strchr(const char *str, int c);
 
+char *strrchr(const char *str, int c);
+
 size_t strspn(const char *str1, const char *str2);
 
 size_t strcspn(const char *str1, const char *str2);

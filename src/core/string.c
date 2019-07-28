@@ -350,6 +350,18 @@ char *strchr(const char *str, int c)
 	return (char *)str;
 }
 
+char *strrchr(const char *str, int c)
+{
+	char *ret = (char *)str + strlen(str) - 1;
+
+	while (*ret != (char)c) {
+		if (ret-- == str)
+			return NULL;
+	}
+
+	return ret;
+}
+
 size_t strspn(const char *str1, const char *str2)
 {
 	size_t ret = 0;
