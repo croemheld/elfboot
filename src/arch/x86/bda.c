@@ -14,7 +14,7 @@ uint32_t bios_get_ebda_addr(void)
 	uint32_t bseg, ebda;
 
 	bseg = bios_get_bda()->ebda_segment;
-	ebda = segment_offset_addr(bseg, 0);
+	ebda = segment_offset_val(bseg, 0);
 
 	if (ebda < EBDA_LOWMEM_START || ebda > EBDA_LOWMEM_LIMIT)
 		return -1;

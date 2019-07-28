@@ -35,44 +35,45 @@
  * Conversions
  */
 
-static inline void *uinttvptr(uint32_t val)
-{
-	return (void *)val;
-}
+/*
+ * uinttvptr:
+ *
+ * Cast a 32-bit unsigned value to a pointer.
+ */
+#define uinttvptr(val)						\
+	((void *)val)
 
-static inline uint32_t vptrtuint(void *ptr)
-{
-	return (uint32_t)ptr;
-}
+/*
+ * vptrtuint:
+ *
+ * Cast a pointer to a 32-bit unsigned value.
+ */
+#define vptrtuint(ptr)						\
+	((uint32_t)ptr)
 
-static inline void *vptradd(void *ptr, uint32_t offset)
-{
-	return ptr + offset;
-}
+/*
+ * vptradd:
+ *
+ * Get a pointer to address ptr + offset, ignoring 
+ * the type of the object residing at address ptr.
+ */
+#define vptradd(ptr, offset)					\
+	uinttvptr(vptrtuint(ptr) + offset)
 
-static inline uint32_t segment_offset_addr(uint16_t segment, uint16_t offset)
-{
-	return (segment << 4) + offset;
-}
+/*
+ * segment_offset_val:
+ *
+ * Get the address of a real mode segment-offset address.
+ */
+#define segment_offset_val(seg, off)				\
+	((seg << 4) + (off))
 
-static inline void *segment_offset_ptr(uint32_t ptr)
-{
-	return uinttvptr(segment_offset_addr(ptr >> 16, ptr & 0xffff));
-}
-
-static inline uint8_t u8val(void *ptr)
-{
-	return *((uint8_t *)ptr);
-}
-
-static inline uint16_t u16val(void *ptr)
-{
-	return *((uint16_t *)ptr);
-}
-
-static inline uint32_t u32val(void *ptr)
-{
-	return *((uint32_t *)ptr);
-}
+/*
+ * segment_offset_ptr:
+ *
+ * Get a pointer to a real mode segment-offset address.
+ */
+#define segment_offset_ptr(ptr)					\
+	uinttvptr(segment_offset_val(ptr >> 16, ptr & 0xffff))
 
 #endif /* __UAPI_COMMON_H__ */
