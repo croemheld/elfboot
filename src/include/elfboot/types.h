@@ -37,36 +37,68 @@ static inline uint64_t swap_bytes64(uint64_t val)
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
-#define cputole16(x)                              ((uint16_t)(x))
-#define cputole32(x)                              ((uint32_t)(x))
-#define cputole64(x)                              ((uint64_t)(x))
-#define letocpu16(x)                              ((uint16_t)(x))
-#define letocpu32(x)                              ((uint32_t)(x))
-#define letocpu64(x)                              ((uint64_t)(x))
+#define cputole16(x)		((uint16_t)(x))
+#define cputole32(x)		((uint32_t)(x))
+#define cputole64(x)		((uint64_t)(x))
+#define letocpu16(x)		((uint16_t)(x))
+#define letocpu32(x)		((uint32_t)(x))
+#define letocpu64(x)		((uint64_t)(x))
 
-#define cputobe16(x)                              swap_bytes16(x)
-#define cputobe32(x)                              swap_bytes32(x)
-#define cputobe64(x)                              swap_bytes64(x)
-#define betocpu16(x)                              swap_bytes16(x)
-#define betocpu32(x)                              swap_bytes32(x)
-#define betocpu64(x)                              swap_bytes64(x)
+#define cputobe16(x)		swap_bytes16(x)
+#define cputobe32(x)		swap_bytes32(x)
+#define cputobe64(x)		swap_bytes64(x)
+#define betocpu16(x)		swap_bytes16(x)
+#define betocpu32(x)		swap_bytes32(x)
+#define betocpu64(x)		swap_bytes64(x)
 
 #else /* __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__*/
 
-#define cputole16(x)                              swap_bytes16(x)
-#define cputole32(x)                              swap_bytes32(x)
-#define cputole64(x)                              swap_bytes64(x)
-#define letocpu16(x)                              swap_bytes16(x)
-#define letocpu32(x)                              swap_bytes32(x)
-#define letocpu64(x)                              swap_bytes64(x)
+#define cputole16(x)		swap_bytes16(x)
+#define cputole32(x)		swap_bytes32(x)
+#define cputole64(x)		swap_bytes64(x)
+#define letocpu16(x)		swap_bytes16(x)
+#define letocpu32(x)		swap_bytes32(x)
+#define letocpu64(x)		swap_bytes64(x)
 
-#define cputobe16(x)                              ((uint16_t)(x))
-#define cputobe32(x)                              ((uint32_t)(x))
-#define cputobe64(x)                              ((uint64_t)(x))
-#define betocpu16(x)                              ((uint16_t)(x))
-#define betocpu32(x)                              ((uint32_t)(x))
-#define betocpu64(x)                              ((uint64_t)(x))
+#define cputobe16(x)		((uint16_t)(x))
+#define cputobe32(x)		((uint32_t)(x))
+#define cputobe64(x)		((uint64_t)(x))
+#define betocpu16(x)		((uint16_t)(x))
+#define betocpu32(x)		((uint32_t)(x))
+#define betocpu64(x)		((uint64_t)(x))
 
 #endif /* __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ */
+
+static inline uint16_t get_le16(void *p)
+{
+	return letocpu16(*(uint16_t *)p);
+}
+
+static inline uint32_t get_le32(void *p)
+{
+	return letocpu32(*(uint32_t *)p);
+}
+
+static inline uint64_t get_le64(void *p)
+{
+	return letocpu64(*(uint64_t *)p);
+}
+
+
+static inline uint16_t get_be16(void *p)
+{
+	return betocpu16(*(uint16_t *)p);
+}
+
+static inline uint32_t get_be32(void *p)
+{
+	return betocpu32(*(uint32_t *)p);
+}
+
+static inline uint64_t get_be64(void *p)
+{
+	return betocpu64(*(uint64_t *)p);
+}
+
 
 #endif /* __TYPES_H__ */
