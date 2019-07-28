@@ -37,7 +37,7 @@ static int scsi_request_sense(struct device *device)
 		return -EFAULT;
 
 	rs.cmd = SCSI_CMD_REQUEST_SENSE;
-	rs.lun = device->params.lun << SCSI_LUN_SHIFT;
+	rs.lun = device->io->lun << SCSI_LUN_SHIFT;
 	rs._reserved1 = 0;
 	rs._reserved2 = 0;
 	rs.len = 0x12;
@@ -70,7 +70,7 @@ static int scsi_inquiry(struct device *device)
 		return -EFAULT;
 
 	iq.cmd = SCSI_CMD_INQUIRY;
-	iq.lun = device->params.lun << SCSI_LUN_SHIFT;
+	iq.lun = device->io->lun << SCSI_LUN_SHIFT;
 	iq.page = 0;
 	iq._reserved = 0;
 	iq.len = 0x24;
@@ -113,7 +113,7 @@ static int scsi_read_capacity10(struct device *device)
 		return -EFAULT;
 
 	rc.cmd = SCSI_CMD_READ_CAPACITY10;
-	rc.lun = device->params.lun << SCSI_LUN_SHIFT;
+	rc.lun = device->io->lun << SCSI_LUN_SHIFT;
 	rc.lba = 0;
 	rc._reserved1 = 0;
 	rc._reserved2 = 0;
@@ -153,7 +153,7 @@ static int scsi_read_capacity16(struct device *device)
 		return -EFAULT;
 
 	rc.cmd = SCSI_CMD_READ_CAPACITY16;
-	rc.lun = (device->params.lun << SCSI_LUN_SHIFT) | 0x10;
+	rc.lun = (device->io->lun << SCSI_LUN_SHIFT) | 0x10;
 	rc.lba = 0;
 	rc.len = sizeof(rcd);
 	rc.pmi = 0;
@@ -191,7 +191,7 @@ static int scsi_read10(struct device *device, uint64_t sector, uint32_t size,
 		return -EFAULT;
 
 	rd.cmd = SCSI_CMD_READ10;
-	rd.lun = device->params.lun << SCSI_LUN_SHIFT;
+	rd.lun = device->io->lun << SCSI_LUN_SHIFT;
 	rd.lba = cputobe32(sector);
 	rd._reserved1 = 0;
 	rd.size = cputobe16(size);
@@ -227,7 +227,7 @@ static int scsi_read12(struct device *device, uint64_t sector, uint32_t size,
 		return -EFAULT;
 
 	rd.cmd = SCSI_CMD_READ12;
-	rd.lun = device->params.lun << SCSI_LUN_SHIFT;
+	rd.lun = device->io->lun << SCSI_LUN_SHIFT;
 	rd.lba = cputobe32(sector);
 	rd.size = cputobe32(size);
 	rd._reserved = 0;
@@ -262,7 +262,7 @@ static int scsi_read16(struct device *device, uint64_t sector, uint32_t size,
 		return -EFAULT;
 
 	rd.cmd = SCSI_CMD_READ16;
-	rd.lun = device->params.lun << SCSI_LUN_SHIFT;
+	rd.lun = device->io->lun << SCSI_LUN_SHIFT;
 	rd.lba = cputobe64(sector);
 	rd.size = cputobe32(size);
 	rd._reserved = 0;
@@ -363,7 +363,6 @@ static int scsi_close(struct device *device __unused)
 }
 
 static struct device_driver scsi_device_driver = {
-	.type = DEVICE_SCSI,
 	.probe = scsi_probe,
 	.open = scsi_open,
 	.read = scsi_read,

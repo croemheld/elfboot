@@ -34,4 +34,9 @@
 
 #define __aligned(x)			__attribute__((aligned(x)))
 
+/*
+ * Inline
+ */
+#define __always_inline			inline __attribute__((always_inline))
+
 #endif /* __ELFBOOT_LINKAGE_H__ */

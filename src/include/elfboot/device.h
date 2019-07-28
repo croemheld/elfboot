@@ -2,47 +2,14 @@
 #define __ELFBOOT_DEVICE_H__
 
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 #include <elfboot/list.h>
 
 #include <uapi/elfboot/const.h>
 
-enum device_flags {
-	DEVICE_FLAGS_VIRTUAL,		/* Not a physical device */
-	DEVICE_FLAGS_SLAVE,		/* 0 = master, 1 = slave */
-	DEVICE_FLAGS_LBA,		/* 0 = only CHS, 1 = LBA */
-	DEVICE_FLAGS_CHS_VALID,		/* CHS values are usable */
-	DEVICE_FLAGS_IO_ADDRESS,	/* Device has IO address */
-	DEVICE_FLAGS_LUN,		/* Device associated LUN */
-};
-
-/*
- * Structure prototype for device
- */
-
 struct device;
 
-struct device_params {
-	uint16_t flags;
-
-	/* LUN */
-	uint64_t lun;
-
-	/* CHS values */
-	uint32_t num_cylinders;
-	uint32_t num_heads;
-	uint32_t num_sectors;
-	uint32_t total_sectors;
-
-	/* Sector size */
-	uint32_t sector_size;
-
-	/* IO address */
-	uint16_t io_base;
-	uint16_t control;
-};
-
 struct device_driver {
-	int type;
 	int (*probe)(struct device *);
 	int (*open)(struct device *, const char *);
 	int (*read)(struct device *, uint64_t, uint64_t, char *);
@@ -58,46 +25,124 @@ struct device_driver {
 	void *driver_data;
 };
 
+struct device_io {
+	uint32_t flags;
+
+#define DEVICE_IO_FLAG_SLAVE		0x00000001
+#define DEVICE_IO_FLAG_LUN		0x00000002
+#define DEVICE_IO_FLAG_CHS		0x00000008
+#define DEVICE_IO_FLAG_LBA		0x00000010
+
+	/*
+	 * Device communication relevant data
+	 */
+
+	uint16_t io_base;
+	uint16_t control;
+	uint64_t lun;
+
+	/*
+	 * Members describing the volume of the
+	 * corresponding device.
+	 *
+	 * Wdefine members for both the CHS and
+	 * the LBA addressing modes.
+	 */
+	
+	uint32_t num_cylinders;
+	uint32_t num_heads;
+	uint32_t num_sectors;
+	uint32_t total_sectors;
+
+	uint32_t block_size;
+	uint32_t last_block;
+};
+
 struct device {
 	const char *name;
 	int type;
 
 #define DEVICE_BAD			0
+#define DEVICE_BLOCK			1
+#define DEVICE_CHAR			2
 
-#define DEVICE_ATA			1
-#define DEVICE_ATAPI			2
-#define DEVICE_SCSI			3
+	/*
+	 * Device flags are described by the
+	 * device_flags enumerations.
+	 */
 
-#define DEVICE_TTY			4
+	uint32_t flags;
 
-#define DEVICE_RANDOM			5
+#define DEVICE_FLAG_VIRTUAL		0x00000001
 
 	int refcount;
-	struct list_head list;
-	struct device_params params;
+
+	/*
+	 * If this device is an actual physical
+	 * device, we store the I/O ports used
+	 * to communicate with the device here.
+	 *
+	 * For additional data belonging to this
+	 * device, we provide a pointer to an
+	 * arbitrary structure which is handled
+	 * by the device driver.
+	 */
+	
+	struct device_io *io;
+	void *device_data;
+
+	/*
+	 * Device driver. Can be nested, i.e.
+	 * consisting another driver behind.
+	 */
+	
 	struct device_driver *driver;
 
 	/*
-	 * The following fields are filled
-	 * with device specific information
+	 * The devices superblock. It cointains
+	 * information about size and capacity of
+	 * the devices block. Usually used by the
+	 * filesystem drivers.
 	 */
 	
-	void *device_data;
+	struct superblock *sb;
+
+	struct list_head list;
 };
 
-static inline int device_is_type(struct device *device, int type)
+static __always_inline bool device_io_has(struct device *device, uint32_t flag)
+{
+	return (device->io->flags & flag) != 0;
+}
+
+static __always_inline void device_io_set(struct device *device, uint32_t flag)
+{
+	device->io->flags |= flag;
+}
+
+static __always_inline bool device_is_type(struct device *device, int type)
 {
 	return device->type == type;
 }
 
-static inline int device_has_flag(struct device *device, int flag)
+static __always_inline bool device_has(struct device *device, uint32_t flag)
 {
-	return (device->params.flags & _BITUL(flag)) != 0;
+	return (device->flags & flag) != 0;
 }
 
-static inline int device_set_flag(struct device *device, int flag)
+static __always_inline void device_set(struct device *device, uint32_t flag)
 {
-	return device->params.flags |= _BITUL(flag);
+	device->flags |= flag;
+}
+
+/*
+ * This only works for physical devices since it accesses
+ * the struct device_io member in the device structure.
+ */
+
+static __always_inline uint64_t device_capacity(struct device *device)
+{
+	return device->io->block_size * device->io->last_block;
 }
 
 int device_probe(struct device *device);

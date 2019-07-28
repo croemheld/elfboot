@@ -32,7 +32,6 @@ static int random_close(struct device *device __unused)
 }
 
 struct device_driver random_device_driver = {
-	.type = DEVICE_RANDOM,
 	.probe = random_probe,
 	.open = random_open,
 	.read = random_read,

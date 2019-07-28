@@ -22,12 +22,12 @@ static void initcommand(struct ata_command *command)
 
 static inline void ata_set_reg(struct device *device, int reg, int val)
 {
-	outb(device->params.io_base + reg, val);
+	outb(device->io->io_base + reg, val);
 }
 
 static inline uint8_t ata_get_reg(struct device *device, int reg)
 {
-	return inb(device->params.io_base + reg);
+	return inb(device->io->io_base + reg);
 }
 
 static void ata_pio_read(struct device *device, uint16_t *buf, uint64_t size)
@@ -35,7 +35,7 @@ static void ata_pio_read(struct device *device, uint16_t *buf, uint64_t size)
 	uint64_t i;
 
 	for (i = 0; i < (size / 2); i++)
-		*(buf + i) = inw(device->params.io_base + ATA_REG_DATA);
+		*(buf + i) = inw(device->io->io_base + ATA_REG_DATA);
 }
 
 static void ata_pio_write(struct device *device, uint16_t *buf, uint64_t size)
@@ -43,7 +43,7 @@ static void ata_pio_write(struct device *device, uint16_t *buf, uint64_t size)
 	uint64_t i;
 
 	for (i = 0; i < (size / 2); i++)
-		outw(device->params.io_base + ATA_REG_DATA, *(buf + i));
+		outw(device->io->io_base + ATA_REG_DATA, *(buf + i));
 }
 
 static void ata_io_wait(struct device *device)
@@ -63,7 +63,7 @@ static int ata_status_wait(struct device *device, int timeout)
 	uint16_t port;
 	int status, i;
 
-	port = device->params.io_base + ATA_REG_STATUS;
+	port = device->io->io_base + ATA_REG_STATUS;
 
 	if (timeout > 0) {
 		i = 0;
@@ -107,7 +107,7 @@ static int ata_handle(struct device *device, struct ata_command *atacmd)
 	uint32_t cnt, nread = 0;
 
 	/* Determine the selected device */
-	slave = device_has_flag(device, DEVICE_FLAGS_SLAVE);
+	slave = device_io_has(device, DEVICE_IO_FLAG_SLAVE);
 	hdsel = (atacmd->regs.disk & 0xef) | (slave << 4);
 
 	ata_set_reg(device, ATA_REG_HDDEVSEL, hdsel);
@@ -332,7 +332,6 @@ static int atapi_close(struct device *device __unused)
 }
 
 static struct device_driver ata_device_driver = {
-	.type = DEVICE_ATA,
 	.probe = ata_probe,
 	.open = ata_open,
 	.read = ata_read,
@@ -342,7 +341,6 @@ static struct device_driver ata_device_driver = {
 };
 
 static struct scsi_driver atapi_device_driver = {
-	.type = DEVICE_ATAPI,
 	.probe = atapi_probe,
 	.open = atapi_open,
 	.read = atapi_read,
