@@ -169,6 +169,10 @@ static struct page *merge_pages(struct page *page, struct page *buddy)
 	buddy->order++;
 	buddy->flags |= PAGE_FLAG_FREE;
 
+	/*
+	 * TODO CRO: After merging, the compound head changes!
+	 */
+
 	return page->paddr < buddy->paddr ? buddy : page;
 }
 

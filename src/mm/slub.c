@@ -5,10 +5,7 @@
 #include <elfboot/math.h>
 #include <elfboot/list.h>
 
-/* -------------------------------------------------------------------------- */
-
 static struct bmem_info bmalloc_info[] = {
-	{NULL, 			0x00000000},
 	{"bmalloc-8", 		0x00000008},
 	{"bmalloc-16", 		0x00000010},
 	{"bmalloc-32", 		0x00000020},
@@ -24,20 +21,37 @@ static struct bmem_info bmalloc_info[] = {
 	{"bmalloc-32768", 	0x00008000},
 };
 
-static void bmem_cache_ctor(void *cacheo);
+static void bmem_cache_init(void *objp)
+{
+	struct bmem_cache *cachep = objp;
+
+	/*
+	 * Use this constructor to initialize all caches we
+	 * need to set up all bmalloc caches for our system.
+	 */
+
+	cachep->free_objs   = 0;
+	cachep->free_slabs  = 0;
+	cachep->total_slabs = 0;
+	list_init(&cachep->slabs_free);
+	list_init(&cachep->slabs_partial);
+	list_init(&cachep->slabs_full);
+	cachep->ctor = NULL;
+	cachep->dtor = NULL;
+}
 
 /*
  * The cache for creating all other caches
  */
 static struct bmem_cache bmem_cache = {
 	.name = "bmem_cache",
-	.ctor = bmem_cache_ctor,
+	.ctor = bmem_cache_init,
 };
 
 /*
  * The actual caches for bmalloc()
  */
-static struct bmem_cache bmalloc_caches[KMALLOC_CACHE_NUM];
+static struct bmem_cache *bmalloc_caches[KMALLOC_CACHE_NUM];
 
 static inline int bmalloc_index(uint32_t size)
 {
@@ -50,7 +64,7 @@ static inline int bmalloc_index(uint32_t size)
 		return KMALLOC_MIN_SHIFT;
 
 	if (size > KMALLOC_MIN_SIZE && size <= (1UL << 15))
-		return log2(size) - 2;
+		return log2(size) - 3;
 
 	return -1;
 }
@@ -62,7 +76,7 @@ static struct bmem_cache *bmalloc_cache(uint32_t size)
 	if (index < 0)
 		return NULL;
 
-	return &bmalloc_caches[index];
+	return bmalloc_caches[index];
 }
 
 static inline uint32_t calculate_cache_order(uint32_t size)
@@ -121,10 +135,10 @@ static void bmem_cache_fixup(struct bmem_cache *cachep, struct page *page)
 static void bmem_cache_setup(struct bmem_cache *cachep, struct page *page)
 {
 	struct list_head *objp;
-	uint32_t obj_num;
+	uint32_t objc;
 
-	for (obj_num = 0; obj_num < cachep->nums; obj_num++) {
-		objp = uinttvptr(page->paddr + cachep->size * obj_num);
+	for (objc = 0; objc < cachep->nums; objc++) {
+		objp = uinttvptr(page->paddr + cachep->size * objc);
 
 		/* Initialize header */
 		list_init(objp);
@@ -283,29 +297,41 @@ bmem_cache_alloc_free:
  * Initialization
  */
 
-static void bmem_cache_ctor(void *cacheo)
+static struct bmem_cache *bmalloc_create_cache(int cache_num)
 {
-	struct bmem_cache *cachep = cacheo;
+	struct bmem_cache *cachep = bmem_cache_alloc(&bmem_cache);
 
-	cachep->free_objs   = 0;
-	cachep->free_slabs  = 0;
-	cachep->total_slabs = 0;
-	list_init(&cachep->slabs_free);
-	list_init(&cachep->slabs_partial);
-	list_init(&cachep->slabs_full);
-	cachep->ctor = NULL;
-	cachep->dtor = NULL;
-}
+	if (!cachep)
+		return NULL;
 
-static void bmalloc_cache_create(struct bmem_cache *cachep, const char *name,
-				uint32_t size)
-{
-	cachep->name  = name;
-	cachep->size  = round_up_pow2(size);
+	cachep->name  = bmalloc_info[cache_num].name;
+	cachep->size  = bmalloc_info[cache_num].size;
 	cachep->nums  = PAGE_SIZE / cachep->size;
 	cachep->order = calculate_cache_order(cachep->size);
 
-	bmem_cache_ctor(cachep);
+	return cachep;
+}
+
+static int bmalloc_create_all_caches(void)
+{
+	int cache_num;
+
+	for (cache_num = 0; cache_num < KMALLOC_CACHE_NUM; cache_num++) {
+
+		/*
+		 * Allocate cache for all object sizes defined in the
+		 * bmalloc_info structure array. If even one cache is
+		 * failing during the setup, we cannot allocate memory
+		 * for smaller objects at all.
+		 */
+
+		bmalloc_caches[cache_num] = bmalloc_create_cache(cache_num);
+
+		if (!bmalloc_caches[cache_num])
+			return -EFAULT;
+	}
+
+	return 0;
 }
 
 static void bmalloc_create_boot_cache(void)
@@ -313,22 +339,31 @@ static void bmalloc_create_boot_cache(void)
 	bmem_cache.size  = round_up_pow2(sizeof(struct bmem_cache));
 	bmem_cache.nums  = PAGE_SIZE / bmem_cache.size;
 	bmem_cache.order = calculate_cache_order(bmem_cache.size);
-
-	bmem_cache_ctor(&bmem_cache);
+	bmem_cache.free_objs   = 0;
+	bmem_cache.free_slabs  = 0;
+	bmem_cache.total_slabs = 0;
+	list_init(&bmem_cache.slabs_free);
+	list_init(&bmem_cache.slabs_partial);
+	list_init(&bmem_cache.slabs_full);
 }
 
 int bmalloc_init(void)
 {
-	struct bmem_info *info;
-	int i;
-
+	/* 
+	 * Create boot cache for allocating the other
+	 * bmalloc caches. That way we don't need to
+	 * use an array for each bmem_cache we create.
+	 */
+	
 	bmalloc_create_boot_cache();
 
-	for (i = 0; i < KMALLOC_CACHE_NUM; i++) {
-		info = &bmalloc_info[i];
+	/*
+	 * Allocate all other caches via the initial
+	 * boot bmem_cache we set up beforehand.
+	 */
 
-		bmalloc_cache_create(&bmalloc_caches[i], info->name, info->size);
-	}
+	if (bmalloc_create_all_caches())
+		return -EFAULT;
 
 	return 0;
 }

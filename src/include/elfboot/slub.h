@@ -10,9 +10,9 @@ struct bmem_info {
 	uint32_t size;
 };
 
-#define KMALLOC_CACHE_NUM	14
+#define KMALLOC_CACHE_NUM	13
 
-#define KMALLOC_MIN_SHIFT	 3
+#define KMALLOC_MIN_SHIFT	 2
 #define KMALLOC_MIN_SIZE	32
 
 /*
