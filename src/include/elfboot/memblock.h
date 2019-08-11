@@ -1,12 +1,18 @@
 #ifndef __ELFBOOT_MEMBLOCK_H__
 #define __ELFBOOT_MEMBLOCK_H__
 
+#include <elfboot/mm.h>
+
 #define MEMBLOCK_MAX_REGIONS		32
+
+#define MEMBLOCK_LIMIT			MEMORY_LIMIT
 
 struct memblock_region {
 	uint32_t base;
 	uint32_t size;
 };
+
+#define memblock_end(region)		((region)->base + (region)->size)
 
 struct memblock_type {
 	uint32_t cnt;
@@ -34,5 +40,7 @@ void memblock_dump(void);
 int memblock_add(uint32_t base, uint32_t size);
 
 int memblock_reserve(uint32_t base, uint32_t size);
+
+void *memblock_alloc(uint32_t size, uint32_t align);
 
 #endif /* __ELFBOOT_MEMBLOCK_H__ */

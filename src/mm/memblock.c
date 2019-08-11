@@ -1,7 +1,14 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/sections.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
+
+/*
+ * TODO CRO: Provide allocations on page granularity
+ * and make SLOB allocator and memblock allocator run
+ * simultaneously (memblock allocation on demand)
+ */
 
 static struct memblock_region memory[MEMBLOCK_MAX_REGIONS];
 
@@ -51,7 +58,7 @@ static void memblock_adjust_range(uint32_t *base, uint32_t *size)
 	 * public functions need to be trimmed down or rounded up.
 	 */
 
-	nbase = PAGE_ADDRESS(*base);
+	nbase = round_down(*base, PAGE_SIZE);
 	limit = round_up(*base + *size, PAGE_SIZE);
 
 	*base = nbase;
@@ -228,4 +235,55 @@ int memblock_add(uint32_t base, uint32_t size)
 int memblock_reserve(uint32_t base, uint32_t size)
 {
 	return memblock_remove_range(&memblock.memory, base, size);
+}
+
+static uint32_t memblock_find_in_range(uint32_t size, uint32_t align,
+				       uint32_t start, uint32_t end)
+{
+	uint32_t rbase, rend, cand;
+	struct memblock_region *region;
+	uint32_t i;
+
+	for_each_free_memblock(i, region) {
+		rbase = clamp(region->base, start, end);
+		rend  = clamp(memblock_end(region), start, end);
+
+		cand = round_up(rbase, align);
+		if (cand < rend && rend - cand >= size)
+			return cand;
+	}
+
+	return 0;
+}
+
+static uint32_t memblock_alloc_range(uint32_t size, uint32_t align,
+				     uint32_t start, uint32_t end)
+{
+	uint32_t base = memblock_find_in_range(size, align, start, end);
+
+	if (base && !memblock_reserve(base, size))
+		return base;
+
+	return 0;
+}
+
+static void *memblock_alloc_internal(uint32_t size, uint32_t align,
+				     uint32_t start, uint32_t end)
+{
+	uint32_t base = memblock_alloc_range(size, align, start, end);
+
+	if (!base)
+		return NULL;
+
+	return uinttvptr(base);
+}
+
+void *memblock_alloc(uint32_t size, uint32_t align)
+{
+	/*
+	 * We only support allocations below the 1MB mark since we
+	 * want to load kernels starting at addresses > 1MB.
+	 */
+	
+	return memblock_alloc_internal(size, align, BOOT_END, MEMBLOCK_LIMIT);
 }
