@@ -56,6 +56,8 @@ size_t strnlen(const char *str, size_t maxlen);
 
 size_t strlen(const char *str);
 
+char *strcpy(char *dst, const char *str);
+
 char *strstr(const char *str1, const char *str2);
 
 char *strchr(const char *str, int c);

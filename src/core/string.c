@@ -317,6 +317,11 @@ size_t strlen(const char *str)
 	return sc - str;
 }
 
+char *strcpy(char *dst, const char *str)
+{
+	return memcpy(dst, str, strlen(str));
+}
+
 char *strstr(const char *str1, const char *str2)
 {
 	size_t len1, len2;

@@ -107,7 +107,7 @@ static int ata_handle(struct device *device, struct ata_command *atacmd)
 	uint32_t cnt, nread = 0;
 
 	/* Determine the selected device */
-	slave = device_io_has(device, DEVICE_IO_FLAG_SLAVE);
+	slave = device_has(device, DEVICE_FLAG_SLAVE);
 	hdsel = (atacmd->regs.disk & 0xef) | (slave << 4);
 
 	ata_set_reg(device, ATA_REG_HDDEVSEL, hdsel);

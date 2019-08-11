@@ -2,6 +2,7 @@
 #include <elfboot/mm.h>
 #include <elfboot/device.h>
 #include <elfboot/string.h>
+#include <elfboot/printf.h>
 #include <elfboot/tree.h>
 #include <elfboot/list.h>
 
@@ -45,6 +46,11 @@ int device_read(struct device *device, uint64_t sector,
 	return -ENOTSUP;
 }
 
+int device_read_sector(struct device *device, uint64_t sector, char *buffer)
+{
+	return device_read(device, sector, 1, buffer);
+}
+
 int device_write(struct device *device, uint64_t sector, 
 	uint64_t size, const char *buffer)
 {
@@ -52,6 +58,12 @@ int device_write(struct device *device, uint64_t sector,
 		return device->driver->write(device, sector, size, buffer);
 
 	return -ENOTSUP;
+}
+
+int device_write_sector(struct device *device, uint64_t sector,
+			const char *buffer)
+{
+	return device_write(device, sector, 1, buffer);
 }
 
 int device_close(struct device *device)
@@ -80,11 +92,11 @@ int device_lookup_driver(struct device *device)
 
 int device_mount(struct device *device, const char *name)
 {
-	if (device_lookup_driver(device))
-		return -EFAULT;
-
 	device->name = bstrdup(name);
 	if (!device->name)
+		return -EFAULT;
+
+	if (device_lookup_driver(device))
 		return -EFAULT;
 
 	list_add(&device->list, &devices);
@@ -97,7 +109,7 @@ int device_umount(struct device *device)
 	if (device->refcount)
 		return -EINVAL;
 
-	bfree(device->name);
+	bfree_const(device->name);
 	device->type = 0;
 	device->refcount = 0;
 	device->driver = NULL;

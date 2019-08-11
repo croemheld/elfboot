@@ -107,11 +107,22 @@ static int edd_device_setup(struct device *device, struct edd_device_info *edi)
 	struct edd_disk_drive_params *ddp;
 	const char *interface_type = edi->params.interface_type;
 
+	/*
+	 * Physical devices require I/O ports and controls
+	 * in order to communicate with the bootloader.
+	 */
+
 	device->io = bmalloc(sizeof(*device->io));
 	if (!device->io)
 		return -EFAULT;
+	
+	/* Devices created here are always block devices */
+	device->type = DEVICE_BLOCK;
 
+	/* Basic parameters for IO */
 	ddp = segment_offset_ptr(edi->params.dpte_ptr);
+	device->io->io_base = ddp->io_base;
+	device->io->control = ddp->control;
 
 	/*
 	 * All devices created by edd_device_create() are actual
@@ -123,39 +134,32 @@ static int edd_device_setup(struct device *device, struct edd_device_info *edi)
 	 * flag is cleared. Also, since we are using the BIOS EDD
 	 * extensions, we know tha the device is a block device.
 	 */
-	
-	/* Devices created here are always block devices */
-	device->type = DEVICE_BLOCK;
-
-	/* Basic parameters for IO */
-	device->io->io_base = ddp->io_base;
-	device->io->control = ddp->control;
 
 	/* Determine device type via interface */
 	if (!edd_device_is_type(interface_type, EDD_DEVICE_INTERFACE_ATAPI)) {
-		device_io_set(device, DEVICE_IO_FLAG_LUN);
-		device->io->lun = edi->params.device_path.atapi.lun;
+		device_set(device, DEVICE_FLAG_LUN);
+		device->info.lun = edi->params.device_path.atapi.lun;
 	}
 
 	/* Device is slave */
 	if (ddp->flags & EDD_DISK_DRIVE_PARAM_SLAVE)
-		device_io_set(device, DEVICE_IO_FLAG_SLAVE);
+		device_set(device, DEVICE_FLAG_SLAVE);
 
 	/* Device uses LBA addressing */
 	if (ddp->flags & EDD_DISK_DRIVE_PARAM_LBA)
-		device_io_set(device, DEVICE_IO_FLAG_LBA);
+		device_set(device, DEVICE_FLAG_LBA);
 
 	/* Device has valid CHS information */
 	if (edi->params.info_flags & EDD_DEVICE_PARAM_CHS_VALID) {
-		device_io_set(device, DEVICE_IO_FLAG_CHS);
-		device->io->num_cylinders = edi->params.num_cylinders;
-		device->io->num_heads = edi->params.num_heads;
-		device->io->num_sectors = edi->params.num_sectors;
-		device->io->total_sectors = edi->params.total_sectors;
+		device_set(device, DEVICE_FLAG_CHS);
+		device->info.cylinders = edi->params.num_cylinders;
+		device->info.heads = edi->params.num_heads;
+		device->info.sectors = edi->params.num_sectors;
+		device->info.total_sectors = edi->params.total_sectors;
 	}
 
 	/* Sector size is always valid */
-	device->io->block_size = edi->params.bytes_per_sector;
+	device->info.block_size = edi->params.bytes_per_sector;
 
 	return 0;
 }
