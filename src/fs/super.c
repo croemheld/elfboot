@@ -1,26 +1,40 @@
 #include <elfboot/core.h>
+#include <elfboot/mm.h>
 #include <elfboot/super.h>
 
-int superblock_probe(struct fs *fs, struct device *device)
+int superblock_alloc(struct device *device, struct fs *fs)
 {
-	if (!sb->s_ops && !sb->s_ops->probe(device))
-		return sb->s_ops->probe(device);
+	device->sb = bmalloc(sizeof(*(device->sb)));
+	if (!device->sb)
+		return -ENOMEM;
+
+	/* Set references */
+	device->sb->device = device;
+	device->sb->s_ops  = fs->s_ops;
+
+	return 0;
+}
+
+int superblock_probe(struct device *device, struct fs *fs)
+{
+	if (fs->s_ops->probe)
+		return fs->s_ops->probe(device, fs);
 
 	return -ENOTSUP;
 }
 
 int superblock_open(struct superblock *sb)
 {
-	if (!sb->ops && !sb->ops->open(sb))
-		return sb->ops->open(sb);
+	if (sb->s_ops->open)
+		return sb->s_ops->open(sb);
 
 	return -ENOTSUP;
 }
 
 int superblock_close(struct superblock *sb)
 {
-	if (!sb->ops && !sb->ops->close(sb))
-		return sb->ops->close(sb);
+	if (sb->s_ops->close)
+		return sb->s_ops->close(sb);
 
 	return -ENOTSUP;
 }

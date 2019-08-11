@@ -1,41 +1,77 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 #include <elfboot/mm.h>
-#include <elfboot/vfs.h>
+#include <elfboot/fs.h>
+#include <elfboot/super.h>
 #include <elfboot/device.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
-static int isofs_superblock_probe(struct device *device)
+#include <fs/isofs.h>
+
+static int isofs_superblock_probe(struct device *device, struct fs *fs)
+{
+	struct iso_primary_descriptor *pvd;
+	struct iso_directory_record *rootp;
+	struct fs_node *node;
+
+	pvd = bmalloc(device->info.block_size);
+	if (!pvd)
+		return -ENOMEM;
+
+	/* Read the primary volume descriptor into the buffer */
+	if (device_read_sector(device, ISOFS_PRIMARY_SECTOR, (char *)pvd))
+		goto sb_probe_free_pvd;
+
+	/* is this indeed an ISO 9660 formatted device? */
+	if (strncmp(pvd->id, ISOFS_PRIMARY_VOLUME_ID, 5))
+		goto sb_probe_free_pvd;
+
+	/* Initialize the superblock */
+	if (superblock_alloc(device, fs))
+		goto sb_probe_free_pvd;
+
+	node = fs_node_alloc(fs);
+	if (!node)
+		goto sb_probe_free_pvd;
+
+	rootp = isofs_root_dir(pvd);
+
+	node->sb = device->sb;
+	node->offset = isonum_733(rootp->extent);
+	node->size   = isonum_711(rootp->length);
+
+	bprintln("Device %s root directory at %llx (%lu bytes)", device->name, node->offset, node->size);
+
+	/* Set block informations */
+	device->sb->last_block = isonum_733(pvd->volume_space_size);
+	device->sb->block_size = isonum_723(pvd->logical_block_size);
+
+	/* Insert root node */
+	device->sb->root = node;
+
+	return 0;
+
+sb_probe_free_pvd:
+	bfree(pvd);
+
+	return -EFAULT;
+}
+
+static int isofs_superblock_open(struct superblock *sb __unused)
 {
 	return -ENOTSUP;
 }
 
-static int isofs_superblock_open(struct fs_superblock *sb __unused)
+static int isofs_superblock_close(struct superblock *sb __unused)
 {
 	return -ENOTSUP;
-}
-
-static int isofs_superblock_close(struct fs_superblock *sb __unused)
-{
-	return -ENOTSUP;
-}
-
-static struct fs_node *isofs_superblock_alloc_node(struct fs_superblock *sb __unused)
-{
-	return NULL;
-}
-
-static void isofs_superblock_free_node(struct fs_node *node __unused)
-{
-	
 }
 
 static struct superblock_ops isofs_superblock_ops = {
 	.probe = isofs_superblock_probe,
 	.open = isofs_superblock_open,
 	.close = isofs_superblock_close,
-	.alloc_node = isofs_superblock_alloc_node,
 };
 
 static int isofs_open(struct fs_node *node __unused)
@@ -83,12 +119,12 @@ static struct fs_ops isofs_ops = {
 
 static struct fs isofs_fs = {
 	.name = "isofs",
-	.nops = &isofs_ops,
-	.sops = &isofs_superblock_ops,
+	.n_ops = &isofs_ops,
+	.s_ops = &isofs_superblock_ops,
 	.list = LIST_HEAD_INIT(isofs_fs.list),
-}
+};
 
 void isofs_fs_init(void)
 {
-	vfs_register_fs(&isofs_fs);
+	fs_register(&isofs_fs);
 }

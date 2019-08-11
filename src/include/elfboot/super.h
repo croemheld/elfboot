@@ -3,13 +3,13 @@
 
 #include <elfboot/core.h>
 #include <elfboot/device.h>
-#include <elfboot/vfs.h>
+#include <elfboot/fs.h>
 #include <elfboot/list.h>
 
 struct superblock;
 
 struct superblock_ops {
-	int (*probe)(struct device *);
+	int (*probe)(struct device *, struct fs *);
 	int (*open)(struct superblock *);
 	int (*close)(struct superblock *);
 };
@@ -37,10 +37,12 @@ struct superblock {
 	 */
 
 	struct fs_node *root;
-	struct superblock_ops *ops;
-}
+	struct superblock_ops *s_ops;
+};
 
-int superblock_probe(struct fs *fs, struct device *device);
+int superblock_alloc(struct device *device, struct fs *fs);
+
+int superblock_probe(struct device *device, struct fs *fs);
 
 int superblock_open(struct superblock *sb);
 

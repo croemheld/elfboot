@@ -1,6 +1,7 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
 #include <elfboot/device.h>
+#include <elfboot/fs.h>
 #include <elfboot/sections.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
@@ -68,18 +69,27 @@ int main(uint8_t disk_drive)
 	/* Dump memory map */
 	memblock_dump();
 
-	/* SLOB memory allocator */
+	/* Buddy allocation */
+	page_alloc_init();
+
+	/* SLUB memory allocator */
 	bmalloc_init();
 
 	/* Driver initialization */
 	devices_init();
+
+	/* Filesystem initialization */
+	fs_init();
 
 	/* Initialize boot device */
 	bootdev = edd_device_create(disk_drive);
 	if (!bootdev)
 		return -EFAULT;
 
-	if (device_mount(bootdev, "/dev/boot"))
+	if (device_mount(bootdev, "cdrom"))
+		return -EFAULT;
+
+	if (fs_mount(bootdev, "/dev"))
 		return -EFAULT;
 
 	bprintln("Initialized boot device");

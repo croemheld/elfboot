@@ -151,13 +151,6 @@ struct scsi_driver {
 	void *driver_data;
 };
 
-struct scsi_data {
-	uint8_t  scsi_type;
-	uint8_t  removable;
-	uint64_t last_block;
-	uint64_t block_size;
-};
-
 void scsi_driver_register(struct scsi_driver *driver);
 
 void scsi_driver_unregister(struct scsi_driver *driver);
