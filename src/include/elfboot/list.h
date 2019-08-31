@@ -13,44 +13,44 @@ struct list_head {
 };
 
 #define list_entry(ptr, type, member)					\
-    container_of(ptr, type, member)
+	container_of(ptr, type, member)
 
 #define list_first_entry(ptr, type, member)				\
-    list_entry((ptr)->next, type, member)
+	list_entry((ptr)->next, type, member)
 
 #define list_last_entry(ptr, type, member)				\
-    list_entry((ptr)->prev, type, member)
+	list_entry((ptr)->prev, type, member)
 
 #define list_next_entry(pos, member)					\
-    list_entry((pos)->member.next, typeof(*(pos)), member)
+	list_entry((pos)->member.next, typeof(*(pos)), member)
 
 #define list_for_each(pos, head)					\
-    for (pos = (head)->next; pos != (head); pos = pos->next)
+	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 #define list_for_each_safe(pos, n, head)				\
-    for (pos = (head)->next, n = pos->next;				\
-        pos != (head);							\
-        pos = n, n = pos->next)
+	for (pos = (head)->next, n = pos->next;				\
+	     pos != (head);						\
+	     pos = n, n = pos->next)
 
 #define list_for_each_entry(pos, head, member)				\
-    for (pos = list_entry((head)->next, typeof(*pos), member);		\
-        &pos->member != (head);						\
-        pos = list_entry(pos->member.next, typeof(*pos), member))
+	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+	     &pos->member != (head);					\
+	     pos = list_entry(pos->member.next, typeof(*pos), member))
 
 #define list_for_each_entry_safe(pos, n, head, member)			\
-    for (pos = list_first_entry(head, typeof(*pos), member),		\
-            n = list_next_entry(pos, member);				\
-        &pos->member != (head);						\
-        pos = n, n = list_next_entry(n, member))
+	for (pos = list_first_entry(head, typeof(*pos), member),	\
+		n = list_next_entry(pos, member);			\
+	     &pos->member != (head);					\
+	     pos = n, n = list_next_entry(n, member))
 
 #define list_for_each_prev(pos, head)					\
-    for (pos = (head)->prev; pos != (head); pos = pos->prev)
+	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
 #define list_first_entry_or_null(ptr, type, member)			\
 ({									\
-    struct list_head *head__ = (ptr);					\
-    struct list_head *pos__ = head__->next;				\
-    pos__ != head__ ? list_entry(pos__, type, member) : NULL;		\
+	struct list_head *head__ = (ptr);				\
+	struct list_head *pos__ = head__->next;				\
+	pos__ != head__ ? list_entry(pos__, type, member) : NULL;	\
 })
 
 #define LIST_HEAD_INIT(name)						\

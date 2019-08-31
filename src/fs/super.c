@@ -1,5 +1,6 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/fs.h>
 #include <elfboot/super.h>
 
 int superblock_alloc(struct device *device, struct fs *fs)

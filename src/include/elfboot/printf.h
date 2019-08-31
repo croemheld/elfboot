@@ -18,4 +18,9 @@ int bprintf(const char *format, ...);
 	bprintf(fmt "\n", ##__VA_ARGS__);	\
 })
 
+void bprintln_error(int errno);
+
+#define bperror(errno)				\
+	bprintln_error(errno)
+
 #endif /* __ELFBOOT_PRINTF_H__ */

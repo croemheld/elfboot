@@ -23,7 +23,7 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	if (device_read_sector(device, ISOFS_PRIMARY_SECTOR, (char *)pvd))
 		goto sb_probe_free_pvd;
 
-	/* is this indeed an ISO 9660 formatted device? */
+	/* Is this indeed an ISO 9660 formatted device? */
 	if (strncmp(pvd->id, ISOFS_PRIMARY_VOLUME_ID, 5))
 		goto sb_probe_free_pvd;
 
@@ -31,7 +31,8 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	if (superblock_alloc(device, fs))
 		goto sb_probe_free_pvd;
 
-	node = fs_node_alloc(fs);
+	/* TODO CRO: Free superblock */
+	node = fs_node_alloc(fs, device->name);
 	if (!node)
 		goto sb_probe_free_pvd;
 
@@ -41,7 +42,8 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	node->offset = isonum_733(rootp->extent);
 	node->size   = isonum_711(rootp->length);
 
-	bprintln("Device %s root directory at %llx (%lu bytes)", device->name, node->offset, node->size);
+	bprintln("Device %s root directory at sector %llx (%lu bytes)",
+		 device->name, node->offset, node->size);
 
 	/* Set block informations */
 	device->sb->last_block = isonum_733(pvd->volume_space_size);
@@ -96,13 +98,13 @@ static int isofs_readdir(struct fs_node *node __unused,
 	return -ENOTSUP;
 }
 
-static int isofs_read(struct fs_node *node __unused, uint64_t offset __unused,
+static int isofs_read(struct fs_node *node __unused, uint64_t size __unused,
 		      char *buffer __unused)
 {
 	return -ENOTSUP;
 }
 
-static int isofs_write(struct fs_node *node __unused, uint64_t offset __unused,
+static int isofs_write(struct fs_node *node __unused, uint64_t size __unused,
 		       const char *buffer __unused)
 {
 	return -ENOTSUP;

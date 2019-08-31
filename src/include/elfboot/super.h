@@ -3,9 +3,9 @@
 
 #include <elfboot/core.h>
 #include <elfboot/device.h>
-#include <elfboot/fs.h>
 #include <elfboot/list.h>
 
+struct fs;
 struct superblock;
 
 struct superblock_ops {

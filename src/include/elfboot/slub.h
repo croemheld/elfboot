@@ -48,7 +48,11 @@ struct bmem_cache {
 	struct list_head slabs_partial;
 	struct list_head slabs_free;
 	void (*ctor)(void *);
-	void (*dtor)(void *);
 };
+
+void *bmem_cache_alloc(struct bmem_cache *cachep);
+
+struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
+				     void (*ctor)(void *));
 
 #endif /* __ELFBOOT_SLUB_H__ */

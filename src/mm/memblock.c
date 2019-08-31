@@ -4,12 +4,6 @@
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
-/*
- * TODO CRO: Provide allocations on page granularity
- * and make SLOB allocator and memblock allocator run
- * simultaneously (memblock allocation on demand)
- */
-
 static struct memblock_region memory[MEMBLOCK_MAX_REGIONS];
 
 struct memblock memblock = {

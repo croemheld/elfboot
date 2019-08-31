@@ -4,7 +4,9 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
 #include <elfboot/device.h>
+#include <elfboot/super.h>
 #include <elfboot/string.h>
+#include <elfboot/math.h>
 #include <elfboot/list.h>
 #include <elfboot/tree.h>
 
@@ -12,8 +14,10 @@
 #include <uapi/elfboot/const.h>
 
 struct fs_dentry {
-	uint8_t foo;
+	char name[128];
+	uint64_t offset;
 };
+#define FS_DENT_SIZE			sizeof(struct fs_dentry)
 
 struct fs_node;
 
@@ -24,6 +28,8 @@ struct fs_ops {
 
 	/* fs_node functions for directories */
 	struct fs_node *(*lookup)(struct fs_node *, const char *);
+	struct fs_node *(*mkdir)(struct fs_node *, struct fs_dentry *);
+	int (*rmdir)(struct fs_node *, struct fs_dentry *);
 	int (*readdir)(struct fs_node *, struct fs_dentry *);
 
 	/* fs_node function for files */
@@ -50,6 +56,15 @@ struct fs_node {
 	struct tree_node fs_node;
 };
 
+#define FS_NODE_SIZE			sizeof(struct fs_node)
+
+struct fs {
+	const char *name;
+	struct fs_ops *n_ops;
+	struct superblock_ops *s_ops;
+	struct list_head list;
+};
+
 static inline void fs_node_set(struct fs_node *node, uint32_t flags)
 {
 	node->flags |= flags;
@@ -60,18 +75,42 @@ static inline bool fs_node_is_dir(struct fs_node *node)
 	return (node->flags & FS_NODE_DIRECTORY) != 0;
 }
 
-struct fs {
-	const char *name;
-	struct fs_ops *n_ops;
-	struct superblock_ops *s_ops;
-	struct list_head list;
-};
+/*
+ * Utility macros
+ */
 
-struct fs_node *fs_node_alloc(struct fs *fs);
+#define fs_node_parent(node)						\
+	tree_parent_entry(node, struct fs_node, fs_node)
+
+/*
+ * Utility functions
+ */
+
+static inline uint64_t calculate_blocks(struct fs_node *node, uint64_t size)
+{
+	uint64_t blocks;
+	uint32_t rest = 0;
+
+	/*
+	 * Helper function for determining the number of blocks to 
+	 * read and/or write from its underlying device. We need
+	 * this because the fs_node cannot pass the actual file size
+	 * to the device driver since they use the size parameter
+	 * for the number of blocks to read and/or write.
+	 */
+
+	blocks = div_u64_rem(size, node->sb->block_size, &rest);
+	if (rest)
+		blocks++;
+
+	return blocks;
+}
+
+struct fs_node *fs_node_alloc(struct fs *fs, const char *name);
 
 int fs_mount(struct device *device, const char *path);
 
-void fs_init(void);
+int fs_init(struct device *device);
 
 void fs_register(struct fs *fs);
 

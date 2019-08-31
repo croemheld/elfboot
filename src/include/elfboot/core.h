@@ -8,6 +8,7 @@
 
 #define min(x, y)			((x < y) ? x : y)
 #define max(x, y)			((x > y) ? x : y)
+#define abs(x)				((x > 0) ? x : -x)
 
 #define abs_difference(x, y)		((x < y) ? y - x : x - y)
 

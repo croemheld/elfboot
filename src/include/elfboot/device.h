@@ -7,6 +7,8 @@
 
 #include <uapi/elfboot/const.h>
 
+#define GENERIC_DEVICE_SECTOR_SIZE	512
+
 struct device;
 
 struct device_driver {
@@ -43,7 +45,7 @@ struct device_info {
 #define DEVICE_INTERFACE_ATA		1
 #define DEVICE_INTERFACE_ATAPI		2
 #define DEVICE_INTERFACE_SCSI		3
-#define DEVICE_INTERFACE_MEMDISK	4
+#define DEVICE_INTERFACE_RAMDISK	4
 
 	uint64_t lun;
 

@@ -37,7 +37,6 @@ static void bmem_cache_init(void *objp)
 	list_init(&cachep->slabs_partial);
 	list_init(&cachep->slabs_full);
 	cachep->ctor = NULL;
-	cachep->dtor = NULL;
 }
 
 /*
@@ -81,12 +80,9 @@ static struct bmem_cache *bmalloc_cache(uint32_t size)
 
 static inline uint32_t calculate_cache_order(uint32_t size)
 {
-	uint32_t order = size / PAGE_SIZE;
+	uint32_t ret = log2(size - 1) + 1;
 
-	if (order >= 1)
-		return order - 1;
-
-	return 0;
+	return ret - min(ret, PAGE_SHIFT);
 }
 
 static void *bmem_cache_fetch(struct page *page)
@@ -179,8 +175,6 @@ static struct page *bmem_cache_grow(struct bmem_cache *cachep)
 	return page;
 }
 
-/* -------------------------------------------------------------------------- */
-
 static struct page *__bmem_obj_page(void *objp)
 {
 	uint32_t addr = vptrtuint(objp);
@@ -200,10 +194,6 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	/* We treat the object as a list */
 	struct list_head *new = objp;
 
-	/* Destroy object */
-	if (cachep->dtor)
-		cachep->dtor(objp);
-
 	list_init(new);
 
 	/* 
@@ -217,6 +207,10 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	if (!--page->inuse) {
 		list_move(&page->list, &cachep->slabs_free);
 		cachep->free_slabs++;
+
+		/*
+		 * TODO CRO: Free free slabs? Limit of free slabs?
+		 */
 	} else {
 
 		/*
@@ -267,7 +261,7 @@ void *bmalloc(uint32_t size)
 }
 
 struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
-				     void (*ctor)(void *), void (*dtor)(void *))
+				     void (*ctor)(void *))
 {
 	struct bmem_cache *cachep = bmem_cache_alloc(&bmem_cache);
 
@@ -283,7 +277,6 @@ struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
 	cachep->order = calculate_cache_order(cachep->size);
 
 	cachep->ctor  = ctor;
-	cachep->dtor  = dtor;
 
 	return cachep;
 

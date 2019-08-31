@@ -2,6 +2,7 @@
 #define __TREE_H__
 
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 #include <elfboot/list.h>
 
 struct tree_node;
@@ -24,11 +25,94 @@ struct tree_head {
 	struct tree_node *root;
 };
 
-#define tree_for_each_child(pos, parent)				\
-	list_for_each_entry(pos, &(parent)->children, siblings)
+#define tree_entry(node, type, member)					\
+	container_of(node, type, member)
 
-#define tree_for_each_child_safe(pos, n, parent)			\
-	list_for_each_entry_safe(pos, n, &(parent)->children, siblings)
+/*
+ * Parent
+ */
+
+#define tree_parent(node)						\
+	((node)->parent)
+
+#define tree_parent_entry(node, type, member)				\
+	tree_entry(tree_parent(&(node)->member), type, member)
+
+/*
+ * First and last child
+ */
+
+#define tree_first_child(node)						\
+	tree_entry((node)->children.next, struct tree_node, siblings)
+
+#define tree_first_child_or_null(node)					\
+({									\
+	struct list_head *p__ = &(node)->children;			\
+	struct list_head *n__ = (node)->children.next;			\
+	n__ != p__ ? tree_first_child(node) : NULL;			\
+})
+
+#define tree_first_child_entry(node, type, member)			\
+	tree_entry(tree_first_child(node), type, member)		\
+
+#define tree_first_child_entry_or_null(node, type, member)		\
+({									\
+	struct tree_node *n__;						\
+	n__ = tree_first_child_or_null(node);		 		\
+	n__ != NULL ? tree_entry(n__, type, member) : NULL;		\
+})
+
+#define tree_last_child(node)						\
+	tree_entry((node)->children.prev, struct tree_node, siblings)
+
+#define tree_last_child_entry(node, type, member)			\
+	tree_entry(tree_last_child(node), type, member)
+
+/*
+ * Next and previous sibling
+ */
+
+#define tree_next_sibling(node)						\
+	tree_entry((node)->siblings.next, struct tree_node, siblings)
+
+#define tree_next_sibling_or_null(node)					\
+({									\
+	struct list_head *p__ = &(node)->parent->children;		\
+	struct list_head *n__ = (node)->siblings.next;			\
+	n__ != p__ ? tree_next_sibling(node) : NULL;			\
+})
+
+#define tree_next_sibling_entry(node, type, member)			\
+	tree_entry(tree_next_sibling(node), type, member)
+
+#define tree_next_sibling_entry_or_null(node, type, member)		\
+({									\
+	struct tree_node *n__;						\
+	n__ = tree_next_sibling_or_null(node);				\
+	n__ != NULL ? tree_entry(n__, type, member) : NULL;		\
+})
+
+#define tree_prev_sibling(node)						\
+	tree_entry((node)->siblings.prev, struct tree_node, siblings)
+
+#define tree_prev_sibling_entry(node, type, member)			\
+	tree_entry(tree_prev_sibling(node), type, member)
+
+/*
+ * Loops
+ */
+
+#define tree_for_each_child(pos, node)					\
+	for (pos = tree_first_child_or_null(node);			\
+	     pos;							\
+	     pos = tree_next_sibling_or_null(pos))
+
+#define tree_for_each_child_entry(pos, node, member)			\
+	for (pos = tree_first_child_entry_or_null(&(node)->member, 	\
+		typeof(*pos), member);					\
+	     pos;							\
+	     pos = tree_next_sibling_entry_or_null(&(pos)->member,	\
+	     	typeof(*pos), member))
 
 #define TREE_HEAD_INIT(name)						\
 	{ 0, NULL, NULL }
