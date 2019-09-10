@@ -5,7 +5,7 @@
 #include <elfboot/console.h>
 
 static struct console boot_console = {
-	.active = 1,
+	.active = CONSOLE_STATE_ACTIVE,
 	.xpos = 0,
 	.ypos = 0,
 };
@@ -26,6 +26,7 @@ void console_set_active(struct console *cons)
 	store_console(active_console);
 
 	active_console = cons;
+	active_console->active = CONSOLE_STATE_ACTIVE;
 }
 
 static void console_handle_newline(struct console *cons)

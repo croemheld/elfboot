@@ -2,6 +2,8 @@
 #include <elfboot/string.h>
 #include <elfboot/console.h>
 
+#include <elfboot/debug.h>
+
 /*
  * Private structures
  */
@@ -284,9 +286,10 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 int snprintf(char *buffer, size_t size, const char *format, ...)
 {
 	va_list argp;
+	int length;
 
 	va_start(argp, format);
-	int length = vsnprintf(buffer, size, format, &argp);
+	length = vsnprintf(buffer, size, format, &argp);
 	va_end(argp);
 
 	return length;
@@ -295,9 +298,10 @@ int snprintf(char *buffer, size_t size, const char *format, ...)
 int sprintf(char* buffer, const char *format, ...)
 {
 	va_list argp;
+	int length;
 
 	va_start(argp, format);
-	int length = vsnprintf(buffer, strlen(buffer), format, &argp);
+	length = vsnprintf(buffer, strlen(buffer), format, &argp);
 	va_end(argp);
 
 	return length;
@@ -307,12 +311,14 @@ int bprintf(const char *format, ...)
 {
 	va_list argp;
 	char buffer[256];
+	int length;
 
 	va_start(argp, format);
-	int length = vsnprintf(buffer, 256, format, &argp);
+	length = vsnprintf(buffer, 256, format, &argp);
 	va_end(argp);
 
-	console_write_active(buffer, length);
+	console_printf(buffer, length);
+
 #ifdef CONFIG_DEBUG
 	ebdebug_printf(buffer, length);
 #endif
