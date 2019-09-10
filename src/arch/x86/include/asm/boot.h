@@ -40,6 +40,7 @@ void prepare_kernel(struct boot_params *boot_params);
 /* Jump into our cr0S kernel */
 void kernel_init(void);
 
+int arch_main(uint8_t disk_drive);
 #endif /* __ASSEMBLER__ */
 
 #endif /* __X86_BOOT_H__ */

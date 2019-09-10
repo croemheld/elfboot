@@ -80,10 +80,10 @@ fs_device_free_device:
  * Architecture-specific main function
  */
 
-int main(uint8_t disk_drive)
 {
 	struct device *bootdev;
 
+int arch_main(uint8_t disk_drive)
 	boot_params.disk_drive = disk_drive;
 
 	/* PIC remap */

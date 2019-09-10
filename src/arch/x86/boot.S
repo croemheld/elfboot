@@ -158,6 +158,6 @@ _setup16:
 	# Finally, call bootloader main routine
 
 	pushl   %edx
-	call    main
+	call    arch_main
 
 	jmp     .
