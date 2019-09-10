@@ -3,6 +3,7 @@
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
+#include <elfboot/printf.h>
 #include <elfboot/list.h>
 
 #include <uapi/elfboot/const.h>
