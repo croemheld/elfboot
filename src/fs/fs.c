@@ -213,19 +213,6 @@ static int fs_rmdir(struct fs_node *node __unused,
 	return -ENOTSUP;
 }
 
-
-static struct fs_node *fs_mkdir(struct fs_node *node __unused,
-			     struct fs_dentry *dentry __unused)
-{
-	
-}
-
-static int fs_rmdir(struct fs_node *node __unused,
-		 struct fs_dentry *dentry __unused)
-{
-	
-}
-
 /* 
  * fs_node function for files in general
  */
