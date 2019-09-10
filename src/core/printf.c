@@ -313,6 +313,9 @@ int bprintf(const char *format, ...)
 	va_end(argp);
 
 	console_write_active(buffer, length);
+#ifdef CONFIG_DEBUG
+	ebdebug_printf(buffer, length);
+#endif
 
 	return length;
 }
