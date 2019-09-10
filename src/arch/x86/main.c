@@ -36,46 +36,6 @@ static void bootmem_reserve_regions(void)
 	memblock_reserve(SECTION_START(boot), SECTION_SIZE(boot));
 }
 
-static int init_fs_device(void)
-{
-	struct device *device = bmalloc(sizeof(*device));
-
-	if (!device)
-		return -EFAULT;
-
-	/*
-	 * We create our root fs_node with a ramdisk and a ramfs
-	 * filesystem in order to setup the filesystem hierarchy
-	 * for our bootloader.
-	 */
-	
-	/* Common properties */
-	device->type = DEVICE_BLOCK;
-	device_set(device, DEVICE_FLAG_VIRTUAL);
-	device_set(device, DEVICE_FLAG_LBA);
-
-	/* Device informations */
-	device->info.interface = DEVICE_INTERFACE_RAMDISK;
-	device->info.block_size = GENERIC_DEVICE_SECTOR_SIZE;
-
-	/* Device root directory */
-	device->device_data = bmalloc(GENERIC_DEVICE_SECTOR_SIZE);
-	if (!device->device_data)
-		goto fs_device_free_device;
-
-	/* Initialization */
-	fs_init(device);
-
-	bprintln("Successfully created fs device");
-
-	return 0;
-
-fs_device_free_device:
-	bfree(device);
-
-	return -ENOMEM;
-}
-
 /*
  * Architecture-specific main function
  */
@@ -126,7 +86,7 @@ int arch_main(uint8_t disk_drive)
 
 	/* Dump memory map */
 	memblock_dump();
-	
+
 	/* Setup core */
 	elfboot_main();
 
