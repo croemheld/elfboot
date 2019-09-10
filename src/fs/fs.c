@@ -88,7 +88,6 @@ static int fs_close(struct fs_node *node __unused)
 	return -ENOTSUP;
 }
 
-
 /* 
  * fs_node functions for directories
  */
@@ -202,6 +201,17 @@ static int fs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __
 	return -ENOTSUP;
 }
 
+static struct fs_node *fs_mkdir(struct fs_node *node __unused,
+			     struct fs_dentry *dentry __unused)
+{
+	return NULL;
+}
+
+static int fs_rmdir(struct fs_node *node __unused,
+		 struct fs_dentry *dentry __unused)
+{
+	return -ENOTSUP;
+}
 
 
 static struct fs_node *fs_mkdir(struct fs_node *node __unused,
@@ -291,8 +301,6 @@ static int fs_create_root_node(struct device *device)
 	struct fs *fs;
 
 	list_for_each_entry(fs, &filesystems, list) {
-		bprintln("Checking fs %s", fs->name);
-
 		if (superblock_probe(device, fs))
 			continue;
 
