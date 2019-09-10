@@ -125,6 +125,21 @@ static __always_inline void device_set(struct device *device, uint32_t flag)
 	device->info.flags |= flag;
 }
 
+static __always_inline void device_get(struct device *device)
+{
+	device->refcount++;
+}
+
+static __always_inline int device_put(struct device *device)
+{
+	if (--device->refcount == 0) {
+		bprintln("Device %s is already unused!", device->name);
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 static __always_inline bool device_is_interface(struct device *device,
 						int interface)
 {
@@ -148,25 +163,27 @@ int device_open(struct device *device, const char *name);
 int device_read(struct device *device, uint64_t sector, 
 		uint64_t size, char *buffer);
 
-int device_read_sector(struct device *device, uint64_t sector, char *buffer);
+static __always_inline int device_read_sector(struct device *device,
+					      uint64_t sector, char *buffer)
+{
+	return device_read(device, sector, 1, buffer);
+}
 
 int device_write(struct device *device, uint64_t sector, 
 		 uint64_t size, const char *buffer);
 
-int device_write_sector(struct device *device, uint64_t sector,
-			const char *buffer);
+static __always_inline int device_write_sector(struct device *device,
+					       uint64_t sector,
+					       const char *buffer)
+{
+	return device_write(device, sector, 1, buffer);
+}
 
 int device_close(struct device *device);
 
-int device_lookup_driver(struct device *device);
+int device_create(struct device *device, const char *name);
 
-/* -------------------------------------------------------------------------- */
-
-int device_mount(struct device *device, const char *name);
-
-int device_umount(struct device *device);
-
-/* -------------------------------------------------------------------------- */
+int device_destroy(struct device *device);
 
 void devices_init(void);
 

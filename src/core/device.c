@@ -46,11 +46,6 @@ int device_read(struct device *device, uint64_t sector,
 	return -ENOTSUP;
 }
 
-int device_read_sector(struct device *device, uint64_t sector, char *buffer)
-{
-	return device_read(device, sector, 1, buffer);
-}
-
 int device_write(struct device *device, uint64_t sector, 
 	uint64_t size, const char *buffer)
 {
@@ -58,12 +53,6 @@ int device_write(struct device *device, uint64_t sector,
 		return device->driver->write(device, sector, size, buffer);
 
 	return -ENOTSUP;
-}
-
-int device_write_sector(struct device *device, uint64_t sector,
-			const char *buffer)
-{
-	return device_write(device, sector, 1, buffer);
 }
 
 int device_close(struct device *device)
@@ -90,7 +79,7 @@ int device_lookup_driver(struct device *device)
 	return -EFAULT;
 }
 
-int device_mount(struct device *device, const char *name)
+int device_create(struct device *device, const char *name)
 {
 	device->name = bstrdup(name);
 	if (!device->name)
@@ -99,19 +88,26 @@ int device_mount(struct device *device, const char *name)
 	if (device_lookup_driver(device))
 		return -EFAULT;
 
+	/* Initialize refcount */
+	device->refcount = 1;
+
 	list_add(&device->list, &devices);
 
 	return 0;
 }
 
-int device_umount(struct device *device)
+int device_destroy(struct device *device)
 {
 	if (device->refcount)
 		return -EINVAL;
 
+	if (device_put(device)) {
+		bprintln("Device %s is still being used!", device->name);
+		return -EFAULT;
+	}
+
 	bfree_const(device->name);
 	device->type = 0;
-	device->refcount = 0;
 	device->driver = NULL;
 	list_del(&device->list);
 
