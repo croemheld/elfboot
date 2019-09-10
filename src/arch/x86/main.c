@@ -80,10 +80,28 @@ fs_device_free_device:
  * Architecture-specific main function
  */
 
+int arch_init_late(void)
 {
 	struct device *bootdev;
 
+	/* Initialize boot device */
+	bootdev = edd_device_create(boot_params.disk_drive);
+	if (!bootdev)
+		return -EFAULT;
+
+	if (device_create(bootdev, "cdrom"))
+		return -EFAULT;
+
+	if (fs_mount(bootdev, "/dev"))
+		return -EFAULT;
+
+	bprintln("Initialized boot device");
+
+	return 0;
+}
+
 int arch_main(uint8_t disk_drive)
+{
 	boot_params.disk_drive = disk_drive;
 
 	/* PIC remap */
@@ -108,32 +126,9 @@ int arch_main(uint8_t disk_drive)
 
 	/* Dump memory map */
 	memblock_dump();
-
-	/* Buddy allocation */
-	page_alloc_init();
-
-	/* SLUB memory allocator */
-	bmalloc_init();
-
-	/* Driver initialization */
-	devices_init();
-
-	/* Filesystem initialization */
-	if (init_fs_device())
-		return -EFAULT;
-
-	/* Initialize boot device */
-	bootdev = edd_device_create(disk_drive);
-	if (!bootdev)
-		return -EFAULT;
-
-	if (device_mount(bootdev, "cdrom"))
-		return -EFAULT;
-
-	if (fs_mount(bootdev, "/dev"))
-		return -EFAULT;
-
-	bprintln("Initialized boot device");
+	
+	/* Setup core */
+	elfboot_main();
 
 	return 0;
 }
