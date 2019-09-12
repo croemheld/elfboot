@@ -89,7 +89,7 @@ int device_create(struct device *device, const char *name)
 		return -EFAULT;
 
 	/* Initialize refcount */
-	device->refcount = 1;
+	device->refcount = 0;
 
 	list_add(&device->list, &devices);
 

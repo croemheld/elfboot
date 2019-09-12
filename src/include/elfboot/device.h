@@ -133,10 +133,12 @@ static __always_inline void device_get(struct device *device)
 
 static __always_inline int device_put(struct device *device)
 {
-	if (--device->refcount == 0) {
+	if (!(device->refcount > 0)) {
 		bprintln("Device %s is already unused!", device->name);
 		return -EFAULT;
 	}
+
+	--device->refcount;
 
 	return 0;
 }
