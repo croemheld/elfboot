@@ -254,7 +254,7 @@ static int fs_mount_device(struct device *device, const char *path)
 	fs_node_set(child, FS_NODE_MOUNT | FS_NODE_DIRECTORY);
 
 	/* Insert the node in the VFS tree */
-	tree_node_insert(&child->fs_node, &parent->fs_node);
+	fs_node_add(child, parent);
 
 	return 0;
 }

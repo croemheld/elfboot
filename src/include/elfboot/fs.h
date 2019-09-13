@@ -81,6 +81,11 @@ static inline bool fs_node_is_dir(struct fs_node *node)
 
 #define fs_node_parent(node)						\
 	tree_parent_entry(node, struct fs_node, fs_node)
+static __always_inline void fs_node_add(struct fs_node *child,
+					struct fs_node *parent)
+{
+	tree_node_insert(&child->fs_node, &parent->fs_node);
+}
 
 /*
  * Utility functions
