@@ -140,29 +140,98 @@ static struct fs_node *fs_lookup_node(struct fs_node *node, const char *name)
 	return node->ops->lookup(node, name);
 }
 
-static struct fs_node *fs_lookup(struct fs_node *node, const char *path)
+static __always_inline int fs_request_valid(struct fs_lookup_req *lookup_req)
 {
+	/* Mandatory value */
+	if (!lookup_req->path)
+		return -EFAULT;
+
+	/*
+	 * If no node is specified, the request must state
+	 * that the lookup starts from the fs_root node.
+	 */
+	if (!lookup_req->node)
+		return (lookup_req->flags & FS_REQUEST_ABSOLUTE) ? 0 : -EFAULT;
+
+	return 0;
+}
+
+static int fs_request_lookup(struct fs_lookup_req *lookup_req)
+{
+	struct fs_node *node;
 	char *name, *part;
 
-	if (!node || !path)
-		return NULL;
-
 	/*
-	 * This function can be called for all nodes within
-	 * the fs_node tree. The path is resolved relatively
-	 * to the node passed as an argument. If the path is
-	 * starting with a '/', we need to resolve the given
-	 * path relatively to the root fs_node.
+	 * This function is called when we request a lookup
+	 * search specified by the path in the request. The
+	 * function modifies both the path and node members
+	 * of the request, which reports how far the lookup
+	 * went before an error occurred.
 	 */
 
-	if ((*path == '/') && (node != fs_root))
+	if (fs_request_valid(lookup_req))
+		return -EFAULT;
+
+	name = bstrdup(lookup_req->path);
+	if (!name)
+		return -ENOMEM;
+
+	node = lookup_req->node;
+
+	/* If requested, lookup from the root node */
+	if (lookup_req->flags & FS_REQUEST_ABSOLUTE)
 		node = fs_root;
 
-	/*
-	 * The strtok function is destroying the path string
-	 * while we loop over all parts iteratively. Use the
-	 * copy of the original string instead.
-	 */
+	part = strtok(name, "/");
+
+	while (part) {
+		node = fs_request_lookup_node(lookup_req->node, part);
+		if (!node) {
+			bfree(name);
+			return -ENOENT;
+		}
+
+		/* Successfully found node */
+		lookup_req->node = node;
+		lookup_req->path = part;
+
+		/* Next part of path */
+		part = strtok(part, "/");
+	}
+
+	bfree(name);
+
+	return 0;
+}
+
+static struct fs_node *fs_lookup_node(struct fs_node *node, const char *path)
+{
+	struct fs_lookup_req lookup_req;
+
+	init_fs_request(&lookup_req);
+	lookup_req.node = node;
+	lookup_req.path = (char *)path;
+
+	if (fs_request_lookup(&lookup_req))
+		return NULL;
+
+	return lookup_req.node;
+}
+
+static struct fs_node *fs_lookup(const char *path)
+{
+	return fs_lookup_node(fs_root, path);
+}
+
+static int fs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __unused)
+{
+	return -ENOTSUP;
+}
+
+static struct fs_node *fs_mkdir_node(struct fs_node *node, const char *path,
+				     uint32_t flags)
+{
+	char *name, *part;
 
 	name = bstrdup(path);
 	if (!name)
@@ -170,19 +239,13 @@ static struct fs_node *fs_lookup(struct fs_node *node, const char *path)
 
 	part = strtok(name, "/");
 
-	while (part) {
-
-		/*
-		 * Lookup the next node: If the given part is not
-		 * found anywhere, we abort the entire procedure.
-		 */
-
-		node = fs_lookup_node(node, part);
-		if (!node) {
+	while (part && node) {
+		if (!node->ops->mkdir) {
 			bfree(name);
 			return NULL;
 		}
 
+		node = node->ops->mkdir(node, part);
 		part = strtok(part, "/");
 	}
 
@@ -191,20 +254,21 @@ static struct fs_node *fs_lookup(struct fs_node *node, const char *path)
 	return node;
 }
 
-static struct fs_node *fs_lookup_root(const char *path)
+struct fs_node *fs_mkdir(const char *path, uint32_t flags)
 {
-	return fs_lookup(fs_root, path);
-}
+	struct fs_lookup_req lookup_req;
+	struct fs_node *node;
+	char *name, *part;
 
-static int fs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __unused)
-{
-	return -ENOTSUP;
-}
+	init_fs_request(&lookup_req);
+	lookup_req.flags = flags;
+	lookup_req.node = fs_root;
+	lookup_req.path = (char *)path;
 
-static struct fs_node *fs_mkdir(struct fs_node *node __unused,
-			     struct fs_dentry *dentry __unused)
-{
-	return NULL;
+	if (!fs_request_lookup(&lookup_req))
+		return lookup_req.node;
+
+	return fs_mkdir_node(lookup_req.node, lookup_req.path, flags);
 }
 
 static int fs_rmdir(struct fs_node *node __unused,

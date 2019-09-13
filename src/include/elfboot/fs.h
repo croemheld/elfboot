@@ -28,7 +28,7 @@ struct fs_ops {
 
 	/* fs_node functions for directories */
 	struct fs_node *(*lookup)(struct fs_node *, const char *);
-	struct fs_node *(*mkdir)(struct fs_node *, struct fs_dentry *);
+	struct fs_node *(*mkdir)(struct fs_node *, const char *);
 	int (*rmdir)(struct fs_node *, struct fs_dentry *);
 	int (*readdir)(struct fs_node *, struct fs_dentry *);
 
@@ -65,15 +65,14 @@ struct fs {
 	struct list_head list;
 };
 
-static inline void fs_node_set(struct fs_node *node, uint32_t flags)
-{
-	node->flags |= flags;
-}
+struct fs_lookup_req {
+	uint32_t flags;
 
-static inline bool fs_node_is_dir(struct fs_node *node)
-{
-	return (node->flags & FS_NODE_DIRECTORY) != 0;
-}
+#define FS_REQUEST_ABSOLUTE	_BITUL(0)
+
+	struct fs_node *node;
+	char *path;
+};
 
 /*
  * Utility macros
@@ -81,14 +80,47 @@ static inline bool fs_node_is_dir(struct fs_node *node)
 
 #define fs_node_parent(node)						\
 	tree_parent_entry(node, struct fs_node, fs_node)
+
+/*
+ * Utility functions
+ */
+
+static __always_inline void fs_node_set(struct fs_node *node, uint32_t flags)
+{
+	node->flags |= flags;
+}
+
+static __always_inline bool fs_node_has(struct fs_node *node, uint32_t flags)
+{
+	return (node->flags & flags) != 0;
+}
+
+static __always_inline bool fs_node_is_dir(struct fs_node *node)
+{
+	return fs_node_has(node, FS_NODE_DIRECTORY);
+}
+
+/*
+ * Utility function - node management
+ */
+
 static __always_inline void fs_node_add(struct fs_node *child,
 					struct fs_node *parent)
 {
 	tree_node_insert(&child->fs_node, &parent->fs_node);
 }
 
+/* 
+ * fs_lookup_req initialization
+ */
+
+static __always_inline void init_fs_request(struct fs_lookup_req *lookup_req)
+{
+	memset(lookup_req, 0, sizeof(*lookup_req));
+}
+
 /*
- * Utility functions
+ * TODO CRO: Rename and/or place elsewhere
  */
 
 static inline uint64_t calculate_blocks(struct fs_node *node, uint64_t size)
@@ -111,7 +143,9 @@ static inline uint64_t calculate_blocks(struct fs_node *node, uint64_t size)
 	return blocks;
 }
 
-struct fs_node *fs_node_alloc(struct fs *fs, const char *name);
+struct fs_node *fs_node_alloc(struct fs_ops *ops, const char *name);
+
+struct fs_node *fs_mkdir(const char *path, uint32_t flags);
 
 int fs_mount(struct device *device, const char *path);
 
