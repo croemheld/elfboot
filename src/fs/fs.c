@@ -34,14 +34,14 @@ static void fs_node_init(void *objp)
 	tree_node_init(&node->fs_node);
 }
 
-struct fs_node *fs_node_alloc(struct fs *fs, const char *name)
+struct fs_node *fs_node_alloc(struct fs_ops *ops, const char *name)
 {
 	struct fs_node *node = bmem_cache_alloc(node_cache);
 
 	if (!node)
 		return NULL;
 
-	node->ops = fs->n_ops;
+	node->ops = ops;
 	strcpy(node->name, name);
 
 	return node;
@@ -296,7 +296,7 @@ static int fs_write(struct fs_node *node __unused, uint64_t size __unused,
 
 static int fs_mount_device(struct device *device, const char *path)
 {
-	struct fs_node *parent, *child;
+	struct fs_node *child, *parent;
 
 	/*
 	 * The mounting process takes the given path and creates 
@@ -307,7 +307,7 @@ static int fs_mount_device(struct device *device, const char *path)
 	 * 	 path + "/" + device->name
 	 */
 	
-	parent = fs_lookup(fs_root, path);
+	parent = fs_lookup(path);
 	if (!parent) {
 		bprintln("Could not find node for %s", path);
 		return -EFAULT;
@@ -356,7 +356,7 @@ static int fs_create_root_node(struct device *device)
 		if (superblock_probe(device, fs))
 			continue;
 
-		fs_root = fs_node_alloc(fs, "/");
+		fs_root = fs_node_alloc(fs->n_ops, "/");
 		if (!fs_root)
 			return -EFAULT;
 
