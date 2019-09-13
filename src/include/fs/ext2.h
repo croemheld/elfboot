@@ -126,4 +126,6 @@ struct ext2_directory {
 	char name[0];
 } __packed;
 
+void ext2_fs_init(void);
+
 #endif /* __EXT2_FS_H__ */

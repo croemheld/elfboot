@@ -319,6 +319,7 @@ int fs_init(struct device *device)
 	if (fs_create_root_cache())
 		return -EFAULT;
 
+	ext2_fs_init();
 	isofs_fs_init();
 	ramfs_fs_init();
 
