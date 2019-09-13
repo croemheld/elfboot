@@ -92,7 +92,7 @@ static int fs_close(struct fs_node *node __unused)
  * fs_node functions for directories
  */
 
-static int fs_lookup_fast(struct fs_node **node, const char *name)
+static int fs_request_lookup_fast(struct fs_node **node, const char *name)
 {
 	struct fs_node *child;
 
@@ -108,7 +108,8 @@ static int fs_lookup_fast(struct fs_node **node, const char *name)
 	return -EFAULT;
 }
 
-static struct fs_node *fs_lookup_node(struct fs_node *node, const char *name)
+static struct fs_node *fs_request_lookup_node(struct fs_node *node,
+					      const char *name)
 {
 	/* Case 1: Current node */
 	if (!strcmp(name, "."))
@@ -125,7 +126,7 @@ static struct fs_node *fs_lookup_node(struct fs_node *node, const char *name)
 	 */
 
 	/* Case 3: Cache */
-	if (!fs_lookup_fast(&node, name))
+	if (!fs_request_lookup_fast(&node, name))
 		return node;
 
 	/*
