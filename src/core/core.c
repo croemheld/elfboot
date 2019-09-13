@@ -14,7 +14,7 @@ static int init_fs_device(void)
 	bprintln("Initialize rootfs...");
 
 	if (!device)
-		return -EFAULT;
+		return -ENOMEM;
 
 	/*
 	 * We create our root fs_node with a ramdisk and a ramfs
@@ -40,14 +40,21 @@ static int init_fs_device(void)
 	if (fs_init(device))
 		return -EFAULT;
 
+	/* Create /dev node */
+	if (fs_mkdir("/dev", 0))
+		goto fs_device_free_device_data;
+
 	bprintln("Successfully created rootfs");
 
 	return 0;
 
+fs_device_free_device_data:
+	bfree(device->device_data);
+
 fs_device_free_device:
 	bfree(device);
 
-	return -ENOMEM;
+	return -EFAULT;
 }
 
 int elfboot_main(void)
