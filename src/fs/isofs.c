@@ -32,7 +32,7 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 		goto sb_probe_free_pvd;
 
 	/* TODO CRO: Free superblock */
-	node = fs_node_alloc(fs, device->name);
+	node = fs_node_alloc(fs->n_ops, device->name);
 	if (!node)
 		goto sb_probe_free_pvd;
 

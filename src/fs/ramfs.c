@@ -19,7 +19,7 @@ static int ramfs_superblock_probe(struct device *device, struct fs *fs)
 	if (superblock_alloc(device, fs))
 		return -EFAULT;
 
-	node = fs_node_alloc(fs, device->name);
+	node = fs_node_alloc(fs->n_ops, device->name);
 	if (!node)
 		goto sb_probe_free_sb;
 
@@ -69,8 +69,7 @@ static struct fs_node *ramfs_lookup(struct fs_node *node __unused,
 	return NULL;
 }
 
-static struct fs_node *ramfs_mkdir(struct fs_node *node __unused,
-			     struct fs_dentry *dentry __unused)
+static struct fs_node *ramfs_mkdir(struct fs_node *node, const char *name)
 {
 	return NULL;
 }
@@ -123,6 +122,8 @@ static struct fs_ops ramfs_ops = {
 	.open = ramfs_open,
 	.close = ramfs_close,
 	.lookup = ramfs_lookup,
+	.mkdir = ramfs_mkdir,
+	.rmdir = ramfs_rmdir,
 	.readdir = ramfs_readdir,
 	.read = ramfs_read,
 	.write = ramfs_write,
