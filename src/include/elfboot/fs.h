@@ -75,13 +75,6 @@ struct fs_lookup_req {
 };
 
 /*
- * Utility macros
- */
-
-#define fs_node_parent(node)						\
-	tree_parent_entry(node, struct fs_node, fs_node)
-
-/*
  * Utility functions
  */
 
@@ -101,13 +94,21 @@ static __always_inline bool fs_node_is_dir(struct fs_node *node)
 }
 
 /*
- * Utility function - node management
+ * Utility functions - node management
  */
 
 static __always_inline void fs_node_add(struct fs_node *child,
 					struct fs_node *parent)
 {
+	if (!child || !parent)
+		return;
+
 	tree_node_insert(&child->fs_node, &parent->fs_node);
+}
+
+static __always_inline fs_node_parent(struct fs_node *node)
+{
+	return tree_parent_entry(node, struct fs_node, fs_node);
 }
 
 /* 
