@@ -144,7 +144,10 @@ static inline uint64_t calculate_blocks(struct fs_node *node, uint64_t size)
 	return blocks;
 }
 
-struct fs_node *fs_node_alloc(struct fs_ops *ops, const char *name);
+struct fs_node *fs_node_alloc(struct fs_node *parent, struct fs_ops *ops,
+			      const char *name);
+
+struct fs_node *fs_node_create(struct fs_node *parent, const char *name);
 
 struct fs_node *fs_mkdir(const char *path, uint32_t flags);
 

@@ -35,15 +35,42 @@ static void fs_node_init(void *objp)
 	tree_node_init(&node->fs_node);
 }
 
-struct fs_node *fs_node_alloc(struct fs_ops *ops, const char *name)
+struct fs_node *fs_node_alloc(struct fs_node *parent, struct fs_ops *ops,
+			      const char *name)
 {
-	struct fs_node *node = bmem_cache_alloc(node_cache);
+	struct fs_node *child = bmem_cache_alloc(node_cache);
+
+	if (!child)
+		return NULL;
+
+	child->ops = ops;
+	strcpy(child->name, name);
+
+	/* Add new node to children */
+	fs_node_add(child, parent);
+
+	return child;
+}
+
+struct fs_node *fs_node_create(struct fs_node *parent, const char *name)
+{
+	struct fs_node *node = fs_node_alloc(parent, parent->ops, name);
+
+	/*
+	 * Allocate a new node within one mount for the
+	 * specified filesystem. For allocating a super
+	 * node for a new mountpoint, use the dedicated
+	 * function superblock_alloc_node() instead.
+	 */
 
 	if (!node)
 		return NULL;
 
-	node->ops = ops;
-	strcpy(node->name, name);
+	/*
+	 * We allocate within the same mount, i.e. the
+	 * superblock is the same as the parents.
+	 */
+	node->sb = parent->sb;
 
 	return node;
 }

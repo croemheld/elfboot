@@ -16,6 +16,11 @@ int superblock_alloc(struct device *device, struct fs *fs)
 	return 0;
 }
 
+struct fs_node *superblock_alloc_node(struct fs *fs, const char *name)
+{
+	return fs_node_alloc(NULL, fs->n_ops, name);
+}
+
 int superblock_probe(struct device *device, struct fs *fs)
 {
 	if (fs->s_ops->probe)

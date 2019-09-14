@@ -19,7 +19,7 @@ static int ramfs_superblock_probe(struct device *device, struct fs *fs)
 	if (superblock_alloc(device, fs))
 		return -EFAULT;
 
-	node = fs_node_alloc(fs->n_ops, device->name);
+	node = superblock_alloc_node(fs, device->name);
 	if (!node)
 		goto sb_probe_free_sb;
 

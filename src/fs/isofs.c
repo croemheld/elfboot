@@ -31,8 +31,7 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	if (superblock_alloc(device, fs))
 		goto sb_probe_free_pvd;
 
-	/* TODO CRO: Free superblock */
-	node = fs_node_alloc(fs->n_ops, device->name);
+	node = superblock_alloc_node(fs, device->name);
 	if (!node)
 		goto sb_probe_free_pvd;
 
@@ -51,6 +50,8 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 
 	/* Insert root node */
 	device->sb->root = node;
+
+	bfree(pvd);
 
 	return 0;
 
