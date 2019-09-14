@@ -10,12 +10,6 @@
 
 #define MEMORY_LIMIT			0x100000
 
-struct page *alloc_pages(uint32_t order);
-
-struct page *alloc_page(void);
-
-void *get_zeroed_page(void);
-
 void bfree(void *dptr);
 
 void *bmalloc(size_t size);
