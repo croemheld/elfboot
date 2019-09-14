@@ -8,6 +8,7 @@
 #include <elfboot/list.h>
 #include <elfboot/tree.h>
 
+#include <fs/ext2.h>
 #include <fs/isofs.h>
 #include <fs/ramfs.h>
 
