@@ -8,7 +8,8 @@
 
 #include <uapi/elfboot/const.h>
 
-#define GENERIC_DEVICE_SECTOR_SIZE	512
+#define GENERIC_DEVICE_SECTOR_SHIFT	9
+#define GENERIC_DEVICE_SECTOR_SIZE	_BITUL(GENERIC_DEVICE_SECTOR_SHIFT)
 
 struct device;
 
