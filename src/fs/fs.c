@@ -80,7 +80,7 @@ static void fs_dent_init(void *objp)
 	struct fs_dentry *dentry = objp;
 
 	/* Empty name until usage */
-	strcpy(dentry->name, "\0");
+	memset(dentry->name, 0, 128);
 	dentry->offset = 0;
 }
 
