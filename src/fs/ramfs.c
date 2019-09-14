@@ -29,6 +29,9 @@ static int ramfs_superblock_probe(struct device *device, struct fs *fs)
 	node->offset = vptrtuint(device->device_data) / RAMFS_BLOCK_SIZE;
 	node->size   = 0;
 
+	/* Insert root node */
+	device->sb->root = node;
+
 	return 0;
 
 sb_probe_free_sb:
