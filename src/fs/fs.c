@@ -357,7 +357,7 @@ static int fs_create_root_node(struct device *device)
 		if (superblock_probe(device, fs))
 			continue;
 
-		fs_root = fs_node_alloc(fs->n_ops, "/");
+		fs_root = device->sb->root;
 		if (!fs_root)
 			return -EFAULT;
 
