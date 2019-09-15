@@ -11,7 +11,26 @@
 
 static int ext2_superblock_probe(struct device *device, struct fs *fs)
 {
-	return -ENOTSUP;
+	struct ext2_superblock *esb;
+	struct ext2_directory *rootp;
+	struct fs_node *node;
+	int ret = 0;
+
+	esb = bmalloc(sizeof(*esb));
+	if (!esb)
+		return -ENOMEM;
+
+	ret = device_read_bytes(device, EXT2_SUPERBLOCK_OFFSET,
+				EXT2_SUPERBLOCK_LENGTH, (char *)esb);
+	if (ret)
+		goto sb_probe_free_esb;
+
+	
+
+sb_probe_free_esb:
+	bfree(esb);
+
+	return ret;
 }
 
 static int ext2_superblock_open(struct superblock *sb __unused)

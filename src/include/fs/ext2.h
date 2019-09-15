@@ -4,6 +4,9 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
+#define EXT2_SUPERBLOCK_OFFSET	1024
+#define EXT2_SUPERBLOCK_LENGTH	1024
+
 struct ext2_superblock {
 	uint32_t inodes_count;
 	uint32_t blocks_count;
