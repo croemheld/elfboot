@@ -17,6 +17,12 @@ struct superblock_ops {
 struct superblock {
 
 	/*
+	 * Filesystem dependent information.
+	 */
+
+	void *fs_info;
+
+	/*
 	 * General information about capacity and
 	 * block size of the underlying device.
 	 */

@@ -3,6 +3,7 @@
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
+#include <elfboot/super.h>
 
 #define EXT2_SUPERBLOCK_OFFSET	1024
 #define EXT2_SUPERBLOCK_LENGTH	1024
@@ -131,6 +132,13 @@ struct ext2_directory {
 
 	char name[0];
 } __packed;
+
+static inline struct ext2_superblock *ext2_sb(struct superblock *sb)
+{
+	return sb->fs_info;
+}
+
+#define EXT2_INODES_PER_GROUP(sb)	(ext2_sb(sb)->inodes_per_group)
 
 void ext2_fs_init(void);
 
