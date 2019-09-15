@@ -173,6 +173,9 @@ static __always_inline int device_read_sector(struct device *device,
 	return device_read(device, sector, 1, buffer);
 }
 
+int device_read_bytes(struct device *device, uint64_t offset,
+		      uint64_t length, char *buffer);
+
 int device_write(struct device *device, uint64_t sector, 
 		 uint64_t size, const char *buffer);
 

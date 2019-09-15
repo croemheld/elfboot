@@ -46,6 +46,35 @@ int device_read(struct device *device, uint64_t sector,
 	return -ENOTSUP;
 }
 
+int device_read_bytes(struct device *device, uint64_t offset,
+		      uint64_t length, char *buffer)
+{
+	char *tmpbuf;
+	uint64_t sector, blocks;
+	uint32_t remsec = 0, remblk = 0;
+	int ret = 0;
+
+	sector = div_u64_rem(offset, device->info.block_size, &remsec);
+	blocks = div_u64_rem(offset + length, device->info.block_size, &remblk);
+	if (remblk)
+		blocks++;
+
+	tmpbuf = bmalloc(device->info.block_size * blocks);
+	if (!tmpbuf)
+		return -ENOMEM;
+
+	ret = device_read(device, sector, blocks, tmpbuf);
+	if (ret)
+		goto device_free_tmpbuf;
+
+	memcpy(buffer, tmpbuf + remsec, length);
+
+device_free_tmpbuf:
+	bfree(tmpbuf);
+
+	return ret;
+}
+
 int device_write(struct device *device, uint64_t sector, 
 	uint64_t size, const char *buffer)
 {
