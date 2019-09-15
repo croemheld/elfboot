@@ -24,6 +24,9 @@ struct ext2_superblock {
 	uint16_t mnt_count;
 	uint16_t max_mnt_count;
 	uint16_t magic;
+
+#define EXT2_SUPERBLOCK_MAGIC	0xEF53
+
 	uint16_t state;
 	uint16_t errors;
 	uint16_t revision_minor;
