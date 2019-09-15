@@ -106,7 +106,7 @@ static __always_inline void fs_node_add(struct fs_node *child,
 	tree_node_insert(&child->fs_node, &parent->fs_node);
 }
 
-static __always_inline fs_node_parent(struct fs_node *node)
+static __always_inline struct fs_node *fs_node_parent(struct fs_node *node)
 {
 	return tree_parent_entry(node, struct fs_node, fs_node);
 }
