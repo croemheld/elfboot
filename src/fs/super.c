@@ -3,22 +3,28 @@
 #include <elfboot/fs.h>
 #include <elfboot/super.h>
 
+static struct fs_node *superblock_alloc_node(struct fs *fs, const char *name)
+{
+	return fs_node_alloc(NULL, fs->n_ops, name);
+}
+
 int superblock_alloc(struct device *device, struct fs *fs)
 {
 	device->sb = bmalloc(sizeof(*(device->sb)));
 	if (!device->sb)
 		return -ENOMEM;
 
+	device->sb->root = superblock_alloc_node(fs, device->name);
+	if (!device->sb->root) {
+		bfree(device->sb);
+		return -ENOMEM;
+	}
+
 	/* Set references */
 	device->sb->device = device;
 	device->sb->s_ops  = fs->s_ops;
 
 	return 0;
-}
-
-struct fs_node *superblock_alloc_node(struct fs *fs, const char *name)
-{
-	return fs_node_alloc(NULL, fs->n_ops, name);
 }
 
 int superblock_probe(struct device *device, struct fs *fs)

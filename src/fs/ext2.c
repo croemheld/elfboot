@@ -14,7 +14,7 @@ static int ext2_superblock_probe(struct device *device, struct fs *fs)
 	struct ext2_superblock *esb;
 	struct ext2_directory *rootp;
 	struct fs_node *node;
-	int ret = 0;
+	int ret;
 
 	esb = bmalloc(sizeof(*esb));
 	if (!esb)
@@ -22,13 +22,31 @@ static int ext2_superblock_probe(struct device *device, struct fs *fs)
 
 	ret = device_read_bytes(device, EXT2_SUPERBLOCK_OFFSET,
 				EXT2_SUPERBLOCK_LENGTH, (char *)esb);
-	if (ret)
+	if (ret) {
+		ret = -EFAULT;
 		goto sb_probe_free_esb;
+	}
 
-	
+	if (esb->magic != cputole16(EXT2_SUPERBLOCK_MAGIC)) {
+		ret = -EINVAL;
+		goto sb_probe_free_esb;
+	}
+
+	if (superblock_alloc(device, fs)) {
+		ret = -ENOMEM;
+		goto sb_probe_free_esb;
+	}
+
+	/* Store filesystem data */
+	device->sb->fs_info = esb;
+
+	node = device->sb->root;
+
+
 
 sb_probe_free_esb:
-	bfree(esb);
+	if (ret)
+		bfree(esb);
 
 	return ret;
 }

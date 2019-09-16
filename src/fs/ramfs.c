@@ -19,9 +19,7 @@ static int ramfs_superblock_probe(struct device *device, struct fs *fs)
 	if (superblock_alloc(device, fs))
 		return -EFAULT;
 
-	node = superblock_alloc_node(fs, device->name);
-	if (!node)
-		goto sb_probe_free_sb;
+	node = device->sb->root;
 
 	node->sb = device->sb;
 
@@ -29,15 +27,7 @@ static int ramfs_superblock_probe(struct device *device, struct fs *fs)
 	node->offset = vptrtuint(device->device_data) / RAMFS_BLOCK_SIZE;
 	node->size   = 0;
 
-	/* Insert root node */
-	device->sb->root = node;
-
 	return 0;
-
-sb_probe_free_sb:
-	
-
-	return -EFAULT;
 }
 
 static int ramfs_superblock_open(struct superblock *sb __unused)

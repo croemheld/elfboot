@@ -48,8 +48,6 @@ struct superblock {
 
 int superblock_alloc(struct device *device, struct fs *fs);
 
-struct fs_node *superblock_alloc_node(struct fs *fs, const char *name);
-
 int superblock_probe(struct device *device, struct fs *fs);
 
 int superblock_open(struct superblock *sb);

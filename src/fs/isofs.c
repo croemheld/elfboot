@@ -14,27 +14,35 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	struct iso_primary_descriptor *pvd;
 	struct iso_directory_record *rootp;
 	struct fs_node *node;
+	int ret;
 
 	pvd = bmalloc(device->info.block_size);
 	if (!pvd)
 		return -ENOMEM;
 
 	/* Read the primary volume descriptor into the buffer */
-	if (device_read_sector(device, ISOFS_PRIMARY_SECTOR, (char *)pvd))
+	ret = device_read_sector(device, ISOFS_PRIMARY_SECTOR, (char *)pvd);
+	if (ret) {
+		ret = -EFAULT;
 		goto sb_probe_free_pvd;
+	}
 
 	/* Is this indeed an ISO 9660 formatted device? */
-	if (strncmp(pvd->id, ISOFS_PRIMARY_VOLUME_ID, 5))
+	if (strncmp(pvd->id, ISOFS_PRIMARY_VOLUME_ID, 5)) {
+		ret = -EFAULT;
 		goto sb_probe_free_pvd;
+	}
 
 	/* Initialize the superblock */
-	if (superblock_alloc(device, fs))
+	if (superblock_alloc(device, fs)) {
+		ret = -ENOMEM;
 		goto sb_probe_free_pvd;
+	}
 
-	node = superblock_alloc_node(fs, device->name);
-	if (!node)
-		goto sb_probe_free_pvd;
+	/* Store filesystem data */
+	device->sb->fs_info = pvd;
 
+	node = device->sb->root;
 	rootp = isofs_root_dir(pvd);
 
 	node->sb = device->sb;
@@ -48,17 +56,11 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 	device->sb->last_block = isonum_733(pvd->volume_space_size);
 	device->sb->block_size = isonum_723(pvd->logical_block_size);
 
-	/* Insert root node */
-	device->sb->root = node;
-
-	bfree(pvd);
-
-	return 0;
-
 sb_probe_free_pvd:
-	bfree(pvd);
+	if (ret)
+		bfree(pvd);
 
-	return -EFAULT;
+	return ret;
 }
 
 static int isofs_superblock_open(struct superblock *sb __unused)
