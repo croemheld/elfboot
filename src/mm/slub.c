@@ -37,6 +37,7 @@ static void bmem_cache_init(void *objp)
 	list_init(&cachep->slabs_partial);
 	list_init(&cachep->slabs_full);
 	cachep->ctor = NULL;
+	list_init(&cachep->next);
 }
 
 /*
@@ -51,6 +52,33 @@ static struct bmem_cache bmem_cache = {
  * The actual caches for bmalloc()
  */
 static struct bmem_cache *bmalloc_caches[KMALLOC_CACHE_NUM];
+
+static LIST_HEAD(bmem_caches);
+
+static void __slab_dump(struct bmem_cache *cachep)
+{
+	bprintln("%-16s %10lu %10lu %10lu %10lu", 
+		 cachep->name,
+		 cachep->free_objs,
+		 cachep->size,
+		 cachep->free_slabs,
+		 cachep->total_slabs);
+}
+
+void slab_dump(void)
+{
+	struct bmem_cache *cachep;
+
+	bprintln("%-16s %-10s %-10s %-10s %-10s",
+		 "Cache name",
+		 "free objs",
+		 "obj size",
+		 "free slabs",
+		 "tot. slabs");
+
+	list_for_each_entry(cachep, &bmem_caches, next)
+		__slab_dump(cachep);
+}
 
 static inline int bmalloc_index(uint32_t size)
 {
@@ -123,9 +151,9 @@ static void bmem_cache_fixup(struct bmem_cache *cachep, struct page *page)
 	list_del(&page->list);
 
 	if (page->inuse == cachep->nums)
-		list_add(&page->list, &cachep->slabs_full);
+		list_move(&page->list, &cachep->slabs_full);
 	else
-		list_add(&page->list, &cachep->slabs_partial);
+		list_move(&page->list, &cachep->slabs_partial);
 }
 
 static void bmem_cache_setup(struct bmem_cache *cachep, struct page *page)
@@ -160,13 +188,10 @@ static struct page *bmem_cache_grow(struct bmem_cache *cachep)
 
 	/* Initialize objects */
 	bmem_cache_setup(cachep, page);
-
-	list_init(&page->list);
 	cachep->total_slabs++;
 
 	if(!page->inuse) {
-		list_add(&page->list, &cachep->slabs_free);
-		cachep->free_slabs++;
+		list_move(&page->list, &cachep->slabs_free);
 	} else
 		bmem_cache_fixup(cachep, page);
 
@@ -246,6 +271,7 @@ void *bmem_cache_alloc(struct bmem_cache *cachep)
 		return NULL;
 
 	cachep->free_objs--;
+	bmem_cache_fixup(cachep, page);
 
 	return objp;
 }
@@ -272,11 +298,13 @@ struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
 	if (!cachep->name)
 		goto bmem_cache_alloc_free;
 
-	cachep->size  = size;
+	cachep->size  = round_up_pow2(size);
 	cachep->nums  = PAGE_SIZE / cachep->size;
 	cachep->order = calculate_cache_order(cachep->size);
 
 	cachep->ctor  = ctor;
+
+	list_add(&cachep->next, &bmem_caches);
 
 	return cachep;
 
@@ -322,6 +350,8 @@ static int bmalloc_create_all_caches(void)
 
 		if (!bmalloc_caches[cache_num])
 			return -EFAULT;
+
+		list_add(&bmalloc_caches[cache_num]->next, &bmem_caches);
 	}
 
 	return 0;
@@ -338,6 +368,13 @@ static void bmalloc_create_boot_cache(void)
 	list_init(&bmem_cache.slabs_free);
 	list_init(&bmem_cache.slabs_partial);
 	list_init(&bmem_cache.slabs_full);
+	list_init(&bmem_cache.next);
+
+	/*
+	 * Add root cache to list
+	 */
+
+	list_add(&bmem_cache.next, &bmem_caches);
 }
 
 int bmalloc_init(void)
