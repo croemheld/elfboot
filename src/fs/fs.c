@@ -258,7 +258,7 @@ static int fs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __
 }
 
 static struct fs_node *fs_mkdir_node(struct fs_node *node, const char *path,
-				     uint32_t flags)
+				     uint32_t flags __unused)
 {
 	char *name, *part;
 
@@ -286,8 +286,6 @@ static struct fs_node *fs_mkdir_node(struct fs_node *node, const char *path,
 struct fs_node *fs_mkdir(const char *path, uint32_t flags)
 {
 	struct fs_lookup_req lookup_req;
-	struct fs_node *node;
-	char *name, *part;
 
 	init_fs_request(&lookup_req);
 	lookup_req.flags = flags;
