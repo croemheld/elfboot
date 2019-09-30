@@ -2,6 +2,7 @@
 #include <elfboot/mm.h>
 #include <elfboot/slub.h>
 #include <elfboot/printf.h>
+#include <elfboot/string.h>
 #include <elfboot/math.h>
 #include <elfboot/list.h>
 
@@ -284,6 +285,16 @@ void *bmalloc(uint32_t size)
 		return NULL;
 
 	return bmem_cache_alloc(cachep);
+}
+
+void *bzalloc(uint32_t size)
+{
+	void *objp = bmalloc(size);
+
+	if (objp)
+		memset(objp, 0, size);
+
+	return objp;
 }
 
 struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
