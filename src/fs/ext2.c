@@ -9,6 +9,50 @@
 
 #include <fs/ext2.h>
 
+static int ext2_read_group_desc(struct superblock *sb, uint64_t blkgrp,
+				struct ext2_block_group_desc *blkdsc)
+{
+	int ret;
+	uint64_t blkoff = blkgrp * EXT2_BLOCKS_PER_GROUP(sb);
+	uint64_t grpoff = blkoff * EXT2_BLOCK_SIZE(sb);
+
+	ret = device_read_bytes(sb->device, grpoff + EXT2_GROUP_DESC_OFFSET,
+				EXT2_GROUP_DESC_LENGTH, (char *)blkdsc);
+	if (ret)
+		return -EFAULT;
+
+	return 0;
+}
+
+static struct ext2_block_group_desc *ext2_group_desc(struct superblock *sb,
+						     uint64_t blkgrp)
+{
+	struct ext2_block_group_desc *group_desc;
+	int ret;
+
+	if (blkgrp >= ext2_sb(sb)->block_group_count)
+		return NULL;
+
+	if (ext2_sb(sb)->block_groups[blkgrp])
+		return ext2_sb(sb)->block_groups[blkgrp];
+
+	group_desc = bmalloc(EXT2_GROUP_DESC_LENGTH);
+	if (!group_desc)
+		return NULL;
+	
+	ret = ext2_read_group_desc(sb, blkgrp, group_desc);
+	if (ret)
+		goto read_group_free;
+
+	ext2_sb(sb)->block_groups[blkgrp] = group_desc;
+
+read_group_free:
+	if (ret)
+		bfree(group_desc);
+
+	return group_desc;
+}
+
 static int ext2_superblock_probe(struct device *device, struct fs *fs)
 {
 	struct ext2_superblock *esb;
