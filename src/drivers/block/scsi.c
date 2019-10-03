@@ -311,6 +311,7 @@ static int scsi_close(struct device *device __unused)
 }
 
 static struct device_driver scsi_device_driver = {
+	.name = "SCSI",
 	.probe = scsi_probe,
 	.open = scsi_open,
 	.read = scsi_read,

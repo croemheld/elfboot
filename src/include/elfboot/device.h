@@ -14,6 +14,7 @@
 struct device;
 
 struct device_driver {
+	const char *name;
 	int (*probe)(struct device *);
 	int (*open)(struct device *, const char *);
 	int (*read)(struct device *, uint64_t, uint64_t, char *);

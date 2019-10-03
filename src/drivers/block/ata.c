@@ -332,6 +332,7 @@ static int atapi_close(struct device *device __unused)
 }
 
 static struct device_driver ata_device_driver = {
+	.name = "ATA",
 	.probe = ata_probe,
 	.open = ata_open,
 	.read = ata_read,
@@ -341,6 +342,7 @@ static struct device_driver ata_device_driver = {
 };
 
 static struct scsi_driver atapi_device_driver = {
+	.name = "ATAPI",
 	.probe = atapi_probe,
 	.open = atapi_open,
 	.read = atapi_read,
