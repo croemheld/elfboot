@@ -5,6 +5,10 @@
 
 static struct fs_node *superblock_alloc_node(struct fs *fs, const char *name)
 {
+	/*
+	 * The parent node needs to be set by the caller.
+	 */
+
 	return fs_node_alloc(NULL, fs->n_ops, name);
 }
 

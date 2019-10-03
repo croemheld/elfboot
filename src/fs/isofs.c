@@ -33,7 +33,10 @@ static int isofs_superblock_probe(struct device *device, struct fs *fs)
 		goto sb_probe_free_pvd;
 	}
 
-	/* Initialize the superblock */
+	/*
+	 * Superblock allocation
+	 */
+
 	if (superblock_alloc(device, fs)) {
 		ret = -ENOMEM;
 		goto sb_probe_free_pvd;
