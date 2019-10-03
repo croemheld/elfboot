@@ -10,6 +10,8 @@
 #define EDD_MAGIC1			0x55AA
 #define EDD_MAGIC2			0xAA55
 
+#define EDD_MAX_DEVICES			8
+
 struct edd_disk_drive_params {
 	uint16_t io_base;
 	uint16_t control;
@@ -187,5 +189,7 @@ static inline int edd_device_is_type(const char *name, const char *type)
 }
 
 struct device *edd_device_create(uint8_t devno);
+
+int edd_query_devices(void);
 
 #endif /* __X86_EDD_H__ */

@@ -183,3 +183,28 @@ struct device *edd_device_create(uint8_t devno)
 
 	return device;
 }
+
+int edd_query_devices(void)
+{
+	uint8_t devno;
+	struct device *device;
+	char name[] = "sda";
+
+	for (devno = 0x80; devno < 0x80 + EDD_MAX_DEVICES; devno++) {
+		device = edd_device_create(devno);
+
+		if (!device)
+			continue;
+
+		if (!device_create(device, name))
+			continue;
+
+		/*
+		 * Use sda, sdb, ... etc as names for our devices.
+		 */
+		
+		name[2]++;
+	}
+
+	return 0;
+}
