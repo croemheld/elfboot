@@ -136,6 +136,7 @@ struct scsi_xfer16 {
 } __packed;
 
 struct scsi_driver {
+	const char *name;
 	int (*probe)(struct device *);
 	int (*open)(struct device *, const char *);
 	int (*read)(struct device *, char *, size_t, char *, size_t);
