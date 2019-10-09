@@ -38,22 +38,43 @@ void put_string(formatter *f, const char *str)
 	char pad_char = (f->flags & PADDING_NUL) ? '0' : ' ';
 
 	if (~f->flags & PADDING_NEG) {
-		while(--width >= 0)
+		while (--width >= 0)
 			put_char(f, pad_char);
 	}
 
 	if (!f->precision)
-		while(*str)
+		while (*str)
 			put_char(f, *str++);
 	else {
 		f->precision = false;
 
-		while(--f->strlen >= 0)
+		while (--f->strlen >= 0)
 			put_char(f, *str++);
 	}
 
-	while(--width >= 0)
+	while (--width >= 0)
 		put_char(f, pad_char);
+}
+
+void put_binary(formatter *f, unsigned long long n)
+{
+	char buffer[64];
+	char *end = buffer + sizeof(buffer) - 1;
+	char *str = end;
+
+	/* NULL terminator */
+	*str = '\0';
+
+	do {
+		char c = '0' + (n & 1);
+		*--str = c;
+
+		n >>= 1;
+	} while (n > 0);
+
+	f->width -= end - str;
+
+	put_string(f, str);
 }
 
 void put_decimal(formatter *f, unsigned long long n)
@@ -70,7 +91,7 @@ void put_decimal(formatter *f, unsigned long long n)
 		*--str = c;
 
 		n /= 10;
-	} while(n > 0);
+	} while (n > 0);
 
 	f->width -= end - str;
 
@@ -100,7 +121,7 @@ void put_hexadecimal(formatter *f, char type, unsigned long long n)
 
 		*--str = c;
 		n >>= 4;
-	} while(n > 0);
+	} while (n > 0);
 
 	f->width -= end - str;
 
@@ -121,7 +142,7 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 	f.buffer = buffer;
 	f.end = buffer + size - 1;
 
-	while(1) {
+	while (1) {
 		char c = *format++;
 		bool is_long_long = false;
 
@@ -165,7 +186,7 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			do {
 				width = width * 10 + c - '0';
 				c = *format++;
-			} while(is_digit(c));
+			} while (is_digit(c));
 
 			if (f.precision && !(f.strlen > 0))
 				f.strlen = width;
@@ -222,9 +243,9 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			{
 				long long n;
 
-				if (is_long_long) {
+				if (is_long_long)
 					n = va_arg(*argp, long long);
-				} else
+				else
 					n = va_arg(*argp, int);
 
 				if (n < 0) {
@@ -240,9 +261,9 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			{
 				unsigned long long n;
 
-				if (is_long_long) {
+				if (is_long_long)
 					n = va_arg(*argp, unsigned long long);
-				} else
+				else
 					n = va_arg(*argp, unsigned long);
 
 				put_decimal(&f, n);
@@ -254,13 +275,25 @@ int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
 			{
 				unsigned long long n;
 
-				if (is_long_long) {
+				if (is_long_long)
 					n = va_arg(*argp, unsigned long long);
-
-				} else
+				else
 					n = va_arg(*argp, unsigned long);
 
 				put_hexadecimal(&f, type, n);
+				break;
+			}
+
+			case 'b':
+			{
+				unsigned long long n;
+
+				if (is_long_long)
+					n = va_arg(*argp, unsigned long long);
+				else
+					n = va_arg(*argp, unsigned long);
+
+				put_binary(&f, n);
 				break;
 			}
 
