@@ -7,6 +7,7 @@ elfboot-y += edd.o
 elfboot-y += e820.o
 elfboot-y += main.o
 elfboot-y += opmode.o
+elfboot-y += pci.o
 elfboot-y += pic.o
 elfboot-y += timestamp.o
 elfboot-y += video.o
