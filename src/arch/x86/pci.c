@@ -209,31 +209,50 @@ void pci_device_iterate(int (*hook)(struct pci_device *, void *), void *data)
 	}
 }
 
-struct pci_device *pci_get_device(uint16_t vendor, uint16_t device)
+static struct pci_device *pci_find_device(struct pci_device_id *id)
 {
 	struct pci_device *pcidev;
 
 	list_for_each_entry(pcidev, &pci_devices, list) {
-		if ((pcidev->vendor == vendor) &&
-		    (pcidev->device == device))
+		if ((id->vendor == PCI_ANY_ID || 
+		     id->vendor == pcidev->vendor) &&
+		    (id->device == PCI_ANY_ID || 
+		     id->device == pcidev->device) &&
+		    (id->subvendor == PCI_ANY_ID ||
+		     id->subvendor == pcidev->subvendor) &&
+		    (id->subdevice == PCI_ANY_ID ||
+		     id->subdevice == pcidev->subdevice) &&
+		    !((id->class ^ pcidev->classrv) & PCI_CLASS_MASK))
 			return pcidev;
 	}
 
 	return NULL;
 }
 
-struct pci_device *pci_get_device_by_class(uint16_t class, uint8_t prog_if)
+struct pci_device *pci_get_device(uint16_t vendor, uint16_t device)
 {
-	struct pci_device *pcidev;
+	struct pci_device_id id = {
+		.vendor = vendor,
+		.device = device,
+		.subvendor = PCI_ANY_ID,
+		.subdevice = PCI_ANY_ID,
+		.class = PCI_ANY_ID
+	};
 
-	list_for_each_entry(pcidev, &pci_devices, list) {
-		if ((pcidev->prog_if  == prog_if) &&
-		    (pcidev->subclass == ((class >> 0) & 0xff)) &&
-		    (pcidev->class    == ((class >> 8) & 0xff)))
-			return pcidev;
-	}
+	return pci_find_device(&id);
+}
 
-	return NULL;	
+struct pci_device *pci_get_device_by_class(uint32_t class)
+{
+	struct pci_device_id id = {
+		.vendor = PCI_ANY_ID,
+		.device = PCI_ANY_ID,
+		.subvendor = PCI_ANY_ID,
+		.subdevice = PCI_ANY_ID,
+		.class = class
+	};
+
+	return pci_find_device(&id);
 }
 
 /*
@@ -260,6 +279,8 @@ static void pci_alloc_device(struct pci_address *addr)
 	pcidev->command = pci_read_config_word(addr, PCI_COMMAND);
 	pcidev->status  = pci_read_config_word(addr, PCI_STATUS);
 	pcidev->classrv = pci_read_config_long(addr, PCI_REVISION);
+	pcidev->subvendor = pci_read_config_word(addr, PCI_SUBVENDOR);
+	pcidev->subdevice = pci_read_config_word(addr, PCI_SUBDEVICE);
 
 	pci_dump_device(pcidev);
 

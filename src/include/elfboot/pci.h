@@ -42,6 +42,9 @@
 #define PCI_BIST			0x0F
 
 #define PCI_INVALID_DEVICE		(~0UL)
+#define PCI_ANY_ID			(~0UL)
+
+#define PCI_CLASS_MASK			(~(_BITUL(8) - 1))
 
 /*
  * PCI Header Type 0x00
@@ -229,10 +232,15 @@ struct pci_address {
 };
 
 struct pci_device_id {
-	uint16_t vendor;
-	uint16_t device;
-	uint16_t subvendor;
-	uint16_t subdevice;
+	uint32_t vendor;
+	uint32_t device;
+	uint32_t subvendor;
+	uint32_t subdevice;
+
+	/*
+	 * Class, Subclass and Program Interface
+	 */
+
 	uint32_t class;
 };
 
@@ -266,6 +274,9 @@ struct pci_device {
 		};
 	};
 
+	uint32_t subvendor;
+	uint32_t subdevice;
+
 	/*
 	 * List of registered PCI devices
 	 */
@@ -277,7 +288,7 @@ void pci_device_iterate(int (*hook)(struct pci_device *, void *), void *data);
 
 struct pci_device *pci_get_device(uint16_t vendor, uint16_t device);
 
-struct pci_device *pci_get_device_by_class(uint16_t class, uint8_t prog_if);
+struct pci_device *pci_get_device_by_class(uint32_t class);
 
 void pci_init(void);
 
