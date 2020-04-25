@@ -7,6 +7,10 @@
  * Basic port I/O 
  */
 
+/*
+ * TODO CRO: Move to arch/x86
+ */
+
 static inline void outb(uint16_t port, uint8_t v)
 {
 	__asm__ volatile("outb %0, %1" :: "a" (v), "dN" (port));
