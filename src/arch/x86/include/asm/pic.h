@@ -11,6 +11,8 @@
 
 #define PIC_CMD_EOI                               0x20
 
+void pic_send_eoi(uint8_t irq);
+
 void pic_init(void);
 
 #endif /* __X86_PIC_H__ */

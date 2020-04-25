@@ -4,6 +4,12 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
+#define VBE2	0x32454256
+
+/*
+ * VESA information structure for INT 10h
+ */
+
 struct timing_description {
 	uint8_t  horizontal_frequency;
 	uint8_t  vertical_frequency;
@@ -53,7 +59,10 @@ struct edid_data {
 } __packed;
 
 struct vesa_info {
-	char signature[4];
+	union {
+		char signature[4];
+		uint32_t sigvalue;
+	};
 	uint16_t version;
 	uint32_t oem;
 	uint32_t capabilities;

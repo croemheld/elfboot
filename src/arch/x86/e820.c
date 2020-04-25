@@ -44,7 +44,7 @@ static uint16_t detect_memory_e820(struct e820_table *table)
 
 static void e820_memblock_setup(struct e820_table *table)
 {
-	int i;
+	uint32_t i, base, size;
 	struct e820_entry *entry;
 
 	for(i = 0; i < table->nr_entries; i++) {
@@ -53,20 +53,46 @@ static void e820_memblock_setup(struct e820_table *table)
 		if (entry->type != E820_MEMORY_TYPE_AVAILABLE)
 			continue;
 
-		memblock_add(entry->addr_32, entry->size_32);
+		/*
+		 * For now, we want to limit the free memory regions to no override
+		 * the kernel which is loaded at the earliest address of 1 MB. This
+		 * check will allow us to limit the memory available to the specific
+		 * limit represented by MEMBLOCK_LIMIT.
+		 */
+
+		if (entry->addr_32 + entry->size_32 <= MEMBLOCK_START)
+			continue;
+
+		if (entry->addr_32 >= MEMBLOCK_LIMIT)
+			continue;
+
+		base = max(entry->addr_32, MEMBLOCK_START);
+		size = entry->addr_32 + entry->size_32 - base;
+
+		/*
+		 * Add chunk of free memory to memblock allocator.
+		 */
+
+		memblock_add(base, size);
 	}
 }
 
-void detect_memory(struct boot_params *boot_params)
+int detect_memory(struct boot_params *boot_params)
 {
 	uint16_t nr_entries = detect_memory_e820(&boot_params->e820_table);
 
 	if (!nr_entries)
-		return;
+		return -ENOMEM;
 
 	boot_params->e820_table.nr_entries = nr_entries;
 
-	e820_memory_dump(&boot_params->e820_table);
-
+	/*
+	 * Initialize memblock allocator with the entries stores in the previously
+	 * filled e820 memory map. We use the original entries from the memory map
+	 * because the kernel will later simply override already filled regions.
+	 */
+	
 	e820_memblock_setup(&boot_params->e820_table);
+
+	return 0;
 }

@@ -7,10 +7,79 @@
 
 #include <uapi/elfboot/const.h>
 
+/*
+ * EDD magic numbers for validating result of BIOS function
+ */
+
 #define EDD_MAGIC1			0x55AA
 #define EDD_MAGIC2			0xAA55
 
-#define EDD_MAX_DEVICES			8
+/*
+ * EDD disk drive parameter values and bits
+ */
+
+#define EDD_DRIVE_PARAM_SLAVE_BIT	4
+#define EDD_DRIVE_PARAM_SLAVE		_BITUL(EDD_DRIVE_PARAM_SLAVE_BIT)
+#define EDD_DRIVE_PARAM_LBA_BIT		6
+#define EDD_DRIVE_PARAM_LBA			_BITUL(EDD_DRIVE_PARAM_LBA_BIT)
+
+#define EDD_PARAM_DMA_BIT			0
+#define EDD_PARAM_DMA				_BITUL(EDD_PARAM_DMA_BIT)
+#define EDD_PARAM_CHS_VALID_BIT		1
+#define EDD_PARAM_CHS_VALID			_BITUL(EDD_PARAM_CHS_VALID_BIT)
+#define EDD_PARAM_REMOVABLE_BIT		2
+#define EDD_PARAM_REMOVABLE			_BITUL(EDD_PARAM_REMOVABLE_BIT)
+#define EDD_PARAM_WRVERIFY_BIT		3
+#define EDD_PARAM_WRVERIFY			_BITUL(EDD_PARAM_WRVERIFY_BIT)
+#define EDD_PARAM_CHLINE_BIT		4
+#define EDD_PARAM_CHLINE			_BITUL(EDD_PARAM_CHLINE_BIT)
+#define EDD_PARAM_LOCKED_BIT		5
+#define EDD_PARAM_LOCKED			_BITUL(EDD_PARAM_LOCKED_BIT)
+#define EDD_PARAM_CHS_MAX_BIT		6
+#define EDD_PARAM_CHS_MAX			_BITUL(EDD_PARAM_CHS_MAX_BIT)
+
+#define EDD_HOST_BUS_ISA			"ISA"
+#define EDD_HOST_BUS_PCI			"PCI"
+
+#define EDD_INTERFACE_ATA			"ATA"
+#define EDD_INTERFACE_ATAPI			"ATAPI"
+#define EDD_INTERFACE_SCSI			"SCSI"
+#define EDD_INTERFACE_USB			"USB"
+#define EDD_INTERFACE_1394			"1394"
+#define EDD_INTERFACE_FIBRE			"FIBRE"
+
+/*
+ * Disk address packet
+ */
+
+struct disk_address_packet {
+	uint8_t len;
+	uint8_t __reserved;
+	uint16_t num;
+	uint32_t buf;
+	uint64_t lba;
+};
+
+/*
+ * Structure for reading from drive
+ */
+
+struct edd_extfer_info {
+	uint8_t dev;
+	uint16_t bps;
+	uint32_t lba;
+	uint32_t len;
+
+	/*
+	 * final step
+	 */
+	uint16_t num;
+	uint32_t buf;
+};
+
+/*
+ * Drive parameters from far pointer
+ */
 
 struct edd_disk_drive_params {
 	uint16_t io_base;
@@ -27,11 +96,6 @@ struct edd_disk_drive_params {
 	uint8_t  checksum;
 } __packed;
 
-#define EDD_DISK_DRIVE_PARAM_SLAVE_BIT	4
-#define EDD_DISK_DRIVE_PARAM_SLAVE	_BITUL(EDD_DISK_DRIVE_PARAM_SLAVE_BIT)
-#define EDD_DISK_DRIVE_PARAM_LBA_BIT	6
-#define EDD_DISK_DRIVE_PARAM_LBA	_BITUL(EDD_DISK_DRIVE_PARAM_LBA_BIT)
-
 /*
  * Drive parameters
  */
@@ -40,24 +104,9 @@ struct edd_device_params {
 	uint16_t length;
 	uint16_t info_flags;
 
-#define EDD_DEVICE_PARAM_DMA_BIT	0
-#define EDD_DEVICE_PARAM_DMA		_BITUL(EDD_DEVICE_PARAM_DMA_BIT)
-#define EDD_DEVICE_PARAM_CHS_VALID_BIT	1
-#define EDD_DEVICE_PARAM_CHS_VALID	_BITUL(EDD_DEVICE_PARAM_CHS_VALID_BIT)
-#define EDD_DEVICE_PARAM_REMOVABLE_BIT	2
-#define EDD_DEVICE_PARAM_REMOVABLE	_BITUL(EDD_DEVICE_PARAM_REMOVABLE_BIT)
-#define EDD_DEVICE_PARAM_WRVERIFY_BIT	3
-#define EDD_DEVICE_PARAM_WRVERIFY	_BITUL(EDD_DEVICE_PARAM_WRVERIFY_BIT)
-#define EDD_DEVICE_PARAM_CHLINE_BIT	4
-#define EDD_DEVICE_PARAM_CHLINE		_BITUL(EDD_DEVICE_PARAM_CHLINE_BIT)
-#define EDD_DEVICE_PARAM_LOCKED_BIT	5
-#define EDD_DEVICE_PARAM_LOCKED		_BITUL(EDD_DEVICE_PARAM_LOCKED_BIT)
-#define EDD_DEVICE_PARAM_CHS_MAX_BIT	6
-#define EDD_DEVICE_PARAM_CHS_MAX	_BITUL(EDD_DEVICE_PARAM_CHS_MAX_BIT)
-
-	uint32_t num_cylinders;
-	uint32_t num_heads;
-	uint32_t num_sectors;
+	uint32_t cylinders;
+	uint32_t heads;
+	uint32_t sectors_per_track;
 	uint64_t total_sectors;
 	uint16_t bytes_per_sector;
 
@@ -71,19 +120,7 @@ struct edd_device_params {
 	uint8_t  device_path_info_length;
 	const uint8_t _reserved[3];
 	const char host_bus_type[4];
-
-#define EDD_DEVICE_HOST_BUS_ISA		"ISA"
-#define EDD_DEVICE_HOST_BUS_PCI		"PCI"
-
 	const char interface_type[8];
-
-#define EDD_DEVICE_INTERFACE_ATA	"ATA"
-#define EDD_DEVICE_INTERFACE_ATAPI	"ATAPI"
-#define EDD_DEVICE_INTERFACE_SCSI	"SCSI"
-#define EDD_DEVICE_INTERFACE_USB	"USB"
-#define EDD_DEVICE_INTERFACE_1394	"1394"
-#define EDD_DEVICE_INTERFACE_FIBRE	"FIBRE"
-
 	union {
 		struct {
 			uint16_t base_address;
@@ -183,13 +220,17 @@ struct edd_device_info {
 	struct edd_device_params params;
 } __packed;
 
+#define EDD_BUS(edi)	(edi).params.interface_path.pci.bus
+#define EDD_SLOT(edi)	(edi).params.interface_path.pci.slot
+#define EDD_FUNC(edi)	(edi).params.interface_path.pci.function
+
+int edd_read_device_info(uint8_t devno, struct edd_device_info *edi);
+
+int edd_extended_read(struct edd_extfer_info *ext);
+
 static inline int edd_device_is_type(const char *name, const char *type)
 {
 	return strncmp(name, type, strlen(type));
 }
-
-struct device *edd_device_create(uint8_t devno);
-
-int edd_query_devices(void);
 
 #endif /* __X86_EDD_H__ */

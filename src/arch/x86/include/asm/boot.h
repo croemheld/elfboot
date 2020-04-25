@@ -1,22 +1,35 @@
 #ifndef __X86_BOOT_H__
 #define __X86_BOOT_H__
 
-#define IMAGE_ADDR                                0x7C00
-#define STACK_ADDR_START                          0x2000
-#define STACK_ADDR_END                            0x1000
-#define STACK_SIZE	                     (STACK_ADDR_START - STACK_ADDR_END)
+#define ELFBOOT "ELFBOOT"
 
-#define SETUP_PHYS_ADDR                           0x8000
-#define SETUP_SEGMENT                             0x07E0
+/*
+ * Second stage information
+ */
 
-#define VGA_FONT_BITMAP_ADDRESS                   0xA000
-#define CMDLINE_BUFFER_ADDRESS                    0xB000
+#define SECOND_STAGE_SEGMENT	0x07E0
+#define SECOND_STAGE_ADDRESS	(SECOND_STAGE_SEGMENT << 4)
 
-#define REALMODE_ADDRESS_LIMIT                    0xFFFF
+/*
+ * elfboot logo information
+ */
 
-#define IMG_ADDRESS                               0x7C00
-#define IMG_MAX_ADDRESS                           0x00010000
-#define IMG_MAX_SIZE                             (IMG_MAX_ADDRESS - IMG_ADDRESS)
+#define ELFBOOT_LOGO_SEGMENT	0x00000600
+#define ELFBOOT_LOGO_ADDRESS	(ELFBOOT_LOGO_SEGMENT << 4)
+#define ELFBOOT_LOGO_NUMWORD	0x00001000
+#define VGA_FRBUFFER_ADDRESS	0x000b8000
+
+/*
+ * Boot stacks
+ */
+
+#define BOOT_STACK_START		0x6000
+#define BOOT_STACK_END			0x5000
+#define BOOT_STACK_SIZE			(BOOT_STACK_START - BOOT_STACK_END)
+
+/*
+ * Real-mode interrupt vector table
+ */
 
 #define IVT_ADDRESS                               0x0000
 #define IVT_MAX_SIZE                              0x0400
@@ -26,23 +39,45 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
+#include <uapi/elfboot/common.h>
+
 #include <uapi/asm/bootparam.h>
 
-/* Retrieve e820 memory map */
-void detect_memory(struct boot_params *boot_params);
+/*
+ * Boot information table
+ */
 
-/* Detect supported video modes */
-void detect_videos(struct boot_params *boot_params);
+struct boot_info_table {
+	uint32_t pvdlba;
 
-/* Load kernel */
-void prepare_kernel(struct boot_params *boot_params);
+	/*
+	 * elfboot binary information
+	 */
+	uint32_t elfboot_lba;
+	uint32_t elfboot_len;
 
-/* Jump into our cr0S kernel */
-void kernel_init(void);
+	/*
+	 * Boot unique identification file
+	 */
+	uint32_t bootuid_lba;
+	uint32_t bootuid_len;
+} __packed;
 
-/* Architecture-specific main function*/
-int arch_init_late(void);
-int arch_main(uint8_t disk_drive);
+/*
+ * Initialization
+ */
+
+int detect_memory(struct boot_params *boot_params);
+
+int detect_videos(struct boot_params *boot_params);
+
+/*
+ * Common main function and arch_init_late
+ */
+
+int arch_init_late(char *cmdline);
+
+int elfboot_main(void);
 
 #endif /* __ASSEMBLER__ */
 

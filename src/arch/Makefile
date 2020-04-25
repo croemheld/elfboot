@@ -1,0 +1,1 @@
+elfboot-d += $(ELFBOOT_ARCH)
