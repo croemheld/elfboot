@@ -1,340 +1,288 @@
 #include <elfboot/core.h>
 #include <elfboot/string.h>
 #include <elfboot/console.h>
+#include <elfboot/math.h>
+
+#include <asm/printf.h>
 
 #include <elfboot/debug.h>
 
 /*
- * Private structures
+ * format_struct structure for passing arguments to the individual handlers
+ * of strings, characters and numbers. This structure should always be used
+ * because we don't like making our lifes complicated.
  */
-
-typedef struct {
-    char *buffer;
-    char *end;
-    uint32_t flags;
-    int width;
-    bool precision;
-    int strlen;
-} formatter;
 
 typedef enum {
-    PADDING_NUL                                   = 0x00000001,
-    PADDING_NEG                                   = 0x00000002,
+    PAD_NUL	= 0x00000001,
+    PAD_NEG	= 0x00000002,
+    SGN_POS	= 0x00000004
 } format_flags_t;
 
+struct format_struct {
+	char *buf;
+	uint32_t flags;
+
+	/*
+	 * Purposes of the following fields: pad, pre, len
+	 *
+	 * pad: Padding left or right f the printed string
+	 * pre: Precision for strings, i.e.: string length
+	 * len: Length of string to print, without padding
+	 */
+	int pad;
+	int pre;
+	int len;
+};
+
 /*
- * Functions
+ * Individual handlers for characters, strings and numbers
  */
 
-void put_char(formatter *f, char c)
+static void vsprintf_put_char(struct format_struct *fmts, int c)
 {
-	if (f->buffer < f->end)
-		*f->buffer++ = c;
+	if (!(fmts->flags & PAD_NEG)) 
+		while (--fmts->pad > 0)
+			*fmts->buf++ = ' ';
+
+	*fmts->buf++ = c;
+
+	while (--fmts->pad > 0)
+		*fmts->buf++ = ' ';
 }
 
-void put_string(formatter *f, const char *str)
+static void vsprintf_put_string(struct format_struct *fmts, const char *str)
 {
-	int width = f->width;
-	char pad_char = (f->flags & PADDING_NUL) ? '0' : ' ';
+	int i, len = strnlen(str, fmts->pre);
 
-	if (~f->flags & PADDING_NEG) {
-		while (--width >= 0)
-			put_char(f, pad_char);
+	if (!(fmts->flags & PAD_NEG))
+		while (fmts->pad-- > len)
+			*fmts->buf++ = ' ';
+
+	for (i = 0; i < len; ++i)
+		*fmts->buf++ = *str++;
+
+	while (fmts->pad-- > len)
+		*fmts->buf++ = ' ';
+}
+
+static __always_inline int vsprintf_base(char qual)
+{
+	if (qual == 'b')
+		return 2;
+
+	if (qual == 'o')
+		return 8;
+
+	if (qual == 'd' || qual == 'u')
+		return 10;
+
+	if (qual == 'x')
+		return 16;
+
+	return 0;
+}
+
+static void vsprintf_put_number(struct format_struct *fmts,
+	long long n, int base)
+{
+	/*
+	 * Lookup array of allowed digits
+	 */
+	static const char digits[16] = "0123456789ABCDEF";
+
+	char c, sign, buf[66];
+	int i, d;
+
+	/*
+	 * That should not happen!
+	 */
+	if (!base)
+		return;
+
+	/*
+	 * Signedness of number
+	 */
+	c = (fmts->flags & PAD_NUL) ? '0' : ' ';
+	sign = 0;
+	if (fmts->flags & SGN_POS) {
+		if (n < 0) {
+			sign = '-';
+			n = -n;
+			fmts->pad--;
+		}
 	}
 
-	if (!f->precision)
-		while (*str)
-			put_char(f, *str++);
-	else {
-		f->precision = false;
+	i = 0;
+	if (!n)
+		buf[i++] = '0';
+	else
+		while (n != 0) {
+			d = (unsigned long long)n % (unsigned int)base;
+			n = (unsigned long long)n / (unsigned int)base;
+			buf[i++] = digits[d];
+		}
 
-		while (--f->strlen >= 0)
-			put_char(f, *str++);
-	}
+	if (i > fmts->pre)
+		fmts->pre = i;
 
-	while (--width >= 0)
-		put_char(f, pad_char);
+	fmts->pad -= fmts->pre;
+	if (!(fmts->flags & (PAD_NEG | PAD_NUL)))
+		while (fmts->pad-- > 0)
+			*fmts->buf++ = ' ';
+
+	if (sign)
+		*fmts->buf++ = sign;
+
+	if (!(fmts->flags & PAD_NEG))
+		while (fmts->pad-- > 0)
+			*fmts->buf++ = c;
+
+	while (i < fmts->pre)
+		*fmts->buf++ = '0';
+
+	while (i-- > 0)
+		*fmts->buf++ = buf[i];
+
+	while (fmts->pad-- > 0)
+		*fmts->buf++ = ' ';
 }
 
-void put_binary(formatter *f, unsigned long long n)
+static int vnsprintf_number(const char **str)
 {
-	char buffer[64];
-	char *end = buffer + sizeof(buffer) - 1;
-	char *str = end;
+	int num = 0;
 
-	/* NULL terminator */
-	*str = '\0';
+	while (is_digit(**str))
+		num = num * 10 + *((*str)++) - '0';
 
-	do {
-		char c = '0' + (n & 1);
-		*--str = c;
-
-		n >>= 1;
-	} while (n > 0);
-
-	f->width -= end - str;
-
-	put_string(f, str);
+	return num;
 }
 
-void put_decimal(formatter *f, unsigned long long n)
+/*
+ * Main function for transofrming strings
+ */
+
+int vsprintf(char *buf, const char *fmt, va_list *argp)
 {
-	char buffer[32];
-	char *end = buffer + sizeof(buffer) - 1;
-	char *str = end;
+	struct format_struct fmts;
+	unsigned long long num;
+	bool is_long_long;
 
-	/* NULL terminator */
-	*str = '\0';
-
-	do {
-		char c = '0' + (n % 10);
-		*--str = c;
-
-		n /= 10;
-	} while (n > 0);
-
-	f->width -= end - str;
-
-	put_string(f, str);
-}
-
-void put_hexadecimal(formatter *f, char type, unsigned long long n)
-{
-	char buffer[32];
-	char *end = buffer + sizeof(buffer) - 1;
-	char *str = end;
-
-	char c;
-
-	/* NULL terminator */
-	*str = '\0';
-
-	do {
-		uint8_t digit = n & 0xf;
-
-		if (digit < 10)
-			c = '0' + digit;
-		else if (type == 'x')
-			c = 'A' + digit - 10;
-		else
-			c = 'A' + digit - 10;
-
-		*--str = c;
-		n >>= 4;
-	} while (n > 0);
-
-	f->width -= end - str;
-
-	put_string(f, str);
-}
-
-void put_pointer(formatter *f, void *ptr)
-{
-	uint32_t n = (uintptr_t)ptr;
-
-	put_hexadecimal(f, 'x', n);
-}
-
-int vsnprintf(char *buffer, size_t size, const char *format, va_list *argp)
-{
-	formatter f;
-
-	f.buffer = buffer;
-	f.end = buffer + size - 1;
-
-	while (1) {
-		char c = *format++;
-		bool is_long_long = false;
-
-		if (!c)
-			break;
-
-		if (c != '%') {
-			put_char(&f, c);
+	for (fmts.buf = buf; *fmt; ++fmt) {
+		is_long_long = false;
+		
+		if (*fmt != '%') {
+			*fmts.buf++ = *fmt;
 			continue;
 		}
 
-		c = *format++;
+		fmts.flags = 0;
 
-		f.flags = 0;
+next_char:
 
-		if (c == '-') {
-			f.flags |= PADDING_NEG;
-			c = *format++;
-		} else if (c == '0') {
-			f.flags |= PADDING_NUL;
-			c = *format++;
+		switch(*++fmt) {
+			case '-':
+				fmts.flags |= PAD_NEG;
+				goto next_char;
+			case '0':
+				fmts.flags |= PAD_NUL;
+				goto next_char;
 		}
 
-		f.width  = -1;
-		f.strlen = -1;
-		f.precision = false;
+		/*
+		 * Indentation
+		 */
 
-		if (c == '.') {
-			f.precision = true;
-			c = *format++;
-
-			if (c == '*') {
-				f.strlen = va_arg(*argp, int);
-				c = *format++;
+		fmts.pad = -1;
+		if (is_digit(*fmt))
+			fmts.pad = vnsprintf_number(&fmt);
+		else if (*fmt == '*') {
+			++fmt;
+			fmts.pad = va_arg(*argp, int);
+			if (fmts.pad < 0) {
+				fmts.pad = -fmts.pad;
+				fmts.flags |= PAD_NEG;
 			}
 		}
 
-		if (is_digit(c)) {
-			int width = 0;
+		/*
+		 * Precision (for strings only)
+		 */
 
-			do {
-				width = width * 10 + c - '0';
-				c = *format++;
-			} while (is_digit(c));
+		fmts.pre = -1;
+		if (*fmt == '.') {
+			++fmt;
+			if (is_digit(*fmt))
+				fmts.pre = vnsprintf_number(&fmt);
+			else if (*fmt == '*') {
+				++fmt;
+				fmts.pre = va_arg(*argp, int);
+			}
 
-			if (f.precision && !(f.strlen > 0))
-				f.strlen = width;
-			else
-				f.width = width;
+			if (fmts.pre < 0)
+				fmts.pre = 0;
 		}
 
-		if (c == 'l') {
-			c = *format++;
+		/*
+		 * Large numbers (up to 64-bit)
+		 */
 
-			if (c == 'l') {
-				c = *format++;
+		if (*fmt == 'l') {
+			++fmt;
+			if (*fmt == 'l') {
+				++fmt;
 				is_long_long = true;
 			}
 		}
 
-		char type = c;
+		/*
+		 * Argument qualifiers
+		 */
 
-		switch(type) {
-			case '%': 
-			{
-				put_char(&f, '%');
-				break;
-			}
-
-			case 'c': 
-			{
-				c = va_arg(*argp, int);
-				put_char(&f, c);
-				break;
-			}
-
-			case 's': 
-			{
-				char *s = va_arg(*argp, char *);
-
-				if (!s)
-					s = "(null)";
-
-				if (f.width > 0) {
-					char *ptr = s;
-
-					while(*ptr)
-						++ptr;
-
-					f.width -= ptr - s;
-				}
-
-				put_string(&f, s);
-				break;
-			}
-
-			case 'd': 
-			{
-				long long n;
-
-				if (is_long_long)
-					n = va_arg(*argp, long long);
-				else
-					n = va_arg(*argp, int);
-
-				if (n < 0) {
-					put_char(&f, '-');
-					n = -n;
-				}
-
-				put_decimal(&f, n);
-				break;
-			}
-
-			case 'u': 
-			{
-				unsigned long long n;
-
-				if (is_long_long)
-					n = va_arg(*argp, unsigned long long);
-				else
-					n = va_arg(*argp, unsigned long);
-
-				put_decimal(&f, n);
-				break;
-			}
-
-			case 'x':
-			case 'X': 
-			{
-				unsigned long long n;
-
-				if (is_long_long)
-					n = va_arg(*argp, unsigned long long);
-				else
-					n = va_arg(*argp, unsigned long);
-
-				put_hexadecimal(&f, type, n);
-				break;
-			}
-
+		switch (*fmt) {
+			case 'c':
+				vsprintf_put_char(&fmts, va_arg(*argp, int));
+				continue;
+			case 's':
+				vsprintf_put_string(&fmts, va_arg(*argp, char *));
+				continue;
 			case 'b':
-			{
-				unsigned long long n;
+			case 'o':
+			case 'd':
+			case 'u':
+			case 'x':
+				if (*fmt == 'd')
+					fmts.flags |= SGN_POS;
 
 				if (is_long_long)
-					n = va_arg(*argp, unsigned long long);
+					num = va_arg(*argp, unsigned long long);
 				else
-					n = va_arg(*argp, unsigned long);
+					num = va_arg(*argp, unsigned long);
 
-				put_binary(&f, n);
-				break;
-			}
-
-			case 'p': 
-			{
-				void *p = va_arg(*argp, void *);
-
-				put_char(&f, '0');
-				put_char(&f, 'x');
-				put_pointer(&f, p);
-				break;
-			}
+				vsprintf_put_number(&fmts, num, vsprintf_base(*fmt));
+				continue;
+			default:
+				*fmts.buf++ = '%';
+				if (*fmt)
+					*fmts.buf++ = *fmt;
+				else
+					--fmt;
+				continue;
 		}
 	}
 
+	*fmts.buf = '\0';
 
-	if (f.buffer < f.end + 1)
-		*f.buffer = '\0';
-
-	return f.buffer - buffer;
+	return fmts.buf - buf;
 }
 
-int snprintf(char *buffer, size_t size, const char *format, ...)
+int sprintf(char *buffer, const char *format, ...)
 {
 	va_list argp;
 	int length;
 
 	va_start(argp, format);
-	length = vsnprintf(buffer, size, format, &argp);
-	va_end(argp);
-
-	return length;
-}
-
-int sprintf(char* buffer, const char *format, ...)
-{
-	va_list argp;
-	int length;
-
-	va_start(argp, format);
-	length = vsnprintf(buffer, strlen(buffer), format, &argp);
+	length = vsprintf(buffer, format, &argp);
 	va_end(argp);
 
 	return length;
@@ -347,14 +295,10 @@ int bprintf(const char *format, ...)
 	int length;
 
 	va_start(argp, format);
-	length = vsnprintf(buffer, 256, format, &argp);
+	length = vsprintf(buffer, format, &argp);
 	va_end(argp);
 
-	console_printf(buffer, length);
-
-#ifdef CONFIG_DEBUG
-	ebdebug_printf(buffer, length);
-#endif
+	early_printf(buffer, length);
 
 	return length;
 }
