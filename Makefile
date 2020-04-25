@@ -131,6 +131,7 @@ $(BOOTIMG): $(BOOTIMG_PREREQS)
 	$(Q)$(call objcopy,$(BOOTIMG))
 
 BUILD += $(ELFTOOL_TARGETS)
+PHONY += $(ELFTOOL_TARGETS)
 $(ELFTOOL_TARGETS):
 	$(Q)$(MAKE) -C $(ELFTOOL_TARGETS)
 
@@ -152,7 +153,7 @@ endif
 build:
 	$(Q)mkdir -p build/$(MODULES)
 
-iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG)
+iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG) $(ELFTOOL_TARGETS)
 	$(Q)$(CP) $(BOOTIMG).bin build
 	$(Q)$(CP) $(ELFBOOT).bin build
 	$(Q)$(CP) $(ELFBOOT).cfg build
