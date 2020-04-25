@@ -1,39 +1,11 @@
 #include <elfboot/core.h>
-#include <elfboot/mm.h>
-#include <elfboot/printf.h>
+#include <elfboot/string.h>
+#include <elfboot/memblock.h>
 
+#include <asm/boot.h>
 #include <asm/bios.h>
-#include <asm/e820.h>
 
 #include <uapi/asm/bootparam.h>
-
-static const char *memory_types[] = {
-	[E820_MEMORY_TYPE_INVALID] = "Invalid entry",
-	[E820_MEMORY_TYPE_AVAILABLE] = "Available memory",
-	[E820_MEMORY_TYPE_RESERVED] = "Reserved memory",
-	[E820_MEMORY_TYPE_ACPI_RECLAIMABLE] = "ACPI reclaimable memory",
-	[E820_MEMORY_TYPE_ACPI_NVS] = "ACPI NVS memory",
-	[E820_MEMORY_TYPE_BAD_MEMORY] = "Bad memory"
-};
-
-void e820_memory_dump(struct e820_table *table)
-{
-	int i;
-	uint32_t addr, type, end;
-	struct e820_entry *entry;
-
-	bprintln("Number of e820 memory map entries: %u",  table->nr_entries);
-
-	for(i = 0; i < table->nr_entries; i++) {
-		entry = &table->entries[i];
-
-		addr = entry->addr_32;
-		end  = addr + entry->size_32 - 1;
-		type = entry->type;
-
-		bprintln("[%08p - %08p], %s", addr, end, memory_types[type]);
-	}
-}
 
 static uint16_t detect_memory_e820(struct e820_table *table)
 {
