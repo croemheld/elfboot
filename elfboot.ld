@@ -1,25 +1,35 @@
-OUTPUT_FORMAT(binary)
-ENTRY(_start)
+OUTPUT_FORMAT(elf32-i386)
+ENTRY(_arch_start)
 
 SECTIONS
 {
-	. = 0x7C00;
-	__boot_start = .;
+	/*
+	 * The boot stack starts at 0x6000 and grows towards lower addresses.
+	 * The stack is designed to be only one page in size, which should be
+	 * sufficient for the bootstrap stage.
+	 */
 
-	.boot ALIGN(0x10) : {
-		*(.boot*)
-	}
+	. = 0x6000;
+	__stack_start = .;
 
-	. = 0x7DFE;
-	.signature : {
-		SHORT(0xAA55);
-	}
+	/*
+	 * Buffer for reading files from the boot device. Usually boot devices
+	 * are designed to read data in chunks of 0x200 (512) or 0x800 (2048)
+	 * bytes. The buffer is large enough to read 4 512 or 2 2048 chunks of
+	 * data from the disk.
+	 */
 
-	.real ALIGN(0x10) : {
-		__real_start = .;
-		*(.real*)
-		__real_end = .;
-	}
+	__buffer_start = .;
+
+	. = 0x7000;
+	__buffer_end = .;
+
+	/*
+	 * Actual bootstrap stage code and data.
+	 */
+
+	. = 0x7E00;
+	__bootstrap_start = .;
 
 	.text ALIGN(0x10) : {
 		__text_start = .;
@@ -31,6 +41,24 @@ SECTIONS
 		__rodata_start = .;
 		*(.rodata*)
 		__rodata_end = .;
+	}
+
+	/*
+	 * This section is dedicated to all built-in modules. If a module will
+	 * be included in the elfboot binary, the module_init function pointer
+	 * of that module is placed in this section.
+	 */
+
+	.initcalls ALIGN(0x10) : {
+		__initcalls_start = .;
+		*(.initcalls*)
+		__initcalls_end = .;
+	}
+
+	.exitcalls ALIGN(0x10) : {
+		__exitcalls_start = .;
+		*(.exitcalls*)
+		__exitcalls_end = .;
 	}
 
 	.data ALIGN(0x10) : {
@@ -45,9 +73,5 @@ SECTIONS
 		__bss_end = .;
 	}
 
-	/DISCARD/ : {
-		*(.comment*)
-	}
-
-	__boot_end = .;
+	__bootstrap_end = .;
 }
