@@ -12,6 +12,12 @@
 /docs/*
 
 #
+# Ignore build directory
+#
+
+/build/*
+
+#
 # Ignore binary files and virtual disk images
 #
 
