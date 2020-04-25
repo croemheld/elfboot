@@ -3,7 +3,7 @@
 
 .code32
 
-.section .real
+.section .text
 
 GLOBAL(bioscall)
 

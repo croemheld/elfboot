@@ -2,7 +2,7 @@
 
 .code16
 
-.section .real
+.section .text
 
 # enable_a20:
 #
@@ -30,7 +30,6 @@ GLOBAL(enable_a20)
 	call    a20_check
 
 .a20_enabled:
-
 	ret
 
 enable_a20_bios:
@@ -49,7 +48,6 @@ enable_a20_fast:
 	outb    %al, $0x92
 
 .a20_fast_enabled:
-
 	ret
 
 enable_a20_8042:
