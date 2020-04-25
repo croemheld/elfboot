@@ -1,11 +1,6 @@
-#ifndef __RAMFS_FS_H__
-#define __RAMFS_FS_H__
+#ifndef __FS_RAMFS_H__
+#define __FS_RAMFS_H__
 
-#include <elfboot/core.h>
-#include <elfboot/linkage.h>
+#define FS_RAM		"RAM"
 
-#define RAMFS_BLOCK_SIZE	512
-
-void ramfs_fs_init(void);
-
-#endif /* __RAMFS_FS_H__ */
+#endif /* __FS_RAMFS_H__ */

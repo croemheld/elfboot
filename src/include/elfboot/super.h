@@ -2,56 +2,59 @@
 #define __ELFBOOT_SUPERBLOCK_H__
 
 #include <elfboot/core.h>
-#include <elfboot/device.h>
+#include <elfboot/bdev.h>
 #include <elfboot/list.h>
 
-struct fs;
+struct fs_node;
+struct fs_dent;
 struct superblock;
 
 struct superblock_ops {
-	int (*probe)(struct device *, struct fs *);
-	int (*open)(struct superblock *);
-	int (*close)(struct superblock *);
+	struct fs_node *(*alloc_node)(struct superblock *, const char *);
+	void (*free_node)(struct fs_node *);
 };
 
 struct superblock {
+	struct fs_type *fs;
 
 	/*
-	 * Filesystem dependent information.
+	 * Backing block device for this superblock. Block devices are exclusive
+	 * structures that are able to hold superblocks. The block_size field is
+	 * filled by the file systems fill_super function pointer.
 	 */
-
-	void *fs_info;
+	struct bdev *bdev;
+	uint16_t block_size;
+	uint16_t block_logs;
 
 	/*
-	 * General information about capacity and
-	 * block size of the underlying device.
+	 * The root member points to the first entry in the superblock while the
+	 * mount member points to the entry of the parent node.
 	 */
-	
-	uint64_t last_block;
-	uint32_t block_size;
-
-	/*
-	 * The device which this superblock stores
-	 * information about.
-	 */
-	
-	struct device *device;
-
-	/*
-	 * The root node of the superblock, i.e.
-	 * a mountpoint in the VFS.
-	 */
-
 	struct fs_node *root;
-	struct superblock_ops *s_ops;
+	struct fs_node *mount;
+
+	struct superblock_ops *ops;
 };
 
-int superblock_alloc(struct device *device, struct fs *fs);
+#define SUPERBLOCK_SIZE		sizeof(struct superblock)
 
-int superblock_probe(struct device *device, struct fs *fs);
+static inline uint64_t sb_sector(struct superblock *sb, uint64_t sector,
+	uint64_t offset)
+{
+	return sector + (round_down(offset, sb->block_size) >> sb->block_logs);
+}
 
-int superblock_open(struct superblock *sb);
+static inline uint64_t sb_length(struct superblock *sb, uint64_t offset,
+	uint64_t length)
+{
+	return round_up(offset + length, sb->block_size) >> sb->block_logs;
+}
 
-int superblock_close(struct superblock *sb);
+struct superblock *superblock_alloc(struct fs_type *fs, struct bdev *bdev);
+
+int superblock_read(struct superblock *sb, uint32_t sector, void *buffer);
+
+int superblock_read_blocks(struct superblock *sb, uint32_t sector,
+	uint32_t blknum, void *buffer);
 
 #endif /* __ELFBOOT_SUPERBLOCK_H__ */

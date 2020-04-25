@@ -1,143 +1,199 @@
 #include <elfboot/core.h>
-#include <elfboot/linkage.h>
 #include <elfboot/mm.h>
 #include <elfboot/fs.h>
+#include <elfboot/file.h>
 #include <elfboot/super.h>
+#include <elfboot/sections.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
-#include <elfboot/list.h>
-#include <elfboot/tree.h>
 
-#include <fs/ext2.h>
-#include <fs/isofs.h>
-#include <fs/ramfs.h>
-
-/*
- * List of available file systems
- */
 LIST_HEAD(filesystems);
 
-/*
- * Filesystem root node
- */
 static struct fs_node *fs_root;
 
 /*
- * Caches for allocating fs_node and fs_dentry structures
+ * Cache for allocating filesystem nodes
  */
-static struct bmem_cache *node_cache;
-static struct bmem_cache *dent_cache;
 
-static void fs_node_init(void *objp)
+static struct bmem_cache *fs_node_cache;
+
+/*
+ * Debug functions
+ */
+
+#ifdef CONFIG_DEBUG_FS
+
+static void vfs_show_node(struct tree_info *info)
 {
-	struct fs_node *node = objp;
+	int indent, dlevel;
+	char *symbol;
 
-	tree_node_init(&node->fs_node);
+	if (!info->upper || !info->child)
+		return;
+
+	dlevel = info->level - 1;
+	indent = dlevel * TREE_LINE_SIZE;
+
+	if (!get_next_node(info->child))
+		symbol = TREE_LEAF_LINE;
+	else
+		symbol = TREE_NODE_LINE;
+	
+	sprintf(info->tibuf + indent, "%s %s", symbol, info->child->name);
+
+	if (!dlevel)
+		return;
+
+	indent -= TREE_LINE_SIZE;
+
+	if (!get_next_node(info->upper))
+		symbol = "   ";
+	else
+		symbol = TREE_PIPE_LINE;
+
+	strncpy(info->tibuf + indent, symbol, TREE_LINE_SIZE);
 }
 
-struct fs_node *fs_node_alloc(struct fs_node *parent, struct fs_ops *ops,
-			      const char *name)
+static void vfs_show_tree(struct tree_info *info, struct fs_node *node)
 {
-	struct fs_node *child = bmem_cache_alloc(node_cache);
+	struct fs_node *curr;
 
-	if (!child)
-		return NULL;
+	/* Enter level */
+	info->level++;
+	info->upper = node;
+	info->child = NULL;
 
-	child->ops = ops;
-	strcpy(child->name, name);
+	for_each_node(curr, node) {
+		info->child = curr;
+		vfs_show_node(info);
 
-	/* Add new node to children */
-	fs_node_add(child, parent);
+		bprintln("VFS: %s", info->tibuf);
 
-	return child;
+		if (has_sub_nodes(curr))
+			continue;
+
+		vfs_show_tree(info, curr);
+
+		/* Leave level */
+		info->level--;
+		info->upper = node;
+		info->child = curr;
+	}
 }
 
-struct fs_node *fs_node_create(struct fs_node *parent, const char *name)
+void vfs_dump_tree(void)
 {
-	struct fs_node *node = fs_node_alloc(parent, parent->ops, name);
+	struct tree_info info;
 
-	/*
-	 * Allocate a new node within one mount for the
-	 * specified filesystem. For allocating a super
-	 * node for a new mountpoint, use the dedicated
-	 * function superblock_alloc_node() instead.
-	 */
+	info.level = 0;
+	info.upper = NULL;
+	info.child = NULL;
+	info.tibuf = bmalloc(75);
+	if (!info.tibuf)
+		return;
+
+	bprintln("VFS: /");
+
+	vfs_show_tree(&info, fs_root);
+
+	bfree(info.tibuf);
+}
+
+#endif /* CONFIG_DEBUG_FS */
+
+/*
+ * Allocating file system nodes and directory entries
+ */
+
+static void fs_node_ctor(void *obj)
+{
+	struct fs_node *node = obj;
+
+	memset(node, 0, sizeof(*node));
+}
+
+struct fs_node *fs_node_alloc(const char *name)
+{
+	struct fs_node *node = bmem_cache_alloc(fs_node_cache);
 
 	if (!node)
 		return NULL;
 
-	/*
-	 * We allocate within the same mount, i.e. the
-	 * superblock is the same as the parents.
-	 */
-	node->sb = parent->sb;
+	tree_node_init(&node->tree);
+	strcpy(node->name, name);
 
 	return node;
 }
 
-static void fs_dent_init(void *objp)
-{
-	struct fs_dentry *dentry = objp;
-
-	/* Empty name until usage */
-	memset(dentry->name, 0, 128);
-	dentry->offset = 0;
-}
-
-struct fs_dentry *fs_dentry_alloc(const char *name, uint64_t offset)
-{
-	struct fs_dentry *dentry = bmem_cache_alloc(dent_cache);
-
-	if (!dentry)
-		return NULL;
-
-	strcpy(dentry->name, name);
-	dentry->offset = offset;
-
-	return dentry;
-}
-
-struct fs_dentry *fs_node_dentry_alloc(struct fs_node *node)
-{
-	return fs_dentry_alloc(node->name, node->offset);
-}
-
-/* 
- * fs_node functions
+/*
+ * File system registration for modules
  */
 
-static int fs_open(struct fs_node *node __unused)
+void fs_register(struct fs_type *fs)
 {
-	return -ENOTSUP;
+	list_add(&fs->list, &filesystems);
 }
 
-static int fs_close(struct fs_node *node __unused)
+void fs_unregister(struct fs_type *fs)
 {
-	return -ENOTSUP;
+	list_del(&fs->list);
 }
 
-/* 
- * fs_node functions for directories
+/*
+ * File system functions
  */
 
-static int fs_request_lookup_fast(struct fs_node **node, const char *name)
+static struct fs_type *vfs_find_type(const char *name)
+{
+	struct fs_type *fs;
+
+	list_for_each_entry(fs, &filesystems, list) {
+		if (strcmp(fs->name, name))
+			continue;
+
+		return fs;
+	}
+
+	return NULL;
+}
+
+/*
+ * Lookup functions
+ */
+
+static int vfs_lookup_request_valid(struct fs_lookup_request *lookup_request)
+{
+	/* Mandatory value */
+	if (!lookup_request->path)
+		return -EFAULT;
+
+	/*
+	 * If no node is specified, the request must state
+	 * that the lookup starts from the fs_root node.
+	 */
+	if (!lookup_request->node)
+		return (lookup_request->flags & FS_LOOKUP_ABSOLUTE) ? 0 : -EFAULT;
+
+	return 0;
+}
+
+static struct fs_node *vfs_lookup_tree_fast(struct fs_node *node,
+	const char *name)
 {
 	struct fs_node *child;
 
-	tree_for_each_child_entry(child, *node, fs_node) {
+	tree_for_each_child_entry(child, node, tree) {
 		if (strcmp(child->name, name))
 			continue;
 
-		*node = child;
-
-		return 0;
+		return child;
 	}
 
-	return -EFAULT;
+	return NULL;
 }
 
-static struct fs_node *fs_request_lookup_node(struct fs_node *node,
-					      const char *name)
+static struct fs_node *vfs_lookup_tree_node(struct fs_node *node,
+	const char *name)
 {
 	/* Case 1: Current node */
 	if (!strcmp(name, "."))
@@ -147,85 +203,63 @@ static struct fs_node *fs_request_lookup_node(struct fs_node *node,
 	if (!strcmp(name, ".."))
 		return fs_node_parent(node);
 
-	/*
-	 * Search in the fs cache first. If there 
-	 * is no entry found, read directly from
-	 * the underlying device.
-	 */
-
 	/* Case 3: Cache */
-	if (!fs_request_lookup_fast(&node, name))
-		return node;
+	return vfs_lookup_tree_fast(node, name);
+}
 
-	/*
-	 * No entry found in the cache, read from
-	 * the underlying device next.
-	 */
+static struct fs_node *vfs_lookup_tree_slow(struct fs_node *node,
+	const char *name)
+{
+	struct fs_node *nent = vfs_finddir(node, name);
 
-	/* Case 4: Read from device */
-	if (!node->ops->lookup)
+	if (!nent)
 		return NULL;
 
-	return node->ops->lookup(node, name);
+	tree_node_insert(&nent->tree, &node->tree);
+
+	return nent;
 }
 
-static __always_inline int fs_request_valid(struct fs_lookup_req *lookup_req)
-{
-	/* Mandatory value */
-	if (!lookup_req->path)
-		return -EFAULT;
-
-	/*
-	 * If no node is specified, the request must state
-	 * that the lookup starts from the fs_root node.
-	 */
-	if (!lookup_req->node)
-		return (lookup_req->flags & FS_REQUEST_ABSOLUTE) ? 0 : -EFAULT;
-
-	return 0;
-}
-
-static int fs_request_lookup(struct fs_lookup_req *lookup_req)
+static int vfs_lookup_tree(struct fs_lookup_request *lookup_request)
 {
 	struct fs_node *node;
 	char *name, *part;
 
 	/*
-	 * This function is called when we request a lookup
-	 * search specified by the path in the request. The
-	 * function modifies both the path and node members
-	 * of the request, which reports how far the lookup
+	 * This function is called when we request a lookup search specified
+	 * by the path in the request. The lookup function modifies the path 
+	 * and node members of the request, which reports how far the lookup
 	 * went before an error occurred.
 	 */
 
-	if (fs_request_valid(lookup_req))
+	if (vfs_lookup_request_valid(lookup_request))
 		return -EFAULT;
 
-	name = bstrdup(lookup_req->path);
+	name = bstrdup(lookup_request->path);
 	if (!name)
 		return -ENOMEM;
 
-	node = lookup_req->node;
-
-	/* If requested, lookup from the root node */
-	if (lookup_req->flags & FS_REQUEST_ABSOLUTE)
+	node = lookup_request->node;
+	if (lookup_request->flags & FS_LOOKUP_ABSOLUTE)
 		node = fs_root;
 
 	part = strtok(name, "/");
-
 	while (part) {
-		node = fs_request_lookup_node(lookup_req->node, part);
+		node = vfs_lookup_tree_node(lookup_request->node, part);
+		if (node)
+			goto vfs_lookup_found;
+
+		node = vfs_lookup_tree_slow(lookup_request->node, part);
 		if (!node) {
 			bfree(name);
 			return -ENOENT;
 		}
 
-		/* Successfully found node */
-		lookup_req->node = node;
-		lookup_req->path = part;
+vfs_lookup_found:
 
-		/* Next part of path */
-		part = strtok(part, "/");
+		lookup_request->node = node;
+		lookup_request->path = part;
+		part = strtok(NULL, "/");
 	}
 
 	bfree(name);
@@ -233,188 +267,202 @@ static int fs_request_lookup(struct fs_lookup_req *lookup_req)
 	return 0;
 }
 
-static struct fs_node *fs_lookup_node(struct fs_node *node, const char *path)
+static struct fs_node *vfs_lookup_node(struct fs_node *node, const char *path)
 {
-	struct fs_lookup_req lookup_req;
+	struct fs_lookup_request lookup_request = {
+		.node = node,
+		.path = (char *)path
+	};
 
-	init_fs_request(&lookup_req);
-	lookup_req.node = node;
-	lookup_req.path = (char *)path;
-
-	if (fs_request_lookup(&lookup_req))
+	if (vfs_lookup_tree(&lookup_request))
 		return NULL;
 
-	return lookup_req.node;
+	return lookup_request.node;
 }
 
-static struct fs_node *fs_lookup(const char *path)
+static struct fs_node *vfs_lookup(const char *path)
 {
-	return fs_lookup_node(fs_root, path);
+	return vfs_lookup_node(fs_root, path);
 }
 
-static int fs_readdir(struct fs_node *node __unused, struct fs_dentry *dentry __unused)
-{
-	return -ENOTSUP;
-}
-
-static struct fs_node *fs_mkdir_node(struct fs_node *node, const char *path,
-				     uint32_t flags __unused)
-{
-	char *name, *part;
-
-	name = bstrdup(path);
-	if (!name)
-		return NULL;
-
-	part = strtok(name, "/");
-
-	while (part && node) {
-		if (!node->ops->mkdir) {
-			bfree(name);
-			return NULL;
-		}
-
-		node = node->ops->mkdir(node, part);
-		part = strtok(part, "/");
-	}
-
-	bfree(name);
-
-	return node;
-}
-
-struct fs_node *fs_mkdir(const char *path, uint32_t flags)
-{
-	struct fs_lookup_req lookup_req;
-
-	init_fs_request(&lookup_req);
-	lookup_req.flags = flags;
-	lookup_req.node = fs_root;
-	lookup_req.path = (char *)path;
-
-	if (!fs_request_lookup(&lookup_req))
-		return lookup_req.node;
-
-	return fs_mkdir_node(lookup_req.node, lookup_req.path, flags);
-}
-
-static int fs_rmdir(struct fs_node *node __unused,
-		 struct fs_dentry *dentry __unused)
-{
-	return -ENOTSUP;
-}
-
-/* 
- * fs_node function for files in general
+/*
+ * General file system functions
  */
 
-static int fs_read(struct fs_node *node __unused, uint64_t size __unused,
-		   char *buffer __unused)
+struct fs_node *vfs_open(const char *path)
 {
+	return vfs_lookup(path);
+}
+
+void vfs_close(struct fs_node *node)
+{
+
+}
+
+uint32_t vfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+{
+	if (node->ops && node->ops->read)
+		return node->ops->read(node, off, len, buf);
+
 	return -ENOTSUP;
 }
 
-static int fs_write(struct fs_node *node __unused, uint64_t size __unused,
-		    const char *buffer __unused)
+uint32_t vfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
 {
-	return -ENOTSUP;
+	return 0;
 }
 
-static int fs_mount_device(struct device *device, const char *path)
+struct fs_dent *vfs_readdir(struct fs_node *node, uint32_t index)
 {
-	struct fs_node *child, *parent;
+	return NULL;
+}
+
+struct fs_node *vfs_finddir(struct fs_node *node, const char *name)
+{
+	if (node->ops && node->ops->finddir)
+		return node->ops->finddir(node, name);
+
+	return NULL;
+}
+
+/*
+ * Mounting filesystems
+ */
+
+static struct fs_node *vfs_mount_node(struct fs_type *fs, struct bdev *bdev,
+	struct fs_node *parent, const char *name)
+{
+	struct fs_node *node;
+	struct superblock *sb;
+
+	if (!fs)
+		return NULL;
+
+	sb = superblock_alloc(fs, bdev);
+	if (!sb)
+		return NULL;
+
+	node = fs->fill_super(sb, name);
+	if (!node)
+		goto mount_free_sb;
+
+	node->sb->mount = parent;
+	tree_node_insert(&node->tree, &parent->tree);
+
+	return node;
+
+mount_free_sb:
+	bfree(sb);
+
+	return NULL;
+}
+
+int vfs_mount_type(const char *fs_name, struct bdev *bdev, const char *path,
+	const char *name)
+{
+	struct fs_type *fs;
+	struct fs_node *node;
+
+	if (bdev)
+		bprintln("VFS: Mount device %s to %s/%s", bdev->name, path, name);
+
+	fs = vfs_find_type(fs_name);
+	if (!fs)
+		return -ENOENT;
+
+	node = vfs_lookup(path);
+	if (!node)
+		return -ENOENT;
+
+	return vfs_mount_node(fs, bdev, node, name) == NULL;
+}
+
+static struct fs_node *vfs_mount_bdev(struct bdev *bdev, const char *name)
+{
+	struct superblock *sb;
+	struct fs_node *node;
+	struct fs_type *fs;
+
+	list_for_each_entry(fs, &filesystems, list) {
+		sb = superblock_alloc(fs, bdev);
+		if (!sb)
+			return NULL;
+
+		node = fs->fill_super(sb, name);
+		if (!node) {
+			bfree(sb);
+			continue;
+		}
+
+		return node;
+	}
+
+	return NULL;
+}
+
+int vfs_mount(struct bdev *bdev, const char *path, const char *name)
+{
+	struct fs_node *node, *nent;
+
+	node = vfs_lookup(path);
+	if (!node)
+		return -ENOENT;
+
+	nent = vfs_mount_bdev(bdev, name);
+	if (!nent) {
+		bprintln("VFS: No filesystem found for %s, abort...", bdev->name);
+		return -ENOENT;
+	}
+
+	tree_node_insert(&nent->tree, &node->tree);
+
+	return 0;
+}
+
+/*
+ * Initialization
+ */
+
+static int vfs_init_rootfs(struct fs_type *fs)
+{
+	struct superblock *sb = superblock_alloc(fs, NULL);
+
+	if (!sb)
+		return -ENOMEM;
+
+	fs_root = fs->fill_super(sb, "[root]");
+	if (!fs_root)
+		goto rootfs_free_sb;
+
+	return 0;
+
+rootfs_free_sb:
+	bfree(sb);
+
+	return -EFAULT;
+}
+
+int vfs_init(void)
+{
+	struct fs_type *rootfs = vfs_find_type(ROOTFS);
+
+	if (!rootfs)
+		return -EFAULT;
 
 	/*
-	 * The mounting process takes the given path and creates 
-	 * a new node with the device name in its directory.
-	 *
-	 * The mounted device is then available via:
-	 * 	
-	 * 	 path + "/" + device->name
+	 * Initialize caches for allocation of filesystem nodes and directory
+	 * entries. After that, allocations are done via fs_node_alloc and by
+	 * fs_dent_alloc for fs_node and fs_dent structures respectively.
 	 */
-	
-	parent = fs_lookup(path);
-	if (!parent) {
-		bprintln("Could not find node for %s", path);
-		return -EFAULT;
-	}
-
-	child = device->sb->root;
-
-	/* The new node is both a mountpoint and a directory */
-	fs_node_set(child, FS_NODE_MOUNT | FS_NODE_DIRECTORY);
-
-	/* Insert the node in the VFS tree */
-	fs_node_add(child, parent);
-
-	return 0;
-}
-
-int fs_mount(struct device *device, const char *path)
-{
-	struct fs *fs;
-
-	list_for_each_entry(fs, &filesystems, list) {
-		if (superblock_probe(device, fs))
-			continue;
-
-		return fs_mount_device(device, path);
-	}
-
-	return -EFAULT;
-}
-
-void fs_register(struct fs *fs)
-{
-	list_add(&fs->list, &filesystems);
-}
-
-void fs_unregister(struct fs *fs)
-{
-	list_del(&fs->list);
-}
-
-static int fs_create_root_node(struct device *device)
-{
-	struct fs *fs;
-
-	list_for_each_entry(fs, &filesystems, list) {
-		if (superblock_probe(device, fs))
-			continue;
-
-		fs_root = device->sb->root;
-		if (!fs_root)
-			return -EFAULT;
-
-		return 0;
-	}
-
-	return -EFAULT;
-}
-
-static int fs_create_root_cache(void)
-{
-	node_cache = bmem_cache_create("fs_node", FS_NODE_SIZE, fs_node_init);
-	if (!node_cache)
+	fs_node_cache = bmem_cache_create(FS_NODE_CACHE, FS_NODE_SIZE, fs_node_ctor);
+	if (!fs_node_cache)
 		return -ENOMEM;
 
-	dent_cache = bmem_cache_create("fs_dent", FS_DENT_SIZE, fs_dent_init);
-	if (!dent_cache)
-		return -ENOMEM;
-
-	return 0;
-}
-
-int fs_init(struct device *device)
-{
-	if (fs_create_root_cache())
-		return -EFAULT;
-
-	ext2_fs_init();
-	isofs_fs_init();
-	ramfs_fs_init();
-
-	if (fs_create_root_node(device))
+	/*
+	 * Set up root file system. This is always "ramfs". This step should
+	 * done only after all file system modules have been initialized.
+	 */
+	if (vfs_init_rootfs(rootfs))
 		return -EFAULT;
 
 	return 0;

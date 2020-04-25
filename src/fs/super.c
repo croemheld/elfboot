@@ -1,56 +1,48 @@
 #include <elfboot/core.h>
+#include <elfboot/linkage.h>
 #include <elfboot/mm.h>
 #include <elfboot/fs.h>
+#include <elfboot/bdev.h>
 #include <elfboot/super.h>
+#include <elfboot/printf.h>
 
-static struct fs_node *superblock_alloc_node(struct fs *fs, const char *name)
+struct superblock *superblock_alloc(struct fs_type *fs, struct bdev *bdev)
+{
+	struct superblock *sb;
+
+	sb = bmalloc(SUPERBLOCK_SIZE);
+	if (!sb)
+		return NULL;
+
+	sb->fs = fs;
+	sb->bdev = bdev;
+
+	return sb;
+}
+
+int superblock_read(struct superblock *sb, uint32_t sector, void *buffer)
 {
 	/*
-	 * The parent node needs to be set by the caller.
+	 * TODO CRO: Check if sb->block_size == bdev->block_size in all cases.
 	 */
-
-	return fs_node_alloc(NULL, fs->n_ops, name);
+	return bdev_read(sb->bdev, sector, 1, buffer);
 }
 
-int superblock_alloc(struct device *device, struct fs *fs)
+int superblock_read_blocks(struct superblock *sb, uint32_t sector,
+	uint32_t blknum, void *buffer)
 {
-	device->sb = bmalloc(sizeof(*(device->sb)));
-	if (!device->sb)
-		return -ENOMEM;
+	uint32_t blk;
 
-	device->sb->root = superblock_alloc_node(fs, device->name);
-	if (!device->sb->root) {
-		bfree(device->sb);
-		return -ENOMEM;
+	for (blk = 0; blk < blknum; blk++) {
+
+		/*
+		 * The buffer is expected to be (sb->block_size * numblk) in size and
+		 * trimming of the buffer is done by the caller. This function simply 
+		 * calls superblock_read multiple times.
+		 */
+		if (superblock_read(sb, sector + blk, buffer + (blk * sb->block_size)))
+			return -EFAULT;
 	}
 
-	/* Set references */
-	device->sb->device = device;
-	device->sb->s_ops  = fs->s_ops;
-
 	return 0;
-}
-
-int superblock_probe(struct device *device, struct fs *fs)
-{
-	if (fs->s_ops->probe)
-		return fs->s_ops->probe(device, fs);
-
-	return -ENOTSUP;
-}
-
-int superblock_open(struct superblock *sb)
-{
-	if (sb->s_ops->open)
-		return sb->s_ops->open(sb);
-
-	return -ENOTSUP;
-}
-
-int superblock_close(struct superblock *sb)
-{
-	if (sb->s_ops->close)
-		return sb->s_ops->close(sb);
-
-	return -ENOTSUP;
 }

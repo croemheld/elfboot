@@ -64,47 +64,9 @@ static inline void INIT_LIST_HEAD(struct list_head *head)
 	head->prev = head->next = head;
 }
 
-static inline int __list_add_valid(struct list_head *new, struct list_head *prev, 
-	struct list_head *next)
-{
-	if (prev->next != next)
-		return 0;
-
-	if (next->prev != prev)
-		return 0;
-
-	if (new == prev || new == next)
-		return 0;
-
-	return 1;
-}
-
-static inline int __list_del_entry_valid(struct list_head *entry)
-{
-	struct list_head *prev = entry->prev;
-	struct list_head *next = entry->next;
-
-	if (prev == NULL)
-		return 0;
-
-	if (next == NULL)
-		return 0;
-
-	if (prev->next != entry)
-		return 0;
-
-	if (next->prev != entry)
-		return 0;
-
-	return 1;
-}
-
 static inline void __list_add(struct list_head *new, struct list_head *prev, 
 	struct list_head *next)
 {
-	if (!__list_add_valid(new, prev, next))
-		return;
-
 	next->prev = new;
 	new->next = next;
 	new->prev = prev;
@@ -115,14 +77,6 @@ static inline void __list_del(struct list_head *prev, struct list_head *next)
 {
 	prev->next = next;
 	next->prev = prev;
-}
-
-static inline void __list_del_entry(struct list_head *entry)
-{
-	if (!__list_del_entry_valid(entry))
-		return;
-
-	__list_del(entry->prev, entry->next);
 }
 
 static inline int list_empty(struct list_head *head)
@@ -161,14 +115,13 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
 
 static inline void list_del(struct list_head *entry)
 {
-	__list_del_entry(entry);
-	entry->next = NULL;
-	entry->prev = NULL;
+	__list_del(entry->prev, entry->next);
+	entry->prev = entry->next = NULL;
 }
 
 static inline void list_move(struct list_head *list, struct list_head *head)
 {
-	__list_del_entry(list);
+	list_del(list);
 	list_add(list, head);
 }
 

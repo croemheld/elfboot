@@ -3,160 +3,143 @@
 
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
-#include <elfboot/device.h>
 #include <elfboot/super.h>
-#include <elfboot/string.h>
-#include <elfboot/math.h>
 #include <elfboot/list.h>
 #include <elfboot/tree.h>
 
-#include <uapi/elfboot/common.h>
-#include <uapi/elfboot/const.h>
+#define ROOTFS	"ramfs"
 
-struct fs_dentry {
-	char name[128];
-	uint64_t offset;
+#define TREE_NODE_LINE	"\xc3\xc4"
+#define TREE_LEAF_LINE	"\xc0\xc4"
+#define TREE_PIPE_LINE	"\xb3 "
+#define TREE_LINE_SIZE	3
+
+#define for_each_node(pos, root)	\
+	tree_for_each_child_entry((pos), (root), tree)
+#define get_next_node(node) 		\
+	tree_next_sibling_entry_or_null(&(node)->tree, struct fs_node, tree)
+#define has_sub_nodes(node)			\
+	tree_node_is_leaf(&(node)->tree)
+
+struct tree_info {
+	int level;
+	struct fs_node *upper;
+	struct fs_node *child;
+	char *tibuf;
 };
-#define FS_DENT_SIZE			sizeof(struct fs_dentry)
 
 struct fs_node;
+struct fs_dent;
 
-struct fs_ops {
-	/* fs_node functions */
-	int (*open)(struct fs_node *);
-	int (*close)(struct fs_node *);
+struct fs_node_ops {
+	void (*open)(struct fs_node *);
+	void (*close)(struct fs_node *);
 
-	/* fs_node functions for directories */
-	struct fs_node *(*lookup)(struct fs_node *, const char *);
-	struct fs_node *(*mkdir)(struct fs_node *, const char *);
-	int (*rmdir)(struct fs_node *, struct fs_dentry *);
-	int (*readdir)(struct fs_node *, struct fs_dentry *);
-
-	/* fs_node function for files */
-	int (*read)(struct fs_node *, uint64_t, char *);
-	int (*write)(struct fs_node *, uint64_t, const char *);
+	/*
+	 * TODO CRO: Return value of read/write?
+	 */
+	uint32_t (*read)(struct fs_node *, uint64_t, uint32_t, void *);
+	uint32_t (*write)(struct fs_node *, uint64_t, uint32_t, void *);
+	struct fs_dent *(*readdir)(struct fs_node *, uint32_t);
+	struct fs_node *(*finddir)(struct fs_node *, const char *);
+	struct list_head list;
 };
 
 struct fs_node {
 	char name[128];
+	uint32_t mask;
+	uint32_t uid;
+	uint32_t gid;
 	uint32_t flags;
-
-#define FS_NODE_MOUNT_BIT		0
-#define FS_NODE_MOUNT			_BITUL(FS_NODE_MOUNT_BIT)
-#define FS_NODE_DIRECTORY_BIT		1
-#define FS_NODE_DIRECTORY		_BITUL(FS_NODE_DIRECTORY_BIT)
-
 	uint32_t inode;
-	uint64_t offset;
-	uint32_t size;
-	struct superblock *sb;
-	struct fs_ops *ops;
+	uint32_t length;
+	uint32_t impl;
+	uint32_t open_flags;
 
-	/* The node in the vfs tree */
-	struct tree_node fs_node;
+	uint32_t atime;
+	uint32_t mtime;
+	uint32_t ctime;
+
+	struct fs_node_ops *ops;
+
+	struct fs_node *ptr;
+	uint32_t refcount;
+
+	union {
+		void *device;
+		struct bdev *bdev;
+		struct cdev *cdev;
+	};
+
+	void *private;
+
+	struct superblock *sb;
+	struct tree_node tree;
 };
 
-#define FS_NODE_SIZE			sizeof(struct fs_node)
+#define FS_FILE			_BITUL(0)
+#define FS_DIRECTORY	_BITUL(1)
+#define FS_CHARDEVICE	_BITUL(2)
+#define FS_BLOCKDEVICE	_BITUL(3)
+#define FS_PIPE			_BITUL(4)
+#define FS_SYMLINK		_BITUL(5)
+#define FS_MOUNTPOINT	_BITUL(6)
 
-struct fs {
+#define FS_NODE_SIZE	sizeof(struct fs_node)
+#define FS_NODE_CACHE	"fs_node_cache"
+
+struct fs_dent {
+	char name[128];
+	uint32_t inode;
+};
+
+#define FS_DENT_SIZE	sizeof(struct fs_dent)
+#define FS_DENT_CACHE	"fs_dent_cache"
+
+struct fs_type {
 	const char *name;
-	struct fs_ops *n_ops;
-	struct superblock_ops *s_ops;
+	struct fs_node *(*fill_super)(struct superblock *, const char *);
 	struct list_head list;
 };
 
-struct fs_lookup_req {
+#define FS_LOOKUP_ABSOLUTE	_BITUL(0)
+
+struct fs_lookup_request {
 	uint32_t flags;
-
-#define FS_REQUEST_ABSOLUTE	_BITUL(0)
-
-	struct fs_node *node;
 	char *path;
+	struct fs_node *node;
 };
-
-/*
- * Utility functions
- */
-
-static __always_inline void fs_node_set(struct fs_node *node, uint32_t flags)
-{
-	node->flags |= flags;
-}
-
-static __always_inline bool fs_node_has(struct fs_node *node, uint32_t flags)
-{
-	return (node->flags & flags) != 0;
-}
-
-static __always_inline bool fs_node_is_dir(struct fs_node *node)
-{
-	return fs_node_has(node, FS_NODE_DIRECTORY);
-}
-
-/*
- * Utility functions - node management
- */
-
-static __always_inline void fs_node_add(struct fs_node *child,
-					struct fs_node *parent)
-{
-	if (!child || !parent)
-		return;
-
-	tree_node_insert(&child->fs_node, &parent->fs_node);
-}
 
 static __always_inline struct fs_node *fs_node_parent(struct fs_node *node)
 {
-	return tree_parent_entry(node, struct fs_node, fs_node);
+	return tree_parent_entry(node, struct fs_node, tree);
 }
 
-/* 
- * fs_lookup_req initialization
- */
+void vfs_dump_tree(void);
 
-static __always_inline void init_fs_request(struct fs_lookup_req *lookup_req)
-{
-	memset(lookup_req, 0, sizeof(*lookup_req));
-}
+struct fs_node *fs_node_alloc(const char *name);
 
-/*
- * TODO CRO: Rename and/or place elsewhere
- */
+void fs_register(struct fs_type *fs);
 
-static inline uint64_t calculate_blocks(struct fs_node *node, uint64_t size)
-{
-	uint64_t blocks;
-	uint32_t rest = 0;
+void fs_unregister(struct fs_type *fs);
 
-	/*
-	 * Helper function for determining the number of blocks to 
-	 * read and/or write from its underlying device. We need
-	 * this because the fs_node cannot pass the actual file size
-	 * to the device driver since they use the size parameter
-	 * for the number of blocks to read and/or write.
-	 */
+struct fs_node *vfs_open(const char *path);
 
-	blocks = div_u64_rem(size, node->sb->block_size, &rest);
-	if (rest)
-		blocks++;
+void vfs_close(struct fs_node *node);
 
-	return blocks;
-}
+uint32_t vfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf);
 
-struct fs_node *fs_node_alloc(struct fs_node *parent, struct fs_ops *ops,
-			      const char *name);
+uint32_t vfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf);
 
-struct fs_node *fs_node_create(struct fs_node *parent, const char *name);
+struct fs_dent *vfs_readdir(struct fs_node *node, uint32_t index);
 
-struct fs_node *fs_mkdir(const char *path, uint32_t flags);
+struct fs_node *vfs_finddir(struct fs_node *node, const char *name);
 
-int fs_mount(struct device *device, const char *path);
+int vfs_mount_type(const char *fs_name, struct bdev *bdev, const char *path,
+	const char *name);
 
-int fs_init(struct device *device);
+int vfs_mount(struct bdev *bdev, const char *path, const char *name);
 
-void fs_register(struct fs *fs);
-
-void fs_unregister(struct fs *fs);
+int vfs_init(void);
 
 #endif /* __ELFBOOT_FS_H__ */

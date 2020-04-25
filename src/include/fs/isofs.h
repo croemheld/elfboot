@@ -4,6 +4,8 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
+#define FS_ISO						"ISO"
+
 #define ISOFS_PRIMARY_SECTOR		0x10
 #define ISOFS_PRIMARY_VOLUME_ID		"CD001"
 
@@ -145,10 +147,5 @@ struct iso_directory_record {
 	uint8_t name_len		[ISODCL(  33,   33)]; /* 711 */
 	char name			[0];
 } __packed;
-
-#define isofs_root_dir(desc)						\
-	(struct iso_directory_record *)(desc)->root_directory_record
-
-void isofs_fs_init(void);
 
 #endif /* __ISOFS_FS_H__ */
