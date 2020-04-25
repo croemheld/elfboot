@@ -6,9 +6,9 @@
 #include <elfboot/printf.h>
 #include <elfboot/list.h>
 
-LIST_HEAD(pci_devices);
+LIST_HEAD(pci_devs);
 
-static const char *pci_device_classes[] = {
+static const char *pci_dev_classes[] = {
 	"Unclassified Device",
 	"Mass Storage Controller",
 	"Network Controller",
@@ -31,23 +31,18 @@ static const char *pci_device_classes[] = {
 	"Non-Essential Instrumentation"
 };
 
-static const char *pci_class_name(struct pci_device *pcidev)
+static const char *pci_class_name(struct pci_dev *pcidev)
 {
-	return pci_device_classes[pcidev->class];
+	return pci_dev_classes[pcidev->class];
 }
 
-static void pci_dump_device(struct pci_device *pcidev)
+static void pci_dump_device(struct pci_dev *pcidev)
 {
 	const char *name = pci_class_name(pcidev);
 
-	bprintln("PCI: %s at %02u:%02u.%01u",
-		 name, pcidev->addr.bus, pcidev->addr.slot, pcidev->addr.func);
-	bprintln("PCI: Vendor %x, Device %x",
-		 pcidev->vendor, pcidev->device);
-	bprintln("PCI: Command %x, Status %x",
-		 pcidev->command, pcidev->status);
-	bprintln("PCI: Revision %x, PROG IF %x, Subclass %x, Class %x",
-		 pcidev->revision, pcidev->prog_if, pcidev->subclass, pcidev->class);
+	bprintln("PCI: %02u:%02u.%01u %04lx: %04lx:%04lx %s",
+		 pcidev->addr.bus, pcidev->addr.slot, pcidev->addr.func,
+		 pcidev->classrv >> 16, pcidev->vendor, pcidev->device, name);
 }
 
 /*
@@ -189,31 +184,11 @@ static bool pci_probe_multifunction(struct pci_address *addr)
  * PCI devices
  */
 
-void pci_device_iterate(int (*hook)(struct pci_device *, void *), void *data)
+static struct pci_dev *pci_get_subsys(struct pci_dev_id *id, struct pci_dev *from)
 {
-	struct pci_device *pcidev;
+	struct pci_dev *pcidev;
 
-	list_for_each_entry(pcidev, &pci_devices, list) {
-
-		/*
-		 * The hook function has to determine whether a PCI device
-		 * fits the criteria for a specific device type.
-		 *
-		 * We only return from this function when critical errors
-		 * occur during the iteration. Otherwise it just means that
-		 * the specific device is not suitable for the driver.
-		 */
-
-		if (hook(pcidev, data))
-			return;
-	}
-}
-
-static struct pci_device *pci_find_device(struct pci_device_id *id)
-{
-	struct pci_device *pcidev;
-
-	list_for_each_entry(pcidev, &pci_devices, list) {
+	list_for_each_entry(pcidev, (from) ? &from->list : &pci_devs, list) {
 		if ((id->vendor == PCI_ANY_ID || 
 		     id->vendor == pcidev->vendor) &&
 		    (id->device == PCI_ANY_ID || 
@@ -229,9 +204,9 @@ static struct pci_device *pci_find_device(struct pci_device_id *id)
 	return NULL;
 }
 
-struct pci_device *pci_get_device(uint16_t vendor, uint16_t device)
+struct pci_dev *pci_get_device(uint16_t vendor, uint16_t device, struct pci_dev *from)
 {
-	struct pci_device_id id = {
+	struct pci_dev_id id = {
 		.vendor = vendor,
 		.device = device,
 		.subvendor = PCI_ANY_ID,
@@ -239,12 +214,12 @@ struct pci_device *pci_get_device(uint16_t vendor, uint16_t device)
 		.class = PCI_ANY_ID
 	};
 
-	return pci_find_device(&id);
+	return pci_get_subsys(&id, from);
 }
 
-struct pci_device *pci_get_device_by_class(uint32_t class)
+struct pci_dev *pci_get_class(uint32_t class, struct pci_dev *from)
 {
-	struct pci_device_id id = {
+	struct pci_dev_id id = {
 		.vendor = PCI_ANY_ID,
 		.device = PCI_ANY_ID,
 		.subvendor = PCI_ANY_ID,
@@ -252,7 +227,37 @@ struct pci_device *pci_get_device_by_class(uint32_t class)
 		.class = class
 	};
 
-	return pci_find_device(&id);
+	return pci_get_subsys(&id, from);
+}
+
+static struct pci_dev *pci_find_device_by_address(struct pci_address *addr)
+{
+	struct pci_dev *pcidev;
+
+	list_for_each_entry(pcidev, &pci_devs, list) {
+
+		/*
+		 * Compare the entire PCI address to the one searched for.
+		 * This approach is useful if no vendor or device is given
+		 * for a PCI device lookup (e.g. EDD).
+		 */
+
+		if (!memcmp(addr, &pcidev->addr, sizeof(*addr)))
+			return pcidev;
+	}
+
+	return NULL;
+}
+
+struct pci_dev *pci_find_device(uint16_t bus, uint16_t slot, uint16_t func)
+{
+	struct pci_address addr = {
+		.bus  = bus,
+		.slot = slot,
+		.func = func
+	};
+
+	return pci_find_device_by_address(&addr);
 }
 
 /*
@@ -261,7 +266,7 @@ struct pci_device *pci_get_device_by_class(uint32_t class)
 
 static void pci_alloc_device(struct pci_address *addr)
 {
-	struct pci_device *pcidev = bmalloc(sizeof(*pcidev));
+	struct pci_dev *pcidev = bmalloc(sizeof(*pcidev));
 
 	if (!pcidev)
 		return;
@@ -279,12 +284,18 @@ static void pci_alloc_device(struct pci_address *addr)
 	pcidev->command = pci_read_config_word(addr, PCI_COMMAND);
 	pcidev->status  = pci_read_config_word(addr, PCI_STATUS);
 	pcidev->classrv = pci_read_config_long(addr, PCI_REVISION);
+	pcidev->bar[0]  = pci_read_config_long(addr, PCI_BAR0);
+	pcidev->bar[1]  = pci_read_config_long(addr, PCI_BAR1);
+	pcidev->bar[2]  = pci_read_config_long(addr, PCI_BAR2);
+	pcidev->bar[3]  = pci_read_config_long(addr, PCI_BAR3);
+	pcidev->bar[4]  = pci_read_config_long(addr, PCI_BAR4);
+	pcidev->bar[5]  = pci_read_config_long(addr, PCI_BAR5);
 	pcidev->subvendor = pci_read_config_word(addr, PCI_SUBVENDOR);
 	pcidev->subdevice = pci_read_config_word(addr, PCI_SUBDEVICE);
 
 	pci_dump_device(pcidev);
 
-	list_add(&pcidev->list, &pci_devices);
+	list_add(&pcidev->list, &pci_devs);
 }
 
 static void pci_probe_bus(struct pci_address *addr);
@@ -343,7 +354,7 @@ static void pci_probe_bus(struct pci_address *addr)
 		pci_probe_slot(addr);
 }
 
-void pci_init(void)
+int pci_init(void)
 {
 	struct pci_address addr = { 0 };
 
@@ -362,4 +373,6 @@ void pci_init(void)
 	} else
 		for (; addr.bus < PCI_NUM_BUSES; addr.bus++)
 			pci_probe_bus(&addr);
+
+	return 0;
 }

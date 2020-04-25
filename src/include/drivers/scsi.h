@@ -2,7 +2,7 @@
 #define __BOOT_SCSI_H__
 
 #include <elfboot/core.h>
-#include <elfboot/device.h>
+#include <elfboot/linkage.h>
 
 #define SCSI_CMD_TEST_UNIT_READY	0x00
 #define SCSI_CMD_REQUEST_SENSE		0x03
@@ -52,7 +52,7 @@ struct scsi_request_sense {
 	uint8_t  _reserved2;
 	uint8_t  len;
 	uint8_t  control;
-	uint8_t  pad[6];
+	uint8_t  pad[12];
 } __packed;
 
 struct scsi_request_sense_data {
@@ -112,7 +112,7 @@ struct scsi_xfer10 {
 	uint8_t  lun;
 	uint32_t lba;
 	uint8_t  _reserved1;
-	uint16_t size;
+	uint16_t num;
 	uint8_t  _reserved2;
 	uint16_t pad;
 } __packed;
@@ -121,7 +121,7 @@ struct scsi_xfer12 {
 	uint8_t  cmd;
 	uint8_t  lun;
 	uint32_t lba;
-	uint32_t size;
+	uint32_t num;
 	uint8_t  _reserved;
 	uint8_t  control;
 } __packed;
@@ -130,32 +130,9 @@ struct scsi_xfer16 {
 	uint8_t  cmd;
 	uint8_t  lun;
 	uint64_t lba;
-	uint32_t size;
+	uint32_t num;
 	uint8_t  _reserved;
 	uint8_t  control;
 } __packed;
-
-struct scsi_driver {
-	const char *name;
-	int (*probe)(struct device *);
-	int (*open)(struct device *, const char *);
-	int (*read)(struct device *, char *, size_t, char *, size_t);
-	int (*write)(struct device *, char *, size_t, const char *, size_t);
-	int (*close)(struct device *);
-	struct list_head list;
-
-	/*
-	 * The following fields are filled
-	 * with driver specific information
-	 */
-	
-	void *driver_data;
-};
-
-void scsi_driver_register(struct scsi_driver *driver);
-
-void scsi_driver_unregister(struct scsi_driver *driver);
-
-void scsi_firmware_init(void);
 
 #endif /* __BOOT_SCSI_H__ */

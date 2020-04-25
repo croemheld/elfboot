@@ -1,0 +1,1 @@
+elfboot-$(CONFIG_IDE) += ide.o

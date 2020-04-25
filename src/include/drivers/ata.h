@@ -5,6 +5,10 @@
 #include <elfboot/linkage.h>
 
 /*
+ * TODO CRO: This mess needs to be cleaned up!
+ */
+
+/*
  * ATA status registers
  */
 
@@ -16,6 +20,8 @@
 #define ATA_SR_CORR                               0x04
 #define ATA_SR_IDX                                0x02
 #define ATA_SR_ERR                                0x01
+
+#define ATA_SR_POLL	(ATA_SR_ERR | ATA_SR_DRQ | ATA_SR_DF)
 
 /*
  * ATA error registers
@@ -78,10 +84,10 @@
 #define ATA_REG_FEATURES                           1
 #define ATA_REG_SECTORS                            2
 #define ATAPI_REG_IREASON                          2
-#define ATA_REG_LBA0                               3
-#define ATA_REG_LBA1                               4
+#define ATA_REG_LBALOW                             3
+#define ATA_REG_LBAMID                             4
 #define ATAPI_REG_CNTLOW                           4
-#define ATA_REG_LBA2                               5
+#define ATA_REG_LBAHIGH                            5
 #define ATAPI_REG_CNTHIGH                          5
 #define ATA_REG_HDDEVSEL                           6
 #define ATA_REG_COMMAND                            7
@@ -124,8 +130,55 @@
  * Misc
  */
 
-#define ATA_IO_TIMEOUT                            100000
+#define ATA_IO_TIMEOUT                            1000000
 #define ATA_IDENTIFY_WORD_COUNT                   (ATA_IDENTIFY_BUFFER_SIZE / 2)
+
+typedef union {
+	uint8_t raw[11];
+	struct {
+		union {
+			uint8_t features;
+			uint8_t error;
+		};
+		union {
+			uint8_t sectors;
+			uint8_t atapi_ireason;
+		};
+		union {
+			uint8_t lba_low;
+			uint8_t sectnum;
+		};
+		union {
+			uint8_t lba_mid;
+			uint8_t cyllsb;
+			uint8_t atapi_cntlow;
+		};
+		union {
+			uint8_t lba_high;
+			uint8_t cylmsb;
+			uint8_t atapi_cnthigh;
+		};
+		uint8_t disk;
+		union {
+			uint8_t cmd;
+			uint8_t status;
+		};
+		uint8_t sectors48;
+		uint8_t lba48_low;
+		uint8_t lba48_mid;
+		uint8_t lba48_high;
+	};
+
+} ata_regs_t;
+
+struct ata_cmd {
+	void *buf;
+	size_t bufsize;
+	void *cmd;
+	size_t cmdsize;
+	int write;
+	ata_regs_t reg;
+} __packed;
 
 /* -------------------------------------------------------------------------- */
 
@@ -134,62 +187,7 @@
 
 #define ATA_IDENTIFY_SIZE		ATA_SECTOR_SIZE
 
-struct ata_scsi_packet {
-	union {
-		uint8_t raw[16];
-	};
-};
-
-struct ata_regs {
-	union {
-		uint8_t raw[11];
-		struct {
-			union {
-				uint8_t features;
-				uint8_t error;
-			};
-			union {
-				uint8_t sectors;
-				uint8_t atapi_ireason;
-			};
-			union {
-				uint8_t lba_low;
-				uint8_t sectnum;
-			};
-			union {
-				uint8_t lba_mid;
-				uint8_t cyllsb;
-				uint8_t atapi_cntlow;
-			};
-			union {
-				uint8_t lba_high;
-				uint8_t cylmsb;
-				uint8_t atapi_cnthigh;
-			};
-			uint8_t disk;
-			union {
-				uint8_t cmd;
-				uint8_t status;
-			};
-			uint8_t sectors48;
-			uint8_t lba48_low;
-			uint8_t lba48_mid;
-			uint8_t lba48_high;
-		};
-
-	};
-} __packed;
-
-struct ata_command {
-	void *buf;
-	uint32_t bufsize;
-	void *cmd;
-	uint32_t cmdsize;
-	int write;
-	struct ata_regs regs;
-} __packed;
-
-struct ata_params {
+struct ata_id {
 /*000*/ uint16_t config;			/* configuration info */
 
 #define ATA_PROTO_MASK			0x8003
