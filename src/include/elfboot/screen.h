@@ -116,7 +116,7 @@ static inline void *screen_unit(struct screen *screen, int xpos, int ypos)
 {
 	int lpos = xpos + screen->width * ypos;
 
-	return uinttvptr(screen->fbaddr + screen->bpu * lpos);
+	return tvptr(screen->fbaddr + screen->bpu * lpos);
 }
 
 /*
