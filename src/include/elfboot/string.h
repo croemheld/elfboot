@@ -58,6 +58,8 @@ size_t strlen(const char *str);
 
 char *strcpy(char *dst, const char *str);
 
+char *strncpy(char *dst, const char *str, size_t len);
+
 char *strstr(const char *str1, const char *str2);
 
 char *strchr(const char *str, int c);
@@ -70,8 +72,8 @@ size_t strcspn(const char *str1, const char *str2);
 
 char *strtok(char *str, const char *delim);
 
-uint32_t simple_strtoull(const char *cp, char **endp, unsigned int base);
+unsigned int strtoul(const char *cp, char **endp, unsigned int base);
 
-int simple_strtol(const char *cp, char **endp, unsigned int base);
+int strtol(const char *cp, char **endp, unsigned int base);
 
 #endif /* __ELFBOOT_STRING_H__ */
