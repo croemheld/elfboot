@@ -3,16 +3,19 @@
 
 #ifdef __ASSEMBLER__
 
-#define LOCAL(fname)                                                           \
-fname:
+#define LOCAL(name)				\
+name:
 
-#define GLOBAL(fname)                                                          \
-    .global fname;                                                             \
-fname:
+#define GLOBAL(name)			\
+    .global name;				\
+name:
 
-#define ENDPROC(fname)                                                         \
-    .type fname, @function;                                                    \
-    .size fname, .-fname
+#define ENDPROC(name)			\
+    .type name, @function;		\
+    .size name, .-name
+
+#define ENDSYM(name)			\
+    .size name, .-name
 
 #endif /* __ASSEMBLER__ */
 
