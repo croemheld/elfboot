@@ -153,7 +153,7 @@ endif
 build:
 	$(Q)mkdir -p build/$(MODULES)
 
-iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG) $(ELFTOOL_TARGETS)
+iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG)
 	$(Q)$(CP) $(BOOTIMG).bin build
 	$(Q)$(CP) $(ELFBOOT).bin build
 	$(Q)$(CP) $(ELFBOOT).cfg build
