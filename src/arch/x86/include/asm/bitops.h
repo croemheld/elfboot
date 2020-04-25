@@ -9,13 +9,13 @@ static inline int ffs(uint32_t val)
 
 	asm(
 		"bsfl    %1, %0		\n\t"
-		"jnz     1f		\n\t"
+		"jnz     1f			\n\t"
 		"movl    $-1, %0	\n"
 
 		"1:" : "=r" (r) : "rm" (val)
 	);
 
-	return r + 1;
+	return r;
 }
 
 static inline int fls(uint32_t val)
@@ -24,7 +24,7 @@ static inline int fls(uint32_t val)
 
 	asm(
 		"bsrl    %1, %0		\n\t"
-		"jnz     1f		\n\t"
+		"jnz     1f			\n\t"
 		"movl    $-1, %0	\n"
 
 		"1:" : "=r" (r) : "rm" (val)
