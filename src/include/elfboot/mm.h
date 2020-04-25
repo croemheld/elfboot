@@ -8,6 +8,7 @@
 
 #include <uapi/elfboot/const.h>
 
+#define MEMORY_START			0x010000
 #define MEMORY_LIMIT			0x100000
 
 void bfree(void *dptr);
@@ -31,6 +32,13 @@ int bmalloc_init(void);
 struct page *alloc_pages(uint32_t order);
 
 struct page *alloc_page(void);
+
+static inline uint32_t page_alloc(uint32_t order)
+{
+	struct page *page = alloc_pages(order);
+
+	return (uint32_t)page_address(page);
+}
 
 void *get_zeroed_page(void);
 

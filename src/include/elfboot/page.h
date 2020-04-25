@@ -39,7 +39,7 @@ struct page {
 	struct page *compound_head;
 
 	/*
-	 * In cas this page is allocated for a slab cache, we
+	 * In case this page is allocated for a slab cache we
 	 * use the following members to store information for
 	 * the dedicated slab cache in them.
 	 */
@@ -78,7 +78,7 @@ static inline struct page *phys_to_page(uint32_t addr)
 
 static inline void *page_address(struct page *page)
 {
-	return uinttvptr(page->paddr);
+	return tvptr(page->paddr);
 }
 
 static inline struct page *compound_head(struct page *page)

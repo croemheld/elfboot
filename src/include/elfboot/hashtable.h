@@ -56,7 +56,7 @@ static inline uint32_t hash_32(uint32_t val, uint32_t bits)
 
 static inline uint32_t hash_ptr(void *ptr, uint32_t bits)
 {
-	return hash_32(vptrtuint(ptr), bits);
+	return hash_32(tuint(ptr), bits);
 }
 
 #define hashtable_add_hashed(table, node, bkt)				\

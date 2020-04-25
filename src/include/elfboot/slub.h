@@ -51,8 +51,6 @@ struct bmem_cache {
 	struct list_head next;
 };
 
-void slab_dump(void);
-
 void *bmem_cache_alloc(struct bmem_cache *cachep);
 
 struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,

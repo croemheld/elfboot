@@ -33,16 +33,7 @@ void memblock_dump(void)
 	__memblock_dump(&memblock.memory);
 }
 
-static inline uint32_t memblock_cap_size(uint32_t base, uint32_t *size)
-{
-	/* 
-	 * If the size goes over the maximum of the physical address space, 
-	 * then use the remaining size as the new size for our region.
-	 */
-	return *size = min(*size, (uint32_t)(~0ULL) - base);
-}
-
-static void memblock_adjust_range(uint32_t *base, uint32_t *size)
+static uint32_t memblock_adjust_region(uint32_t *base, uint32_t *size)
 {
 	uint32_t nbase, limit;
 
@@ -57,192 +48,184 @@ static void memblock_adjust_range(uint32_t *base, uint32_t *size)
 
 	*base = nbase;
 	*size = limit - nbase;
+
+	return *base + *size;
 }
 
-static void memblock_merge_regions(struct memblock_type *type)
+static void memblock_fusion_region(struct memblock_type *type, 
+	struct memblock_region *region, uint32_t index)
 {
-	uint32_t i = 0;
-	struct memblock_region *this, *next;
+	struct memblock_region *prvreg, *nxtreg;
 
-	while (i < type->cnt - 1) {
-		this = &type->regions[i];
-		next = &type->regions[i + 1];
+	if (type->cnt == 1)
+		return;
 
-		if (this->base + this->size != next->base) {
-			i++;
-			continue;
+	if (index) {
+		prvreg = region - 1;
+
+		if (memblock_end(prvreg) == memblock_beg(region)) {
+			region->base  = prvreg->base;
+			region->size += prvreg->size;
+
+			memmove(prvreg, region, (type->cnt - index) * sizeof(*region));
 		}
+	}
 
-		this->size += next->size;
+	/*
+	 * A single memblock can be merged with both of its neighbours which is
+	 * why we also have to check whether the successor memblock is adjacent
+	 * to the current memblock region.
+	 */
 
-		memmove(next, next + 1, (type->cnt - (i + 2)) * sizeof(*next));
-		type->cnt--;
+	if (index < type->cnt) {
+		nxtreg = region + 1;
+
+		if (memblock_end(region) == memblock_beg(nxtreg)) {
+			nxtreg->base  = region->base;
+			nxtreg->size += region->size;
+
+			memmove(region, nxtreg, (type->cnt - (index + 1)) * sizeof(*region));
+		}
 	}
 }
 
-static void memblock_insert_region(struct memblock_type *type, int idx, 
-				   uint32_t base, uint32_t size)
+static void memblock_insert_region(struct memblock_type *type, uint32_t index,
+	uint32_t base, uint32_t size)
 {
-	struct memblock_region *region = &type->regions[idx];
+	struct memblock_region *region = &type->regions[index];
 
-	memmove(region + 1, region, (type->cnt - idx) * sizeof(*region));
+	/*
+	 * Move all existing memblock regions one place to the right. That way,
+	 * the region pointer points to our new memblock region which we update
+	 * with the given base and size.
+	 */
+	memmove(region + 1, region, (type->cnt - index) * sizeof(*region));
+
 	region->base = base;
 	region->size = size;
-	type->cnt++;
 	type->total_size += size;
+	type->cnt++;
 }
 
-static void memblock_remove_region(struct memblock_type *type, uint32_t r)
+static void memblock_add_region(struct memblock_type *type, uint32_t base,
+	uint32_t size)
 {
-	type->total_size -= type->regions[r].size;
-	memmove(&type->regions[r], &type->regions[r + 1],
-		(type->cnt - (r + 1)) * sizeof(type->regions[r]));
-	type->cnt--;
-
-	/* Special case for empty arrays */
-	if (type->cnt == 0) {
-		type->cnt = 1;
-		type->regions[0].base = 0;
-		type->regions[0].size = 0;
-	}
-}
-
-static int memblock_add_range(struct memblock_type *type, uint32_t base,
-			      uint32_t size)
-{
-	int count;
-	struct memblock_region *region;
-	uint32_t idx, rbase, rend, end;
-
-	/* Adjust to page granularity */
-	memblock_adjust_range(&base, &size);
-	end = base + memblock_cap_size(base, &size);
-
-	if (!size)
-		return 0;
-
-	if (type->regions[0].size == 0) {
-		type->regions[0].base = base;
-		type->regions[0].size = size;
-		type->total_size = size;
-		return 0;
-	}
-
-	count = 0;
-
-	for_each_memblock_type(idx, type, region) {
-		rbase = region->base;
-		rend = rbase + region->size;
-
-		if (rbase >= end)
-			break;
-
-		if (rend <= base)
-			continue;
-
-		if (rbase > base) {
-			count++;
-			memblock_insert_region(type, idx++, base, rbase - base);
-		}
-
-		base = min(rend, end);
-	}
-
-	if (base < end) {
-		count++;
-		memblock_insert_region(type, idx, base, end - base);
-	}
-
-	if (!count)
-		return 0;
-
-	memblock_merge_regions(type);
-
-	return count;
-}
-
-static int memblock_isolate_range(struct memblock_type *type,
-				  uint32_t base, uint32_t size,
-				  int *start_rgn, int *end_rgn)
-{
-	uint32_t idx, end, rbase, rend;
+	uint32_t i, rbeg, rend, nend;
 	struct memblock_region *region;
 
-	*start_rgn = *end_rgn = 0;
-	end = base + memblock_cap_size(base, &size);
+	nend = memblock_adjust_region(&base, &size);
 
-	if (!size)
-		return 0;
+	region = &type->regions[0];
+	if (region->size == 0) {
+		region->base = base;
+		region->size = size;
+		type->total_size += size;
+		return;
+	}
 
-	for_each_memblock_type(idx, type, region) {
-		rbase = region->base;
-		rend  = rbase + region->size;
+	for_each_memblock_type(i, type, region) {
+		rbeg = memblock_beg(region);
+		rend = memblock_end(region);
 
-		if (rbase >= end)
+		if (rbeg >= nend)
 			break;
 		if (rend <= base)
 			continue;
 
-		if (rbase < base) {
-			region->base = base;
-			region->size -= base - rbase;
-			type->total_size -= base - rbase;
-			memblock_insert_region(type, idx, rbase, base - rbase);
-		} else if (rend > end) {
-			region->base = end;
-			region->size -= end - rbase;
-			type->total_size -= end - rbase;
-			memblock_insert_region(type, idx--, rbase, end - rbase);
-		} else {
-			if (!*end_rgn)
-				*start_rgn = idx;
-			*end_rgn = idx + 1;
+		if (rbeg >= base)
+			memblock_insert_region(type, i++, base, rbeg - base);
+
+		base = min(rend, nend);
+	}
+
+	if (base < nend)
+		memblock_insert_region(type, i, base, nend - base);
+
+	/*
+	 * Check if the new block can be fused with its neighbours.
+	 */
+	memblock_fusion_region(type, &type->regions[i], i);
+}
+
+static int memblock_del_region(struct memblock_type *type, uint32_t base,
+	uint32_t size)
+{
+	uint32_t i, rbeg, rend, nend, mbeg, mend, dbeg;
+	struct memblock_region *region;
+
+	dbeg = MEMBLOCK_INVLD;
+	nend = memblock_adjust_region(&base, &size);
+
+	for_each_memblock_type(i, type, region) {
+		rbeg = memblock_beg(region);
+		rend = memblock_end(region);
+
+		if (rbeg >= nend)
+			return dbeg;
+		if (rend <= base)
+			continue;
+
+		mbeg = max(rbeg, base);
+		mend = min(rend, nend);
+		if (!dbeg)
+			dbeg = mbeg;
+
+		/*
+		 * In a special case: The memory region to be removed is will cause the
+		 * current memblock region to be split into two memblock regions
+		 */
+		if (rbeg < base && rend > nend) {
+			region->size = base - rbeg;
+			memblock_insert_region(type, i + 1, nend, rend - nend);
+			return base;
+		}
+
+		region->size -= mend - mbeg;
+		type->total_size -= mend - mbeg;
+
+		if (!region->size) {
+			memmove(region, region + 1, (type->cnt - (i-- + 1)) * sizeof(*region));
+			type->cnt--;
+			continue;
+		}
+
+		if (rbeg >= base) {
+			region->base = nend;
+			return base;
+		}
+
+		if (rend <= nend) {
+			base = rend;
+			size = nend - rend;
+			continue;
 		}
 	}
 
-	return 0;
+	return dbeg;
 }
 
-static int memblock_remove_range(struct memblock_type *type,
-				 uint32_t base, uint32_t size)
+void memblock_add(uint32_t base, uint32_t size)
 {
-	int i, ret, start_rgn, end_rgn;
-
-	/* Adjust to page granularity */
-	memblock_adjust_range(&base, &size);
-
-	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
-	if (ret)
-		return ret;
-
-	for (i = end_rgn - 1; i >= start_rgn; i--)
-		memblock_remove_region(type, i);
-
-	return 0;
-}
-
-int memblock_add(uint32_t base, uint32_t size)
-{
-	return memblock_add_range(&memblock.memory, base, size);
+	memblock_add_region(&memblock.memory, base, size);
 }
 
 int memblock_reserve(uint32_t base, uint32_t size)
 {
-	return memblock_remove_range(&memblock.memory, base, size);
+	return memblock_del_region(&memblock.memory, base, size) != MEMBLOCK_INVLD;
 }
 
 static uint32_t memblock_find_in_range(uint32_t size, uint32_t align,
 				       uint32_t start, uint32_t end)
 {
-	uint32_t rbase, rend, cand;
+	uint32_t rbeg, rend, cand;
 	struct memblock_region *region;
 	uint32_t i;
 
 	for_each_free_memblock(i, region) {
-		rbase = clamp(region->base, start, end);
-		rend  = clamp(memblock_end(region), start, end);
+		rbeg = clamp(memblock_beg(region), start, end);
+		rend = clamp(memblock_end(region), start, end);
 
-		cand = round_up(rbase, align);
+		cand = round_up(rbeg, align);
 		if (cand < rend && rend - cand >= size)
 			return cand;
 	}
@@ -251,25 +234,25 @@ static uint32_t memblock_find_in_range(uint32_t size, uint32_t align,
 }
 
 static uint32_t memblock_alloc_range(uint32_t size, uint32_t align,
-				     uint32_t start, uint32_t end)
+	uint32_t start, uint32_t end)
 {
 	uint32_t base = memblock_find_in_range(size, align, start, end);
 
-	if (base && !memblock_reserve(base, size))
+	if (base && memblock_reserve(base, size))
 		return base;
 
 	return 0;
 }
 
 static void *memblock_alloc_internal(uint32_t size, uint32_t align,
-				     uint32_t start, uint32_t end)
+	uint32_t start, uint32_t end)
 {
 	uint32_t base = memblock_alloc_range(size, align, start, end);
 
 	if (!base)
 		return NULL;
 
-	return uinttvptr(base);
+	return tvptr(base);
 }
 
 void *memblock_alloc(uint32_t size, uint32_t align)
@@ -279,5 +262,5 @@ void *memblock_alloc(uint32_t size, uint32_t align)
 	 * want to load kernels starting at addresses > 1MB.
 	 */
 	
-	return memblock_alloc_internal(size, align, BOOT_END, MEMBLOCK_LIMIT);
+	return memblock_alloc_internal(size, align, MEMBLOCK_START, MEMBLOCK_LIMIT);
 }

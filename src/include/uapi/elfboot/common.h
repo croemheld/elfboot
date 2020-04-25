@@ -36,20 +36,20 @@
  */
 
 /*
- * uinttvptr:
+ * tvptr:
  *
  * Cast a 32-bit unsigned value to a pointer.
  */
-#define uinttvptr(val)						\
-	((void *)val)
+#define tvptr(val)						\
+	((void *)(val))
 
 /*
- * vptrtuint:
+ * tuint:
  *
  * Cast a pointer to a 32-bit unsigned value.
  */
-#define vptrtuint(ptr)						\
-	((uint32_t)ptr)
+#define tuint(ptr)						\
+	((uint32_t)(ptr))
 
 /*
  * vptradd:
@@ -58,22 +58,22 @@
  * the type of the object residing at address ptr.
  */
 #define vptradd(ptr, offset)					\
-	uinttvptr(vptrtuint(ptr) + offset)
+	tvptr(tuint((ptr)) + (offset))
 
 /*
- * segment_offset_val:
+ * fptr_val:
  *
  * Get the address of a real mode segment-offset address.
  */
-#define segment_offset_val(seg, off)				\
+#define fptr_val(seg, off)				\
 	((seg << 4) + (off))
 
 /*
- * segment_offset_ptr:
+ * fptr:
  *
  * Get a pointer to a real mode segment-offset address.
  */
-#define segment_offset_ptr(ptr)					\
-	uinttvptr(segment_offset_val(ptr >> 16, ptr & 0xffff))
+#define fptr(ptr)					\
+	tvptr(fptr_val((ptr) >> 16, (ptr) & 0xffff))
 
 #endif /* __UAPI_COMMON_H__ */

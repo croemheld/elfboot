@@ -5,7 +5,7 @@
 
 void bfree_const(const void *ptr)
 {
-	uint32_t addr = vptrtuint(ptr);
+	uint32_t addr = tuint(ptr);
 
 	if (!is_elfboot_rodata(addr))
 		bfree((void *)ptr);

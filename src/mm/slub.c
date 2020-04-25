@@ -56,31 +56,6 @@ static struct bmem_cache *bmalloc_caches[KMALLOC_CACHE_NUM];
 
 static LIST_HEAD(bmem_caches);
 
-static void __slab_dump(struct bmem_cache *cachep)
-{
-	bprintln("%-16s %10lu %10lu %10lu %10lu", 
-		 cachep->name,
-		 cachep->free_objs,
-		 cachep->size,
-		 cachep->free_slabs,
-		 cachep->total_slabs);
-}
-
-void slab_dump(void)
-{
-	struct bmem_cache *cachep;
-
-	bprintln("%-16s %-10s %-10s %-10s %-10s",
-		 "Cache name",
-		 "free objs",
-		 "obj size",
-		 "free slabs",
-		 "tot. slabs");
-
-	list_for_each_entry(cachep, &bmem_caches, next)
-		__slab_dump(cachep);
-}
-
 static inline int bmalloc_index(uint32_t size)
 {
 	if (!size)

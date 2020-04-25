@@ -27,7 +27,4 @@
 #define ARRAY_SIZE(x)					\
 	(sizeof(x) / sizeof(*(x)))
 
-/* Core initialization */
-int elfboot_main(void);
-
 #endif /* __CORE_H__ */

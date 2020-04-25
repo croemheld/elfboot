@@ -25,9 +25,9 @@ struct rsdp_descriptor *acpi_scan_rsdp_memory(uint32_t base, uint32_t length)
 	struct rsdp_descriptor *rsdp;
 	void *addr, *end;
 
-	end  = uinttvptr(base + length);
+	end  = tvptr(base + length);
 
-	for(addr = uinttvptr(base); addr < end; addr = vptradd(addr, 16)) {
+	for(addr = tvptr(base); addr < end; addr = vptradd(addr, 16)) {
 		rsdp = addr;
 
 		if (strncmp(rsdp->signature, ACPI_RSDP_SIGNATURE, 8))
