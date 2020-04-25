@@ -1,2 +1,2 @@
 elfboot-d += char
-elfboot-d += screen
+elfboot-d += ide
