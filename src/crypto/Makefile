@@ -1,0 +1,1 @@
+elfboot-y += crc32.o
