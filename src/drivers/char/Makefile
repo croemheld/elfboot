@@ -1,1 +1,1 @@
-elfboot-y += tty.o
+elfboot-$(CONFIG_TTY) += tty.o
