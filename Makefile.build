@@ -1,0 +1,91 @@
+target := $(obj)
+
+.PHONY: __build
+__build: $(target).elf
+	@:
+
+srctree	:= .
+objtree	:= .
+rootdir	:= $(if $(dir),src/$(dir),src)
+
+include $(srctree)/Makefile.lib
+include $(srctree)/auto.conf
+
+#
+# Printing compilation command information
+#
+
+quiet_cmd_cc_o_c = CC      $@
+      cmd_cc_o_c = $(CC) $(DEPFLAGS) -c $< -o $@ $(CFLAGS) $(c_flags) $(INCLUDE)
+
+quiet_cmd_cc_o_S = AS      $@
+      cmd_cc_o_S = $(CC) $(DEPFLAGS) -c $< -o $@ $(CFLAGS) $(c_flags) $(INCLUDE)
+
+#
+# Compiling source files
+#
+
+cc_rule = $(call cmd,cc_o_$(subst .,,$(suffix $(1))))
+
+define build_obj
+srcname := $$(basename $(1))
+modfile := $$(srcname).mod
+depfile := $$(srcname).o.d
+sofiles := $$(wildcard $$(srcname).*)
+srcfile := $$(filter-out $(1) $$(depfile),$$(sofiles))
+
+c_flags := $(2)
+
+ifneq (, $$(srcfile))
+ifneq (, $$(findstring $$(modname),$$(srcfile)))
+.PHONY: $(1)
+endif
+
+$(1): $$(srcfile)
+	$$(call cc_rule,$$<)
+
+-include $$(depfile)
+
+endif
+endef
+
+compile_source = $(foreach file,$(1),$(eval $(call build_obj,$(file),$(2))))
+
+#
+# Compile template
+#
+
+define build_target
+$(1)-ccfl	:=
+$(1)-objs	:=
+
+$$(eval $$(call collect_target,$$(rootdir),$(1)))
+$$(eval $$(call compile_source,$$($(1)-objs),$$($(1)-ccfl)))
+endef
+
+$(eval $(call build_target,$(target)))
+
+#
+# Printing linking command information
+#
+
+quiet_cmd_ld_elf = LD      $@
+      cmd_ld_elf = $(LD) -o $@ -T $(2).ld $($(2)-objs) $(LDFLAGS)
+
+quiet_cmd_oc_elf = OBJCOPY $@
+      cmd_oc_elf = $(OBJCOPY) $(OBJCOPY_SECTION) $(2).elf
+
+#
+# Linking binary files
+#
+
+elf_rule = $(call cmd,ld_elf,$(1))
+elf_objc = $(call cmd,oc_elf,$(1))
+
+#
+# Target building
+#
+
+$(target).elf: $($(target)-objs)
+	$(call elf_rule,$(target))
+	$(call elf_objc,$(target))

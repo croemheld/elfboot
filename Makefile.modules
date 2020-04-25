@@ -1,0 +1,84 @@
+target := $(obj)
+
+.PHONY: __modules
+__modules: $(target)
+	@:
+
+srctree	:= .
+objtree	:= .
+rootdir	:= $(if $(dir),src/$(dir),src)
+
+include $(srctree)/Makefile.lib
+include $(srctree)/auto.conf
+
+#
+# Printing linker command information for modules
+#
+
+CFLAGS += -DMODULE
+
+quiet_cmd_cc_mod_c = CC [M]  $@
+      cmd_cc_mod_c = $(CC) $(DEPFLAGS) -c $< -o $@ $(CFLAGS) $(c_flags) $(INCLUDE)
+
+#
+# Compiling modules
+#
+
+define build_mod
+modname := $$(basename $(1))
+objname := $$(modname).ebm
+depfile := $$(modname).o.d
+srcfile := $$(modname).c
+
+c_flags := $(2)
+
+ifneq (, $$(srcfile))
+
+$(1): $$(srcfile)
+	$$(call cmd,cc_mod_c)
+
+-include $$(depfile)
+
+endif
+endef
+
+compile_module = $(foreach file,$(1),$(eval $(call build_mod,$(file),$(2))))
+
+#
+# Compile template
+#
+
+define build_target
+$(1)-ccfl	:=
+$(1)-mods	:=
+
+$$(eval $$(call collect_target,$$(rootdir),$(1)))
+$$(eval $$(call compile_module,$$($(1)-mods),$$($(1)-ccfl)))
+endef
+
+$(eval $(call build_target,$(target)))
+
+#
+# Printing linking command information
+#
+
+quiet_cmd_oc_mod = LD [M]  $@
+      cmd_oc_mod = $(OBJCOPY) $(OBJCOPY_SECTION) $< $@
+
+      cmd_cp_mod = $(CP) $(2).ebm build/modules
+
+#
+# Linking binary files
+#
+
+mod_copy = $(foreach module,$(1),$(call cmd,cp_mod,$(basename $(module:./%=%))))
+
+#
+# Target building
+#
+
+%.ebm: %.o
+	$(call cmd,oc_mod,$@)
+
+$(target): $($(target)-mods:.o=.ebm)
+	$(call mod_copy,$($(target)-mods))

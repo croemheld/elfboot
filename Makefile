@@ -1,115 +1,147 @@
+#
+# elfboot main Makefile
+#
+
 ELFBOOT := elfboot
 
-ELFBOOT_ARCH   := x86
-ELFBOOT_BITS   := 32
-
 ELFBOOT_TARGET := i686
+ELFBOOT_ARCH   := x86
+
+export ELFBOOT ELFBOOT_TARGET ELFBOOT_ARCH
+
+#
+# Toolchain
+#
+
 ELFBOOT_TCHAIN := elfboot-toolchain
-
-ELFBOOT_ISO     := $(CURDIR)/iso
-ELFBOOT_BOOT    := boot
-ELFBOOT_ISOBOOT := $(ELFBOOT_ISO)/$(ELFBOOT_BOOT)
-
-ELFBOOT_BINARY  := $(ELFBOOT_BOOT)/$(ELFBOOT).bin
-
-# Export the modified PATH variable
 export PATH  := $(CURDIR)/$(ELFBOOT_TCHAIN)/bin:$(PATH)
 export SHELL := env PATH=$(PATH) /bin/bash
 
-# Export relevant variables needed for the toolchain
-export ELFBOOT_ARCH
-export ELFBOOT_TARGET
+#
+# Verbose output
+#
 
-# Programs for compiling and linking
-CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
-LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
-PY := python3
+ifeq ("$(origin V)", "command line")
+  VERBOSE = $(V)
+endif
+ifndef VERBOSE
+  VERBOSE = 0
+endif
 
-# Flags for compiler and linker
-CFLAGS  := -std=gnu99 -ffreestanding -Wextra -g -Os	\
-	   -Wall -Wstrict-prototypes -march=i386	\
-	   -fno-strict-aliasing -fno-pic		\
-	   -mno-mmx -mno-sse
-LDFLAGS := -O2 -nostdlib -lgcc
+ifeq ($(VERBOSE),1)
+  quiet =
+  Q =
+else
+  quiet=quiet_
+  Q = @
+endif
 
-# Includes
-ELFBOOT_INCLUDE := -Isrc/include			\
-		   -Isrc/arch/$(ELFBOOT_ARCH)/include
+export quiet Q VERBOSE
 
-# Recipe variables
-PHONY :=
-CLEAN :=
-BUILD :=
+srctree	:= .
+objtree	:= .
+
+#
+# Targets
+#
+
+BOOTUID			:= bootuid
+DOTCONF			:= $(ELFBOOT).config
+GENCONF			:= src/include/elfboot/config.h
+AUTOCONF		:= auto.conf
+
+IMGCONF			:= $(DOTCONF) $(AUTOCONF) $(GENCONF)
+
+MODULES			:= modules
+
+ELFTOOL_TARGETS	:= tools
+
+ELFBOOT_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF) toolchain-check
+ELFBOOT_ROOTDIR := 
+ELFBOOT_BITSIZE := $(ELFBOOT)_bin_len
+ELFBOOT_BFDSIZE := $(BOOTUID)_bfd_len
+
+BOOTIMG			:= bootimg
+BOOTIMG_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF) toolchain-check
+BOOTIMG_ROOTDIR := arch/$(ELFBOOT_ARCH)/boot
+
+BOOTISO			:= $(ELFBOOT).iso
+
+#
+# elfboot logo TMG file
+#
+
+EBIMAGE			:= $(ELFBOOT)
+
+# 
+# Boot image
+#
+
+BOOTISO_CDFLAGS += -b $(BOOTIMG).bin
+BOOTISO_CDFLAGS += -no-emul-boot
+BOOTISO_CDFLAGS += -volid ELFBOOT
+BOOTISO_CDFLAGS += -boot-info-table
+
+#
+# Weight sorting
+#
+
+BOOTISO_CDFLAGS += --sort-weight 6 $(BOOTIMG).bin
+BOOTISO_CDFLAGS += --sort-weight 5 $(ELFBOOT).bin
+BOOTISO_CDFLAGS += --sort-weight 4 $(ELFBOOT).cfg
+BOOTISO_CDFLAGS += --sort-weight 3 $(ELFBOOT).tmg
+BOOTISO_CDFLAGS += --sort-weight 2 $(ELFBOOT).map
+BOOTISO_CDFLAGS += --sort-weight 1 $(MODULES)
+
+#
+# Additional options
+#
+
+BOOTISO_CDFLAGS += -full-iso9660-filenames
+
+#
+# Recipes for targets
+#
 
 PHONY += all
 all: toolchain-check
 	@echo " Please use one of the following targets:"
 	@echo " $(BUILD)"
 
+include $(srctree)/Makefile.lib
 
-OBJS     :=
+BUILD += $(ELFBOOT)
+$(ELFBOOT): $(ELFBOOT_PREREQS)
+	$(Q)$(call compile,$(ELFBOOT),$(ELFBOOT_ROOTDIR))
+	$(Q)$(call modules,$(ELFBOOT),$(ELFBOOT_ROOTDIR))
+	$(Q)$(call objcopy,$(ELFBOOT))
 
-# Source and object file tree
-objtree  := .
-srctree  := .
+$(ELFBOOT).map: $(ELFBOOT)
+	$(Q)$(NM) $(NMFLAGS) $(ELFBOOT).elf > $@
 
-define build_subdir
-objtree := $$(objtree)/$(1)
-srctree := $$(srctree)/$(1)
+BUILD += auto.conf
+auto.conf: $(DOTCONF)
+	$(Q)$(call builtin,$(DOTCONF))
 
-elfboot-y :=
-elfboot-d :=
+BUILD += $(BOOTIMG)
+$(BOOTIMG): $(BOOTIMG_PREREQS)
+	$(Q)$(call compile,$(BOOTIMG),$(BOOTIMG_ROOTDIR))
+	$(Q)$(call elfconf,$(BOOTIMG),$(ELFBOOT_BITSIZE),$(ELFBOOT).bin)
+	$(Q)$(call elfconf,$(BOOTIMG),$(ELFBOOT_BFDSIZE),$(ELFBOOT).cfg)
+	$(Q)$(call objcopy,$(BOOTIMG))
 
-include $$(srctree)/Makefile
+BUILD += $(ELFTOOL_TARGETS)
+$(ELFTOOL_TARGETS):
+	$(Q)$(MAKE) -C $(ELFTOOL_TARGETS)
 
-OBJS += $$(patsubst %,$$(objtree)/%,$$(elfboot-y))
-
-$$(foreach subdir,$$(elfboot-d),$$(eval $$(call build_subdir,$$(subdir))))
-
-srctree := $$(patsubst %/$(1),%,$$(srctree))
-objtree := $$(patsubst %/$(1),%,$$(objtree))
-endef
-
-$(eval $(call build_subdir,src/arch/$(ELFBOOT_ARCH)))
-$(eval $(call build_subdir,src))
-
-define compile_file
-srcname := $$(basename $(1))
-sofiles := $$(wildcard $$(srcname).*)
-srcfile := $$(filter-out $(1),$$(sofiles))
-
-ifneq (, $$(srcfile))
-
-$(1): $$(srcfile)
-	@echo "  CC      $$@"
-	@$$(CC) -c $$< -o $$@ $$(CFLAGS) $$(ELFBOOT_INCLUDE)
-
-endif
-endef
-
-$(foreach file,$(OBJS),$(eval $(call compile_file,$(file))))
-
-PHONY += elfboot
-BUILD += elfboot
-elfboot: elfboot-config toolchain-check $(OBJS)
-	@echo "  GENISO  $(ELFBOOT).iso"
-	@mkdir -p $(ELFBOOT_ISOBOOT)
-	@$(LD) -o $(ELFBOOT).bin -T $(ELFBOOT).ld $(OBJS) $(LDFLAGS)
-	@cp $(ELFBOOT).bin $(ELFBOOT_ISOBOOT)
-	@genisoimage -R -b $(ELFBOOT_BINARY)				\
-		-input-charset utf-8					\
-		-no-emul-boot						\
-		-V elfboot						\
-		-v -o $(ELFBOOT).iso $(ELFBOOT_ISO)
-
-elfboot-config:
-	@$(PY) tools/genconf.py -i $(ELFBOOT).config			\
-			       -o src/include/elfboot/config.h
+BUILD += $(GENCONF)
+$(GENCONF): $(ELFBOOT).config
+	$(Q)$(call genconf)
 
 PHONY += toolchain
 BUILD += toolchain
 toolchain:
-	$(MAKE) -C $(ELFBOOT_TCHAIN)
+	$(Q)$(MAKE) ELFBOOT_TARGET=$(ELFBOOT_TARGET) -C $(ELFBOOT_TCHAIN)
 
 PHONY += toolchain-check
 toolchain-check:
@@ -117,32 +149,70 @@ ifeq (, $(shell type $(CC) 2> /dev/null))
 	$(error Please run 'make toolchain' first)
 endif
 
-PHONY += clean-elfboot
-CLEAN += clean-elfboot
-clean-elfboot:
-	@rm -f $(ELFBOOT).bin $(ELFBOOT).iso
-	@rm -rf $(ELFBOOT_ISO)
-	@for objfile in $(OBJS); do			\
-		if [[ -e $$objfile ]]; then		\
-			echo "  CLEAN   $$objfile";	\
-			rm -f $$objfile;		\
-		fi					\
-	done
+build:
+	$(Q)mkdir -p build/$(MODULES)
+
+iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG)
+	$(Q)$(CP) $(BOOTIMG).bin build
+	$(Q)$(CP) $(ELFBOOT).bin build
+	$(Q)$(CP) $(ELFBOOT).cfg build
+	$(Q)$(CP) $(ELFBOOT).tmg build
+	$(Q)$(CP) $(ELFBOOT).map build
+	@echo "  XORRISO $(BOOTISO)"
+	$(Q)$(XR) $(BOOTISO_CDFLAGS) -o $(BOOTISO) build 2> /dev/null
+
+#
+# Clean build
+#
+
+PHONY += clean-$(ELFBOOT)
+CLEAN += clean-$(ELFBOOT)
+clean-$(ELFBOOT):
+	$(Q)$(call cleanup,$(ELFBOOT),$(ELFBOOT_ROOTDIR))
+
+PHONY += clean-$(GENCONF)
+CLEAN += clean-$(GENCONF)
+clean-$(GENCONF):
+	$(Q)$(RM) -f src/include/elfboot/config.h
+
+PHONY += clean-auto.conf
+CLEAN += clean-auto.conf
+clean-auto.conf:
+	$(Q)$(RM) -f auto.conf
+
+PHONY += clean-$(BOOTIMG)
+CLEAN += clean-$(BOOTIMG)
+clean-$(BOOTIMG):
+	$(Q)$(call cleanup,$(BOOTIMG),$(BOOTIMG_ROOTDIR))
+
+PHONY += clean-$(ELFTOOL_TARGETS)
+CLEAN += clean-$(ELFTOOL_TARGETS)
+clean-$(ELFTOOL_TARGETS):
+	@echo "  CLEAN   $(ELFTOOL_TARGETS)"
+	$(Q)$(MAKE) -C $(ELFTOOL_TARGETS) clean
 
 PHONY += clean-toolchain
 CLEAN += clean-toolchain
 clean-toolchain:
-	@echo "Clean $(ELFBOOT_TCHAIN)..."
-	$(MAKE) -C $(ELFBOOT_TCHAIN) clean
+	@echo "  CLEAN   $(ELFBOOT_TCHAIN)"
+	$(Q)$(MAKE) -C $(ELFBOOT_TCHAIN) clean
+
+PHONY += clean-iso
+CLEAN += clean-iso
+clean-iso: clean-$(BOOTIMG) clean-$(ELFBOOT) clean-auto.conf clean-$(GENCONF)
+	@echo "  CLEAN   $(BOOTISO)"
+	$(Q)$(RM) -f $(MODULES).lst
+	$(Q)$(RM) -f $(ELFBOOT).map
+	$(Q)$(RM) -f $(ELFBOOT).iso
+
+PHONY += clean-build
+CLEAN += clean-build
+clean-build: clean-$(ELFTOOL_TARGETS) clean-iso
+	$(Q)$(RM) -rf build
 
 PHONY += clean
 clean:
 	@echo " Please use one of the following targets:"
 	@echo " $(CLEAN)"
-
-PHONE += cscope
-cscope:
-	$(MAKE) -C src cscope
-	mv src/cscope.out .
 
 .PHONY: $(PHONY)

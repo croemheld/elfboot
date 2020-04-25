@@ -1,0 +1,122 @@
+PHONY += __lib
+__lib:
+
+#
+# Compiler, linker and additional programs
+#
+
+CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+OBJCOPY := $(ELFBOOT_TARGET)-$(ELFBOOT)-objcopy
+
+#
+# Additional programs
+#
+
+PY := python3
+RM := rm
+NM := nm
+CP := cp
+
+XR := xorriso -as mkisofs
+
+#
+# Flags for compiler and linker
+#
+
+DEPFLAGS  = -MMD -MP -MF $@.d
+
+CFLAGS	:= -std=gnu99 -ffreestanding -Wextra -Os
+CFLAGS	+= -Wall -Wstrict-prototypes -march=i386
+CFLAGS	+= -fno-strict-aliasing -fno-pic
+CFLAGS	+= -mno-mmx -mno-sse
+CFLAGS	+= -Wunused-macros
+
+LDFLAGS := -O2 -nostdlib -lgcc
+MODULE_LDFLAGS := $(LDFLAGS)
+
+NMFLAGS	+= -ng
+
+INCLUDE := -Isrc/include -Isrc/arch/$(ELFBOOT_ARCH)/include
+
+#
+# Calling Makefiles
+#
+
+compile = $(MAKE) -f $(srctree)/Makefile.build obj=$(1) dir=$(2)
+cleanup = $(MAKE) -f $(srctree)/Makefile.clean obj=$(1) dir=$(2)
+
+# Building modules
+
+builtin = $(PY) tools/builtin.py -i $(1)
+modules = $(MAKE) -f $(srctree)/Makefile.modules obj=$(1) dir=$(2)
+
+# Generating configuration and header files
+
+genconf = $(PY) tools/genconf.py -i $(ELFBOOT).config -o $@
+
+#
+# Calling functions
+#
+
+squote := '
+escsq = $(subst $(squote),'\$(squote)',$1)
+
+cec = $(if $($(quiet)cmd_$(1)), echo '  $(call escsq,$($(quiet)cmd_$(1)))';)
+cmd = @$(cec) $(cmd_$(1))
+
+# To reduce the size of the resulting binary, we remove unused sections
+# like the .eh_frame which only adds unwinding information which we are
+# not using anyway.
+
+unused_sections += .comment
+unused_sections += .debug_*
+unused_sections += .eh_frame
+
+OBJCOPY_SECTION := $(foreach section,$(unused_sections),-R $(section))
+
+#
+# Utility functions and Tools
+#
+
+ELFCONF	:= $(srctree)/tools/elfconf
+
+quiet_cmd_ec_elf = ELFCONF $(2).elf
+      cmd_ec_elf = $(ELFCONF) -f $(2).elf -s $(3) -v $(shell stat -L -c %s $(4))
+
+quiet_cmd_oc_bin = OBJCOPY $(2).bin
+      cmd_oc_bin = $(OBJCOPY) -O binary $(2).elf $(2).bin
+
+quiet_cmd_oc_bin = OBJCOPY $(2).bin
+      cmd_oc_bin = $(OBJCOPY) -O binary $(2).elf $(2).bin
+
+elfconf = $(call cmd,ec_elf,$(1),$(2),$(3))
+objcopy = $(call cmd,oc_bin,$(1))
+mod_map = $(call cmd,ko_map)
+
+#
+# Collecting object files for compilation
+#
+
+define collect_target
+objtree := $$(objtree)/$(1)
+srctree := $$(srctree)/$(1)
+
+$(2)-y  :=
+$(2)-m  :=
+$(2)-d  :=
+
+include $$(srctree)/Makefile
+
+$(2)-ccfl	+= $$($(2)-cflags)
+$(2)-ccfl	:= $$(sort $$($(2)-ccfl))
+$(2)-objs	+= $$(patsubst %,$$(objtree)/%,$$($(2)-y))
+$(2)-mods	+= $$(patsubst %,$$(objtree)/%,$$($(2)-m))
+
+$$(foreach subdir,$$($(2)-d),$$(eval $$(call collect_target,$$(subdir),$(2))))
+
+srctree := $$(patsubst %/$(1),%,$$(srctree))
+objtree := $$(patsubst %/$(1),%,$$(objtree))
+endef
+
+

@@ -1,0 +1,61 @@
+target := $(obj)
+
+.PHONY: __clean
+__clean: clean-$(target)
+
+srctree	:= .
+objtree	:= .
+rootdir	:= $(if $(dir),src/$(dir),src)
+
+include $(srctree)/Makefile.lib
+include $(srctree)/auto.conf
+
+#
+# Compile template
+#
+
+define collect_files
+$(1)-objs	:=
+$(1)-mods	:=
+
+$$(eval $$(call collect_target,$$(rootdir),$(1)))
+endef
+
+$(eval $(call collect_files,$(target)))
+
+clean-objs := $($(target)-objs)
+clean-objs += $(target).elf
+clean-objs += $(target).bin
+
+clean-deps := $($(target)-objs:.o=.o.d)
+clean-deps += $($(target)-mods:.o=.o.d)
+
+clean-mods := $($(target)-mods)
+clean-mods += $($(target)-mods:.o=.ebm)
+
+.PHONY: clean-$(target)-deps
+clean-$(target)-deps:
+	@for objfile in $(subst ./,,$(clean-deps)); do			\
+		if [ -e $$objfile ]; then							\
+			$(RM) -f $$objfile;								\
+		fi													\
+	done
+
+.PHONY: clean-$(target)-mods
+clean-$(target)-mods:
+	@for objfile in $(subst ./,,$(clean-mods)); do			\
+		if [ -e $$objfile ]; then							\
+			echo "  CLEAN   $$objfile";						\
+			$(RM) -f $$objfile;								\
+		fi													\
+	done
+
+.PHONY: clean-$(target)
+clean-$(target): clean-$(target)-mods clean-$(target)-deps
+	@for objfile in $(subst ./,,$(clean-objs)); do			\
+		if [ -e $$objfile ]; then							\
+			echo "  CLEAN   $$objfile";						\
+			$(RM) -f $$objfile;								\
+		fi													\
+	done
+	
