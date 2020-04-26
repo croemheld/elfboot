@@ -1,8 +1,9 @@
 #
-# Ignore configuration file
+# Ignore configuration files
 #
 
-/elfboot.config
+*auto.conf
+*elfboot.config
 *config.h
 
 #
