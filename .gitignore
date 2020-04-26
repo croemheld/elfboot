@@ -31,6 +31,12 @@
 *.iso
 
 #
+# Ignore tools
+#
+
+/tools/*
+
+#
 # Ignore CScope files
 #
 
