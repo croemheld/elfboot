@@ -25,6 +25,7 @@
 *.img
 *.ini
 *.o
+*.o.d
 *.bin
 *.iso
 
