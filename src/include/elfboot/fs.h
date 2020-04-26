@@ -46,7 +46,7 @@ struct fs_node_ops {
 };
 
 struct fs_node {
-	char name[128];
+	char name[64];
 	uint32_t mask;
 	uint32_t uid;
 	uint32_t gid;
