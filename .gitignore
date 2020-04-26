@@ -27,6 +27,8 @@
 *.o
 *.o.d
 *.ebm
+*.elf
+*.map
 *.bin
 *.iso
 
