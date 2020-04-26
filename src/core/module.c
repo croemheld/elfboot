@@ -61,13 +61,15 @@ static int module_load_sections(struct module *mod)
 
 static int module_resolve_symbols(struct module *mod)
 {
-	uint32_t symndx, bsymval;
+	Elf32_Half symndx;
 	Elf32_Sym *symtab;
+	uint32_t bsymval;
+	char *name;
 
 	symtab = mod->symtab;
 
 	for (symndx = 1; symndx < mod->numsyms; symndx++) {
-		const char *name = mod->strtab + symtab[symndx].st_name;
+		name = mod->strtab + symtab[symndx].st_name;
 
 		switch (symtab[symndx].st_shndx) {
 		case SHN_COMMON:
@@ -169,10 +171,6 @@ static int module_initialize(struct module *mod)
 	if (mod->init())
 		return -EFAULT;
 
-	mod->name = bstrdup(mod->file->name);
-	if (!mod->name)
-		return -ENOMEM;
-
 	list_add(&mod->list, &modules);
 
 	return 0;
@@ -192,8 +190,6 @@ static int module_read_file(struct file *file)
 	if (!file_read(file, file->length, mod->buffer))
 		goto module_free_buffer;
 
-	mod->file = file;
-
 	if (module_find_sections(mod))
 		goto module_free_buffer;
 
@@ -208,6 +204,8 @@ static int module_read_file(struct file *file)
 
 	if (module_initialize(mod))
 		goto module_free_buffer;
+
+	strncpy(mod->name, file->name, strlen(file->name) - 4);
 
 	return 0;
 

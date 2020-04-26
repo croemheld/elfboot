@@ -4,7 +4,6 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 #include <elfboot/elf.h>
-#include <elfboot/file.h>
 #include <elfboot/list.h>
 
 #ifndef MODULE
@@ -20,8 +19,7 @@
 #endif
 
 struct module {
-	char *name;
-	struct file *file;
+	char name[32];
 
 	/* Module Elf object */
 	union {
