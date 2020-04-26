@@ -23,7 +23,7 @@ static int module_find_sections(struct module *mod)
 	mod->shstrtab = elf32_section_addr(mod->ehdr, mod->ehdr->e_shstrndx);
 
 	/* 
-	 * Search for ".symtab" and ".strtab" section by nyme by using the macros
+	 * Search for ".symtab" and ".strtab" section by name by using the macros
 	 * ELF_SYMTAB and ELF_STRTAB. This needs to happen as soon as the section
 	 * ".shstrtab" has been assigned.
 	 */
