@@ -26,6 +26,7 @@
 *.ini
 *.o
 *.o.d
+*.ebm
 *.bin
 *.iso
 
