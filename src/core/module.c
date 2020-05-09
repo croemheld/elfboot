@@ -10,6 +10,23 @@
 
 LIST_HEAD(modules);
 
+static Elf32_Sym *module_find_symbol(struct module *mod, const char *name)
+{
+	uint32_t symndx;
+	Elf32_Sym *sym;
+
+	for (symndx = 0; symndx < mod->numsyms; symndx++) {
+		sym = &mod->symtab[symndx];
+
+		if (strcmp(name, mod->strtab + sym->st_name))
+			continue;
+
+		return sym;
+	}
+
+	return NULL;
+}
+
 static int module_find_sections(struct module *mod)
 {
 	mod->shdr = elf32_get_shdr(mod->ehdr);
@@ -152,18 +169,16 @@ static int module_resolve_relocations(struct module *mod)
 
 static int module_initialize(struct module *mod)
 {
-	uint32_t symndx;
-	Elf32_Sym *sym;
+	Elf32_Sym *init_sym, *exit_sym;
 
-	for (symndx = 0; symndx < mod->numsyms; symndx++) {
-		sym = &mod->symtab[symndx];
+	init_sym = module_find_symbol(mod, "init_module");
+	exit_sym = module_find_symbol(mod, "exit_module");
 
-		if (!strncmp(mod->strtab + sym->st_name, "init_module", 11))
-			mod->init = tvptr(sym->st_value);
+	if (init_sym)
+		mod->init = tvptr(init_sym->st_value);
 
-		if (!strncmp(mod->strtab + sym->st_name, "exit_module", 11))
-			mod->exit = tvptr(sym->st_value);
-	}
+	if (exit_sym)
+		mod->exit = tvptr(exit_sym->st_value);
 
 	if (!mod->init || !mod->exit)
 		return -ENOEXEC;
