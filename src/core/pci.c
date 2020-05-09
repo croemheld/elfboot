@@ -340,6 +340,9 @@ static void pci_probe_slot(struct pci_address *addr)
 	if (pci_probe_device(addr))
 		return;
 
+	/* Signel device on func 0 */
+	pci_probe_func(addr);
+
 	/* Skip non-multifunction devices */
 	if (!pci_probe_multifunction(addr))
 		return;
