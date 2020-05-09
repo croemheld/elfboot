@@ -531,6 +531,8 @@ static int ide_init(void)
 {
 	struct pci_dev *pcidev;
 
+	bprintln(DRIVER_IDE ": Initialize module...");
+
 	/*
 	 * TODO CRO: Iterate over all class-subclass combinations. The used
 	 * IDE cotroller might not have the used class in the PCI_CLASS_IDE
@@ -539,8 +541,6 @@ static int ide_init(void)
 	pcidev = pci_get_class(PCI_CLASS_IDE, NULL);
 	if (!pcidev)
 		return -ENODEV;
-
-	bprintln(DRIVER_IDE ": Initialize module...");
 
 	return ide_init_controller(pcidev);
 }
