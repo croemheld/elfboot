@@ -540,7 +540,7 @@ static int ide_init(void)
 	 */
 	pcidev = pci_get_class(PCI_CLASS_IDE, NULL);
 	if (!pcidev)
-		return -ENODEV;
+		return 0;
 
 	return ide_init_controller(pcidev);
 }
