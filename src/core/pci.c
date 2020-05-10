@@ -265,7 +265,26 @@ struct pci_dev *pci_find_device(uint16_t bus, uint16_t slot, uint16_t func)
  * PCI initialization
  */
 
-static void pci_alloc_device(struct pci_address *addr)
+static void pci_probe_bus(struct pci_address *addr, struct pci_dev *parent);
+
+static void pci_probe_bridge(struct pci_address *addr, struct pci_dev *parent)
+{
+	struct pci_address bridge = { 0 };
+
+	if ((pci_probe_class(addr, PCI_CLASS_BRIDGE)) &&
+	    (pci_probe_subclass(addr, PCI_SUBCLASS_BRIDGE_PCI))) {
+		bridge.bus = pci_read_config_byte(addr, PCI_SECONDARY_BUS);
+
+		/*
+		 * Start scanning from the secondary bus on the other
+		 * side of the PCI-to-PCI Bridge.
+		 */
+
+		pci_probe_bus(&bridge, parent);
+	}
+}
+
+static void pci_alloc_device(struct pci_address *addr, struct pci_dev *parent)
 {
 	struct pci_dev *pcidev = bmalloc(sizeof(*pcidev));
 
@@ -297,65 +316,53 @@ static void pci_alloc_device(struct pci_address *addr)
 	pci_dump_device(pcidev);
 
 	list_add(&pcidev->list, &pci_devs);
+
+	/* Case: PCI-to-PCI Bridge */
+	pci_probe_bridge(addr, pcidev);
 }
 
-static void pci_probe_bus(struct pci_address *addr);
-
-static void pci_probe_bridge(struct pci_address *addr)
-{
-	struct pci_address bridge = { 0 };
-
-	if ((pci_probe_class(addr, PCI_CLASS_BRIDGE)) &&
-	    (pci_probe_subclass(addr, PCI_SUBCLASS_BRIDGE_PCI))) {
-		bridge.bus = pci_read_config_byte(addr, PCI_SECONDARY_BUS);
-
-		/*
-		 * Start scanning from the secondary bus on the other
-		 * side of the PCI-to-PCI Bridge.
-		 */
-
-		pci_probe_bus(&bridge);
-	}
-}
-
-static void pci_probe_func(struct pci_address *addr)
+static void pci_probe_func(struct pci_address *addr, struct pci_dev *parent)
 {
 	/* Case: No device */
 	if (pci_probe_device(addr))
 		return;
 
-	/* Case: PCI-to-PCI Bridge */
-	pci_probe_bridge(addr);
+	/* We don't want duplicate entries for a device, skip */
+	if (pci_find_device(addr->bus, addr->slot, addr->func))
+		return;
 
 	/*
 	 * At this point, we made sure the device actually exists
 	 * so we can use the address to create a new PCI device.
 	 */
 
-	pci_alloc_device(addr);
+	pci_alloc_device(addr, parent);
 }
 
-static void pci_probe_slot(struct pci_address *addr)
+static void pci_probe_slot(struct pci_address *addr, struct pci_dev *parent)
 {
+	/* Reset function */
+	addr->func = 0;
+
 	/* Case: No device */
 	if (pci_probe_device(addr))
 		return;
 
 	/* Single device on func 0 */
-	pci_probe_func(addr);
+	pci_probe_func(addr, parent);
 
 	/* Skip non-multifunction devices */
 	if (!pci_probe_multifunction(addr))
 		return;
 
 	for (addr->func = 1; addr->func < PCI_NUM_FUNCS; addr->func++)
-		pci_probe_func(addr);
+		pci_probe_func(addr, parent);
 }
 
-static void pci_probe_bus(struct pci_address *addr)
+static void pci_probe_bus(struct pci_address *addr, struct pci_dev *parent)
 {
-	for (; addr->slot < PCI_NUM_SLOTS; addr->slot++)
-		pci_probe_slot(addr);
+	for (addr->slot = 0; addr->slot < PCI_NUM_SLOTS; addr->slot++)
+		pci_probe_slot(addr, parent);
 }
 
 int pci_init(void)
@@ -373,10 +380,10 @@ int pci_init(void)
 		 * need to iterate over all possible buses.
 		 */
 
-		pci_probe_bus(&addr);
+		pci_probe_bus(&addr, NULL);
 	} else
 		for (; addr.bus < PCI_NUM_BUSES; addr.bus++)
-			pci_probe_bus(&addr);
+			pci_probe_bus(&addr, NULL);
 
 	return 0;
 }
