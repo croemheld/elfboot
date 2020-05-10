@@ -40,9 +40,10 @@ static void pci_dump_device(struct pci_dev *pcidev)
 {
 	const char *name = pci_class_name(pcidev);
 
-	bprintln("PCI: %02x:%02x.%01x [%04lx]: %04lx:%04lx %s",
+	bprintln("PCI: %02x:%02x.%01x [%04lx] (%02x): %04lx:%04lx %s",
 		 pcidev->addr.bus, pcidev->addr.slot, pcidev->addr.func,
-		 pcidev->classrv >> 16, pcidev->vendor, pcidev->device, name);
+		 pcidev->classrv >> 16, (pcidev->classrv >> 8) & 0xff,
+		 pcidev->vendor, pcidev->device, name);
 }
 
 /*
