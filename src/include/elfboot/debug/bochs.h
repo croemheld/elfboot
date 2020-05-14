@@ -1,5 +1,5 @@
-#ifndef __UAPI_ELFBOOT_DEBUG_H__
-#define __UAPI_ELFBOOT_DEBUG_H__
+#ifndef __ELFBOOT_DEBUG_BOCHS_H__
+#define __ELFBOOT_DEBUG_BOCHS_H__
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
@@ -24,4 +24,4 @@ static __always_inline void bochs_bprintf(const char *str, int len)
 		bochs_putc(str[i]);
 }
 
-#endif /* __UAPI_ELFBOOT_DEBUG_H__ */
+#endif /* __ELFBOOT_DEBUG_BOCHS_H__ */

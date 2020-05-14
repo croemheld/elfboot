@@ -300,5 +300,9 @@ int bprintf(const char *format, ...)
 
 	early_printf(buffer, length);
 
+#ifdef CONFIG_DEBUG
+	debug_printf(buffer, length);
+#endif
+
 	return length;
 }
