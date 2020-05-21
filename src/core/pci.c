@@ -182,6 +182,22 @@ static bool pci_probe_multifunction(struct pci_address *addr)
 }
 
 /*
+ * PCI device configuration
+ */
+
+void pci_set_master(struct pci_dev *pcidev)
+{
+	uint16_t command = pci_read_config_word(&pcidev->addr, PCI_COMMAND);
+
+	if (command & PCI_COMMAND_BUSMASTER)
+		return;
+
+	command |= PCI_COMMAND_BUSMASTER;
+
+	pci_write_config_word(&pcidev->addr, PCI_COMMAND, command);
+}
+
+/*
  * PCI devices
  */
 

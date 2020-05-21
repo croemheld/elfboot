@@ -44,6 +44,8 @@
 #define PCI_INVALID_DEVICE	(~0UL)
 #define PCI_ANY_ID			(~0UL)
 
+#define PCI_COMMAND_BUSMASTER	_BITUL(2)
+
 #define PCI_CLASS_MASK		(~(_BITUL(8) - 1))
 	
 #define PCI_DEVICE_CLASS(c, s, p) ((c << 24) | (s << 16) | (p << 8))
@@ -313,6 +315,8 @@ void pci_write_config_byte(struct pci_address *addr, uint8_t offset, uint8_t val
 void pci_write_config_word(struct pci_address *addr, uint8_t offset, uint16_t val);
 
 void pci_write_config_long(struct pci_address *addr, uint8_t offset, uint32_t val);
+
+void pci_set_master(struct pci_dev *pcidev);
 
 struct pci_dev *pci_get_device(uint16_t vendor, uint16_t device, struct pci_dev *prev);
 
