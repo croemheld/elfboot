@@ -18,7 +18,7 @@ static const char *pci_dev_classes[] = {
 	"Bridge Device",
 	"Simple Communication Controller",
 	"Base System Peripheral",
-	"Input Device Controller"
+	"Input Device Controller",
 	"Docking Station",
 	"Processor",
 	"Serial Bus Controller",
