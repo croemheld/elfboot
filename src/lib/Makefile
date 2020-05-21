@@ -1,0 +1,1 @@
+elfboot-d += ata

@@ -182,11 +182,6 @@ struct ata_cmd {
 
 /* -------------------------------------------------------------------------- */
 
-#define ATA_SECTOR_WORDS		256
-#define ATA_SECTOR_SIZE			(ATA_SECTOR_WORDS * 2)
-
-#define ATA_IDENTIFY_SIZE		ATA_SECTOR_SIZE
-
 struct ata_id {
 /*000*/ uint16_t config;			/* configuration info */
 

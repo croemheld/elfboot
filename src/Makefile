@@ -3,6 +3,7 @@ elfboot-d += core
 elfboot-d += crypto
 elfboot-d += drivers
 elfboot-d += fs
+elfboot-d += lib
 elfboot-d += mm
 
 elfboot-cflags += -Wno-unused-variable

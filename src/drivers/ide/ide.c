@@ -5,6 +5,7 @@
 #include <elfboot/module.h>
 #include <elfboot/bdev.h>
 #include <elfboot/pci.h>
+#include <elfboot/libata.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
@@ -313,22 +314,6 @@ static struct bdev_ops ide_atapi_bdev_ops = {
  * Module initialization and exit function
  */
 
-static uint64_t ide_read_id(uint16_t *params, uint32_t word, uint64_t size)
-{
-	uint64_t i, value = 0;
-
-	for (i = 0; i < size; i++) {
-
-		/*
-		 * Argument 'size' defines the number of words to read from the buffer
-		 * which means that an 8-byte value has to be read in chunks 4 times.
-		 */
-		value |= params[word + i] << (16 * i);
-	}
-
-	return value;
-}
-
 static int ide_dev_name(struct ide_dev *idedev, struct bdev *bdev)
 {
 	char ide[] = "ideX-Y";
@@ -342,44 +327,29 @@ static int ide_dev_name(struct ide_dev *idedev, struct bdev *bdev)
 	return 0;
 }
 
-#define ATA_INVALID_BLOCK_SIZE(x)	((x) & ((x) - 1) || !(x) || (x) > 0x100000)
-
 static int ide_fill_ata(struct bdev *bdev)
 {
 	struct ide_dev *idedev = bdev->private;
 
 	bdev->init_block = 0;
 
-	if (!(ide_read_id(idedev->private, 49, 1) & ATA_SUPPORT_LBA))
+	if (!libata_has_lba_support(idedev->private))
 		goto fill_ata_chs;
 
 	bdev->flags |= BDEV_FLAGS_LBA;
-
-	if (!(ide_read_id(idedev->private, 83, 1) & ATA_SUPPORT_ADDRESS48)) {
-		bdev->last_block = ide_read_id(idedev->private, 60, 2);
-		goto fill_ata_block_size;
-	}
-
-	bdev->last_block = ide_read_id(idedev->private, 100, 4);
+	bdev->last_block = libata_last_block(idedev->private);
 
 	goto fill_ata_block_size;
 
 fill_ata_chs:
 
-	bdev->cylinders = ide_read_id(idedev->private, 1, 1);
-	bdev->heads = ide_read_id(idedev->private, 3, 1);
-	bdev->sectors_per_track = ide_read_id(idedev->private, 6, 1);
+	bdev->cylinders = libata_cylinders(idedev->private);
+	bdev->heads = libata_heads(idedev->private);
+	bdev->sectors_per_track = libata_sectors_per_track(idedev->private);
 
 fill_ata_block_size:
 
-	bdev->block_size = ide_read_id(idedev->private, 106, 1);
-	if (bdev->block_size & ATA_PSS_VALID_VALUE) {
-		bdev->block_size = ide_read_id(idedev->private, 117, 2);
-
-		if (ATA_INVALID_BLOCK_SIZE(bdev->block_size))
-			bdev->block_size = 512;
-	} else
-		bdev->block_size = 512;
+	bdev->block_size = libata_block_size(idedev->private);
 
 #ifdef CONFIG_IDE_DEBUG
 	bprintln(DRIVER_IDE ": %s: sectors = %llu, block size = %u",
