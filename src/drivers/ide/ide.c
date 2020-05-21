@@ -427,8 +427,6 @@ ide_free_ibuf_ata:
 
 static int ide_fill_atapi(struct bdev *bdev)
 {
-	struct scsi_read_capacity10_data rcd = { 0 };
-
 	if (ide_atapi_read_capacity(bdev))
 		return -EFAULT;
 
