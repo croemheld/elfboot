@@ -116,12 +116,12 @@ static struct fs_type fs_isofs = {
  * Functions for ISO9660 filesystem nodes
  */
 
-void isofs_open(struct fs_node *node)
+static void isofs_open(struct fs_node *node)
 {
 
 }
 
-void isofs_close(struct fs_node *node)
+static void isofs_close(struct fs_node *node)
 {
 
 }
@@ -164,17 +164,17 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	return 0;
 }
 
-uint32_t isofs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+static uint32_t isofs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
 {
 	return 0;
 }
 
-struct fs_dent *isofs_readdir(struct fs_node *node, uint32_t index)
+static struct fs_dent *isofs_readdir(struct fs_node *node, uint32_t index)
 {
 	return NULL;
 }
 
-struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
+static struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
 {
 	struct iso_directory_record *dpos, *dent, *dbeg;
 	uint32_t size, numblk, name_len;

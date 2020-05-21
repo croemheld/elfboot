@@ -74,32 +74,32 @@ static struct fs_type fs_ramfs = {
  * Functions for ISO9660 filesystem nodes
  */
 
-void ramfs_open(struct fs_node *node)
+static void ramfs_open(struct fs_node *node)
 {
 
 }
 
-void ramfs_close(struct fs_node *node)
+static void ramfs_close(struct fs_node *node)
 {
 
 }
 
-uint32_t ramfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
-{
-	return 0;
-}
-
-uint32_t ramfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+static uint32_t ramfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
 {
 	return 0;
 }
 
-struct fs_dent *ramfs_readdir(struct fs_node *node, uint32_t index)
+static uint32_t ramfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+{
+	return 0;
+}
+
+static struct fs_dent *ramfs_readdir(struct fs_node *node, uint32_t index)
 {
 	return NULL;
 }
 
-struct fs_node *ramfs_finddir(struct fs_node *node, const char *name)
+static struct fs_node *ramfs_finddir(struct fs_node *node, const char *name)
 {
 	return NULL;
 }
