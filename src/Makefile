@@ -10,7 +10,6 @@ elfboot-cflags += -Wno-unused-variable
 elfboot-cflags += -Wno-unused-function
 elfboot-cflags += -Wno-unused-parameter
 elfboot-cflags += -Wno-unused-but-set-variable
-elfboot-cflags += -fomit-frame-pointer
 elfboot-cflags += -fno-stack-protector
 
 elfboot-cflags += -mpreferred-stack-boundary=2

@@ -57,7 +57,7 @@ verify_free_buffer:
 	return -EFAULT;
 }
 
-static int arch_init_boot_device(struct boot_params *boot_params)
+static int arch_init_bootdevice(struct boot_params *boot_params)
 {
 	struct bdev *bdev = bdev_get(0, NULL);
 
@@ -102,11 +102,22 @@ static int arch_init_boot_device(struct boot_params *boot_params)
 
 int arch_init_late(char *cmdline)
 {
+#ifdef CONFIG_INTR
+
+	/*
+	 * If we want to enable interrupts we have to set up the IDT here. We do
+	 * this only if we intend to handle keyboard interrupts and other things
+	 * to handle user input for e.g. boot menu.
+	 */
+	if (arch_init_interrupts())
+		return -EFAULT;
+#endif
+
 	/*
 	 * Initialize boot device and load the appropiate disk driver
 	 * from it by using the information stored in boot info table
 	 */
-	if (arch_init_boot_device(&boot_params))
+	if (arch_init_bootdevice(&boot_params))
 		return -EFAULT;
 
 	/* Detect and set video modes */

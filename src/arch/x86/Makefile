@@ -6,12 +6,14 @@ elfboot-y += copy.o
 elfboot-y += e820.o
 elfboot-y += edd.o
 elfboot-y += printf.o
+elfboot-y += ptrace.o
 elfboot-y += setup.o
 elfboot-y += opmode.o
 elfboot-y += video.o
 
+elfboot-$(CONFIG_INTR) += entry.o
+elfboot-$(CONFIG_INTR) += idt.o
+elfboot-$(CONFIG_INTR) += pic.o
+
 # elfboot-y += acpi.o
-# elfboot-y += main.o
-# elfboot-y += pci.o
-# elfboot-y += pic.o
 # elfboot-y += timestamp.o

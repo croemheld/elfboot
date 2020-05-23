@@ -22,7 +22,7 @@ static int symbol_add(char *name, uint32_t addr)
 	}
 
 	symbol->addr = addr;
-	list_add(&symbol->list, &symbols);
+	list_add_tail(&symbol->list, &symbols);
 
 	num_symbols++;
 
@@ -76,6 +76,20 @@ const char *symbol_lookup(uint32_t addr)
 	return NULL;
 }
 
+const char *symbol_lookup_caller(uint32_t addr)
+{
+	struct elfboot_symbol *symbol, *caller = NULL;
+
+	list_for_each_entry(symbol, &symbols, list) {
+		if (symbol->addr >= addr)
+			break;
+
+		caller = symbol;
+	}
+
+	return caller->name;
+}
+
 int symbol_map_parse(char *syms)
 {
 	char *addr, *type, *name;
@@ -88,6 +102,14 @@ int symbol_map_parse(char *syms)
 		name = strtok(NULL, delimiter);
 
 		/*
+		 * To reduce the symbol map to be imported, we discard any symbol
+		 * which starts with an underscore because, they usually refer to
+		 * internal variables.
+		 */
+		if (name[0] == '_')
+			goto parse_next_symbol;
+
+		/*
 		 * Since we created the symbol map using the "nm" command we know
 		 * the layout of the resulting file on the boot device. Addresses
 		 * are in hexadecimal format, but since it does not contain a "0x"
@@ -97,6 +119,7 @@ int symbol_map_parse(char *syms)
 		if (symbol_add(name, strtoul(addr, NULL, 16)))
 			return -ENOMEM;
 
+parse_next_symbol:
 		addr = strtok(NULL, delimiter);
 	}
 

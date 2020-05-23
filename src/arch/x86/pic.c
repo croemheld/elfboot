@@ -5,14 +5,19 @@
 
 void pic_send_eoi(uint8_t irq)
 {
-	if (irq >= 8)
+	if (irq >= 0x28)
 		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 
-	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
+	outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 }
 
 void pic_init(void)
 {
+	uint8_t m_data, s_data;
+
+	m_data = inb(PIC_MASTER_DATA);
+	s_data = inb(PIC_SLAVE_DATA);
+
 	/* Cascading mode */
 	outb(PIC_MASTER_CMD,  0x11);
 	outb(PIC_SLAVE_CMD,   0x11);
@@ -29,7 +34,7 @@ void pic_init(void)
 	outb(PIC_MASTER_DATA, 0x01);
 	outb(PIC_SLAVE_DATA,  0x01);
 
-	/* Reset masks */
+	/* Restore masks */
 	outb(PIC_MASTER_DATA, 0x00);
 	outb(PIC_SLAVE_DATA,  0x00);
 }
