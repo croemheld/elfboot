@@ -32,7 +32,7 @@
 
 extern const char exception_list[X86_TRAP_NUM][X86_TRAP_ENTRY_SIZE];
 
-extern const char interrupt_list[X86_INTR_NUM][X86_TRAP_ENTRY_SIZE];
+extern const char interrupt_list[X86_INTR_NUM][X86_INTR_ENTRY_SIZE];
 
 /*
  * Interrupt Descriptor Table
