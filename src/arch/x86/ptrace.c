@@ -67,7 +67,7 @@ void dump_stack(void)
 	 * stack dump. That means, the function dump_stack is also contained in
 	 * the output.
 	 */
-	eip = tuint(dump_stack + 1);
+	eip = tuint(dump_stack);
 	asm volatile("movl %%ebp, %0" : "=r"(ebp));
 
 	__dump_stack(eip, ebp);
