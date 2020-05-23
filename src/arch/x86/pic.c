@@ -35,6 +35,6 @@ void pic_init(void)
 	outb(PIC_SLAVE_DATA,  0x01);
 
 	/* Restore masks */
-	outb(PIC_MASTER_DATA, 0x00);
-	outb(PIC_SLAVE_DATA,  0x00);
+	outb(PIC_MASTER_DATA, m_data);
+	outb(PIC_SLAVE_DATA,  s_data);
 }
