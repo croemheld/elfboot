@@ -1,0 +1,1 @@
+elfboot-$(CONFIG_AHCI) += ahci.o
