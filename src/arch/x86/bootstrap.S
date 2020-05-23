@@ -61,7 +61,7 @@ LOCAL(.bios_error)
 	movw    $bios_error_msg, %ax
 	call    .bios_print
 
-	jmp     .
+	jmp     .die
 ENDPROC(.bios_error)
 
 #
@@ -92,16 +92,25 @@ LOCAL(_arch_start16)
 
 .code32
 
+	# Clear the EBP register for a clean stack trace
+
+	movl    $0, %ebp
+
 	# Finally, calllbootloader main routine
 
 	pushl   %edx
 	calll   arch_setup
-ENDPROC(_arch_start16)
+
+	# Halt the machine
+
+	cli
+
+LOCAL(.die)
+	hlt
 
 #
 # Endless loop when failing
 #
 
-LOCAL(.die)
 	jmp     .die
-ENDPROC(.die)
+ENDPROC(_arch_start16)
