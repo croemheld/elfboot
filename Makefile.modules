@@ -65,7 +65,8 @@ $(eval $(call build_target,$(target)))
 quiet_cmd_oc_mod = LD [M]  $@
       cmd_oc_mod = $(OBJCOPY) $(OBJCOPY_SECTION) $< $@
 
-      cmd_cp_mod = $(CP) $(2).ebm build/modules
+quiet_cmd_cp_mod = CP [M]  build/modules/$(notdir $@)
+      cmd_cp_mod = $(CP) $(2) build/modules
 
 #
 # Linking binary files
@@ -79,6 +80,7 @@ mod_copy = $(foreach module,$(1),$(call cmd,cp_mod,$(basename $(module:./%=%))))
 
 %.ebm: %.o
 	$(call cmd,oc_mod,$@)
+	$(call cmd,cp_mod,$@)
 
 $(target): $($(target)-mods:.o=.ebm)
-	$(call mod_copy,$($(target)-mods))
+	
