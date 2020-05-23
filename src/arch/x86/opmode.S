@@ -2,7 +2,7 @@
 #include <asm/segment.h>
 #include <asm/linkage.h>
 
-.section .real, "aw", @progbits
+.section .data
 
 	.global boot_gdt
 	.align 0x10
@@ -46,13 +46,11 @@ boot_idt_prot:
 	.long 0
 
 
-.section .real
+.section .data
 
 GLOBAL(pmmode_jmp)
 .code16
 	cli
-
-	push    %eax
 
 	xorw    %ax, %ax
 	movw    %ax, %ds
@@ -81,14 +79,14 @@ GLOBAL(pmmode_jmp)
 	sidt    boot_idt_real
 	lidt    boot_idt_prot
 
-	pop    %eax
+#ifdef CONFIG_INTR
+	sti
+#endif
 
 	retw
 ENDPROC(pmmode_jmp)
 
 GLOBAL(rmmode_jmp)
-	pushl   %eax
-
 	lgdt    boot_gdt_desc
 
 	/*
@@ -123,10 +121,6 @@ GLOBAL(rmmode_jmp)
 	movw    %ax, %fs
 	movw    %ax, %gs
 	movw    %ax, %ss
-
-	sti
-
-	popl   %eax
 
 	/*
 	 * Use retl instead of ret to pop the correct
