@@ -165,7 +165,6 @@ size_t strcspn(const char *str1, const char *str2)
 	return ret;
 }
 
-
 char *strtok(char *str, const char *delim)
 {
 	static char* p = 0;
@@ -182,6 +181,36 @@ char *strtok(char *str, const char *delim)
 		return p = 0;
 
 	p = *p ? *p = 0, p + 1 : 0;
+
+	return str;
+}
+
+char *strtok_r(char *str, const char *delim, char **store)
+{
+	char *end;
+
+	if (!str)
+		str = *store;
+
+	if (!*str) {
+		*store = str;
+		return NULL;
+	}
+
+	str += strspn(str, delim);
+	if (!*str) {
+		*store = str;
+		return NULL;
+	}
+
+	end = str + strcspn(str, delim);
+	if (!*end) {
+		*store = end;
+		return str;
+	}
+
+	*end = 0;
+	*store = end + 1;
 
 	return str;
 }

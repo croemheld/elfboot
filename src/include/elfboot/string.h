@@ -72,6 +72,8 @@ size_t strcspn(const char *str1, const char *str2);
 
 char *strtok(char *str, const char *delim);
 
+char *strtok_r(char *str, const char *delim, char **store);
+
 unsigned int strtoul(const char *cp, char **endp, unsigned int base);
 
 int strtol(const char *cp, char **endp, unsigned int base);
