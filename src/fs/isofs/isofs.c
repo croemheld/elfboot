@@ -215,6 +215,14 @@ static struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
 			name_len -= 2;
 
 		/*
+		 * The ISO9660 specification states, that every file without a dot in
+		 * the name is added a trailing dot. If that is the case we also need
+		 * to reduce the name length by one.
+		 */
+		if (!strchr(name, '.'))
+			name_len -= 1;
+
+		/*
 		 * Each file name on an ISO 9660 formatted device contains the string
 		 * serminating sequence ";1", which we will leave out since comparing
 		 * would fail all the time.
