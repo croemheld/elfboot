@@ -72,7 +72,7 @@ int file_lseek(struct file *file, int pos, uint32_t offset)
 		return -1;
 
 	switch (pos) {
-		case FILE_SET: fpos = pos;
+		case FILE_SET: fpos = offset;
 			break;
 		case FILE_CUR:
 			if (file->offset + offset >= file->length)
