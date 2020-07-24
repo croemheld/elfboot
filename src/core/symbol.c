@@ -81,7 +81,7 @@ const char *symbol_lookup_caller(uint32_t addr)
 	struct elfboot_symbol *symbol, *caller = NULL;
 
 	list_for_each_entry(symbol, &symbols, list) {
-		if (symbol->addr >= addr)
+		if (symbol->addr > addr)
 			break;
 
 		caller = symbol;
@@ -90,7 +90,7 @@ const char *symbol_lookup_caller(uint32_t addr)
 	return caller->name;
 }
 
-int symbol_map_parse(char *syms)
+int symbol_parse_map(char *syms)
 {
 	char *addr, *type, *name;
 	const char delimiter[] = " \n";

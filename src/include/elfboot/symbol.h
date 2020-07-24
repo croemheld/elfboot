@@ -17,6 +17,6 @@ const char *symbol_lookup(uint32_t addr);
 
 const char *symbol_lookup_caller(uint32_t addr);
 
-int symbol_map_parse(char *table);
+int symbol_parse_map(char *table);
 
 #endif /* __ELFBOOT_SYMBOL_H__ */

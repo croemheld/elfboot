@@ -43,7 +43,7 @@ static int symbols_init(void)
 	if (!file_read(file, file->length, syms))
 		goto symbols_free_syms;
 
-	return symbol_map_parse(syms);
+	return symbol_parse_map(syms);
 
 symbols_free_syms:
 	bfree(syms);
