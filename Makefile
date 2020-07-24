@@ -88,7 +88,7 @@ BOOTISO_CDFLAGS += -boot-info-table
 
 BOOTISO_CDFLAGS += --sort-weight 6 $(BOOTIMG).bin
 BOOTISO_CDFLAGS += --sort-weight 5 $(ELFBOOT).bin
-BOOTISO_CDFLAGS += --sort-weight 4 $(ELFBOOT).cfg
+BOOTISO_CDFLAGS += --sort-weight 4 $(ELFBOOT).bid
 BOOTISO_CDFLAGS += --sort-weight 3 $(ELFBOOT).tmg
 BOOTISO_CDFLAGS += --sort-weight 2 $(ELFBOOT).map
 BOOTISO_CDFLAGS += --sort-weight 1 $(MODULES)
@@ -127,7 +127,7 @@ BUILD += $(BOOTIMG)
 $(BOOTIMG): $(BOOTIMG_PREREQS)
 	$(Q)$(call compile,$(BOOTIMG),$(BOOTIMG_ROOTDIR))
 	$(Q)$(call elfconf,$(BOOTIMG),$(ELFBOOT_BITSIZE),$(ELFBOOT).bin)
-	$(Q)$(call elfconf,$(BOOTIMG),$(ELFBOOT_BFDSIZE),$(ELFBOOT).cfg)
+	$(Q)$(call elfconf,$(BOOTIMG),$(ELFBOOT_BFDSIZE),$(ELFBOOT).bid)
 	$(Q)$(call objcopy,$(BOOTIMG))
 
 BUILD += $(ELFTOOL_TARGETS)
