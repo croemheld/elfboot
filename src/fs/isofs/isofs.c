@@ -126,42 +126,42 @@ static void isofs_close(struct fs_node *node)
 
 }
 
-static uint32_t isofs_read_blocks(struct fs_node *node, uint64_t sector,
-	uint32_t blknum)
-{
-	if (node->private)
-		return 0;
-
-	node->private = bmalloc(blknum * node->sb->block_size);
-
-	if (!node->private)
-		return -ENOMEM;
-
-	if (superblock_read_blocks(node->sb, sector, blknum, node->private))
-		goto isofs_read_blocks_free_private;
-
-	return 0;
-
-isofs_read_blocks_free_private:
-	bfree(node->private);
-
-	return -EFAULT;
-}
-
 static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	uint32_t length, void *buffer)
 {
-	uint64_t sector, blknum;
+	void *iblock;
+	uint64_t sector, blknum, nbsize;
+	uint64_t ibloff, blkoff, remlen, bufoff = 0;
+	uint32_t ret = 0;
+
+	nbsize = node->sb->block_size;
+	iblock = bmalloc(nbsize);
+	if (!iblock)
+		return -EFAULT;
 
 	sector = sb_sector(node->sb, node->inode, offset);
 	blknum = sb_length(node->sb, offset, length);
 
-	if (isofs_read_blocks(node, sector, blknum))
-		return -EFAULT;
+	for (blkoff = 0; length && blkoff < blknum; blkoff++) {
+		ibloff = blkoff ? 0 : offset;
+		remlen = min(nbsize - ibloff, length);
 
-	memcpy(buffer, node->private + offset, length);
+		if (superblock_read(node->sb, sector + blkoff, iblock))
+			goto isofs_read_fail;
+
+		memcpy(buffer + bufoff, iblock + ibloff, remlen);
+		bufoff += remlen;
+		length -= remlen;
+	}
+
+	bfree(iblock);
 
 	return 0;
+
+isofs_read_fail:
+	bfree(iblock);
+
+	return -EFAULT;
 }
 
 static uint32_t isofs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
