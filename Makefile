@@ -156,6 +156,7 @@ build:
 iso: build $(ELFBOOT) $(ELFBOOT).map $(BOOTIMG)
 	$(Q)$(CP) $(BOOTIMG).bin build
 	$(Q)$(CP) $(ELFBOOT).bin build
+	$(Q)$(CP) $(ELFBOOT).bid build
 	$(Q)$(CP) $(ELFBOOT).cfg build
 	$(Q)$(CP) $(ELFBOOT).tmg build
 	$(Q)$(CP) $(ELFBOOT).map build
