@@ -87,10 +87,27 @@ LOCAL(_arch_start16)
 	jc      .bios_error
 
 	# Prepare to jump into unreal mode
+	cli
 
-	call    pmmode_jmp
+	xorw    %ax, %ax
+	movw    %ax, %ds
+
+	lgdt    boot_gdt_desc
+	movl    %cr0, %eax
+	orl     $0x1, %eax
+	movl    %eax, %cr0
+
+	ljmp	$GDT_CODE32, $_arch_start32
 
 .code32
+
+LOCAL(_arch_start32)
+	movw    $GDT_DATA32, %ax
+	movw    %ax, %ds
+	movw    %ax, %es
+	movw    %ax, %fs
+	movw    %ax, %gs
+	movw    %ax, %ss
 
 	# Clear the EBP register for a clean stack trace
 
