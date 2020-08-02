@@ -11,6 +11,14 @@
 #define MEMORY_START			0x010000
 #define MEMORY_LIMIT			0x100000
 
+#ifdef CONFIG_DEBUG
+
+void page_dump(void);
+
+void slab_dump(void);
+
+#endif /* CONFIG_DEBUG */
+
 void bfree(void *dptr);
 
 void *bmalloc(size_t size);

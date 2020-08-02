@@ -12,6 +12,8 @@ struct memblock memblock = {
 	.memory.regions = memory
 };
 
+#ifdef CONFIG_DEBUG
+
 static void __memblock_dump(struct memblock_type *type)
 {
 	uint32_t i, base, size, rend;
@@ -32,6 +34,8 @@ void memblock_dump(void)
 {
 	__memblock_dump(&memblock.memory);
 }
+
+#endif /* CONFIG_DEBUG */
 
 static uint32_t memblock_adjust_region(uint32_t *base, uint32_t *size)
 {

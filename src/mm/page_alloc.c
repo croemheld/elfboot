@@ -23,6 +23,21 @@ struct page *page_map;
  * Utility functions
  */
 
+#ifdef CONFIG_DEBUG
+
+void page_dump(void)
+{
+	bprintln("Order %3lu %3lu %3lu %3lu %3lu %3lu %3lu %3lu %3lu", 
+		0, 1, 2, 3, 4, 5, 6, 7, 8);
+	bprintln("Frees %3lu %3lu %3lu %3lu %3lu %3lu %3lu %3lu %3lu",
+		free_area[0].nr_free, free_area[1].nr_free, free_area[2].nr_free, 
+		free_area[3].nr_free, free_area[4].nr_free, free_area[5].nr_free, 
+		free_area[6].nr_free, free_area[7].nr_free, free_area[8].nr_free);
+	bprintln("-----------------------------------------");
+}
+
+#endif /* CONFIG_DEBUG */
+
 static inline bool page_is_aligned(uint32_t addr, uint32_t order)
 {
 	return (addr % (PAGE_SIZE << order) == 0);

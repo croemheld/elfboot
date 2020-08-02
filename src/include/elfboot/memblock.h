@@ -3,7 +3,7 @@
 
 #include <elfboot/mm.h>
 
-#define MEMBLOCK_MAX_REGIONS		32
+#define MEMBLOCK_MAX_REGIONS	16
 
 #define MEMBLOCK_START			MEMORY_START
 #define MEMBLOCK_LIMIT			MEMORY_LIMIT
