@@ -233,10 +233,14 @@ module_free_mod:
 	return -EFAULT;
 }
 
-int module_open(const char *path)
+int module_open(const char *name)
 {
-	struct file *file = file_open(path, 0);
+	struct file *file;
+	char path[64] = { 0 };
 
+	sprintf(path, "/root/modules/%s.ebm", name);
+
+	file = file_open(path, 0);
 	if (!file)
 		return -ENOENT;
 

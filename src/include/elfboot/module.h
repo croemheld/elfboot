@@ -40,7 +40,7 @@ struct module {
 	struct list_head list;
 };
 
-int module_open(const char *path);
+int module_open(const char *name);
 
 void modules_exit(void);
 
