@@ -695,49 +695,6 @@ struct ata_id {
 #define ATAPI_READ_CD			0xBE	/* read data */
 #define ATAPI_POLL_DSC			0xFF	/* poll DSC status bit */
 
-/*
-static inline uint64_t chs_to_lba(uint64_t heads, uint64_t sectors, 
-				  uint64_t c, uint64_t h, uint64_t s)
-{
-	return (c * heads + h) * sectors + (s - 1);
-}
-
-static inline uint32_t lba_to_chs_cylinder(uint64_t lba, uint32_t hpc, 
-					   uint32_t spt)
-{
-	return lba / (hpc * spt);
-}
-
-static inline uint32_t lba_to_chs_head(uint64_t lba, uint32_t hpc, 
-				       uint32_t spt)
-{
-	return (lba % (hpc * spt)) / spt;
-}
-
-static inline uint32_t lba_to_chs_sector(uint64_t lba, uint32_t hpc, 
-					 uint32_t spt)
-{
-	return (lba % (hpc * spt)) % spt + 1;
-}
-
-#define lba_to_cyln(lba, hpc, spt)	\
-	lba_to_chs_cylinder(lba, hpc, spt)
-
-#define lba_to_head(lba, hpc, spt)	\
-	lba_to_chs_head(lba, hpc, spt)
-
-#define lba_to_sect(lba, hpc, spt)	\
-	lba_to_chs_sector(lba, hpc, spt)
-
-struct device;
-
-int ata_read_sectors(struct device *device, void *buffer, uint64_t lba,
-		     int sectnum);
-
-#define ata_read_sector(d, b, l) \
-	ata_read_sectors(d, b, l, 1)
-*/
-
 void ata_firmware_init(void);
 
 #endif /* __DRIVER_ATA_H__ */

@@ -22,9 +22,6 @@ struct superblock *superblock_alloc(struct fs_type *fs, struct bdev *bdev)
 
 int superblock_read(struct superblock *sb, uint32_t sector, void *buffer)
 {
-	/*
-	 * TODO CRO: Check if sb->block_size == bdev->block_size in all cases.
-	 */
 	return bdev_read(sb->bdev, sector, 1, buffer);
 }
 

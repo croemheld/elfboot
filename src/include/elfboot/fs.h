@@ -34,10 +34,6 @@ struct fs_dent;
 struct fs_node_ops {
 	void (*open)(struct fs_node *);
 	void (*close)(struct fs_node *);
-
-	/*
-	 * TODO CRO: Return value of read/write?
-	 */
 	uint32_t (*read)(struct fs_node *, uint64_t, uint32_t, void *);
 	uint32_t (*write)(struct fs_node *, uint64_t, uint32_t, void *);
 	struct fs_dent *(*readdir)(struct fs_node *, uint32_t);

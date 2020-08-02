@@ -9,9 +9,6 @@
 #define GDT_CODE32		0x18
 #define GDT_DATA32		0x20
 
-#define GDT_URCODE		0x28
-#define GDT_URDATA		0x30
-
 #ifdef __ASSEMBLER__
 
 #define GDT_SEG_NULL					\
