@@ -58,7 +58,7 @@ static struct fs_node *isofs_alloc_dent(struct superblock *sb,
 	/*
 	 * TODO CRO: Use macros for flags
 	 */
-	if (*dent->flags & 0x1)
+	if (*dent->flags & 0x2)
 		node->flags |= FS_DIRECTORY;
 
 	return node;
@@ -209,18 +209,18 @@ static struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
 		 * Length of the current file name: On ISO 9660 formatted devices, an
 		 * entry name can either have a terminating sequence of ";1" if it is
 		 * a file or no sequence if it is a directory.
-		 */
-		name_len = isonum_711(dpos->name_len);
-		if (!(*dpos->flags & 0x1))
-			name_len -= 2;
-
-		/*
+		 *
 		 * The ISO9660 specification states, that every file without a dot in
 		 * the name is added a trailing dot. If that is the case we also need
 		 * to reduce the name length by one.
 		 */
-		if (!strchr(name, '.'))
-			name_len -= 1;
+		name_len = isonum_711(dpos->name_len);
+		if (!(*dpos->flags & 0x2)) {
+			name_len -= 2;
+
+			if (!strchr(name, '.') && (dpos->name[name_len - 1] == '.'))
+				name_len -= 1;
+		}
 
 		/*
 		 * Each file name on an ISO 9660 formatted device contains the string
