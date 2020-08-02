@@ -4,6 +4,7 @@
 #include <elfboot/pci.h>
 #include <elfboot/bdev.h>
 #include <elfboot/file.h>
+#include <elfboot/loader.h>
 #include <elfboot/module.h>
 #include <elfboot/symbol.h>
 #include <elfboot/string.h>
@@ -97,7 +98,9 @@ int elfboot_main(void)
 	if (modules_load())
 		return -EFAULT;
 
-	vfs_dump_tree();
+	/* Initialize loader */
+	if (loader_init())
+		return -EFAULT;
 
 	return 0;
 }

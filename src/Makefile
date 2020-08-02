@@ -4,6 +4,7 @@ elfboot-d += crypto
 elfboot-d += drivers
 elfboot-d += fs
 elfboot-d += lib
+elfboot-d += loaders
 elfboot-d += mm
 
 elfboot-cflags += -Wno-unused-variable
