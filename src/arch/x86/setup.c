@@ -121,8 +121,8 @@ int arch_init_late(char *cmdline)
 		return -EFAULT;
 
 	/* Detect and set video modes */
-	// if (detect_videos(&boot_params))
-	// 	return -EFAULT;
+	if (detect_videos(&boot_params))
+		return -EFAULT;
 
 	return 0;
 }
