@@ -4,6 +4,7 @@
 #include <asm/linkage.h>
 
 #define GATE_INTR	0x0E
+#define GATE_TRAP	0x0F
 
 struct gate_desc {
 	uint16_t offset_lower;
@@ -14,9 +15,8 @@ struct gate_desc {
 } __packed;
 
 struct desc_ptr {
-	uint16_t size;
-	uint16_t addr_lower;
-	uint16_t addr_upper;
-};
+	uint16_t limit;
+	uint32_t offset;
+} __packed;
 
 #endif /* __X86_DESC_H__ */
