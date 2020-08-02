@@ -120,9 +120,9 @@ static inline uint32_t calculate_cache_order(uint32_t size)
 
 static void *bmem_cache_fetch(struct page *page)
 {
-	void *objp = page->freelist.next;
+	void *objp = list_first_or_null(&page->freelist);
 
-	if (objp == &page->freelist)
+	if (!objp)
 		return NULL;
 
 	list_del(objp);
@@ -151,9 +151,9 @@ static void bmem_cache_fixup(struct bmem_cache *cachep, struct page *page)
 	list_del(&page->list);
 
 	if (page->inuse == cachep->nums)
-		list_move(&page->list, &cachep->slabs_full);
+		list_add(&page->list, &cachep->slabs_full);
 	else
-		list_move(&page->list, &cachep->slabs_partial);
+		list_add(&page->list, &cachep->slabs_partial);
 }
 
 static void bmem_cache_setup(struct bmem_cache *cachep, struct page *page)
@@ -171,26 +171,23 @@ static void bmem_cache_setup(struct bmem_cache *cachep, struct page *page)
 
 static struct page *bmem_cache_grow(struct bmem_cache *cachep)
 {
-	struct page *page = alloc_pages(cachep->order);
+	struct page *page;
 
+	page = alloc_pages(cachep->order);
 	if (!page)
 		return NULL;
 
 	list_init(&page->freelist);
 
-	/* Set the cache for freeing */
 	page->slab_cache = cachep;
+	page->inuse = 0;
 
-	/* Initialize objects */
 	bmem_cache_setup(cachep, page);
 	cachep->total_slabs++;
 
-	if(!page->inuse) {
-		list_move(&page->list, &cachep->slabs_free);
-	} else
-		bmem_cache_fixup(cachep, page);
+	list_add(&page->list, &cachep->slabs_free);
 
-	cachep->free_objs += cachep->nums - page->inuse;
+	cachep->free_objs += cachep->nums;
 
 	return page;
 }
@@ -214,8 +211,6 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	/* We treat the object as a list */
 	struct list_head *new = objp;
 
-	list_init(new);
-
 	/* 
 	 * Add the object back to the freelist. We don't really
 	 * care about at which position the object was inserted
@@ -225,12 +220,9 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	list_add_tail(new, &page->freelist);
 
 	if (!--page->inuse) {
-		list_move(&page->list, &cachep->slabs_free);
-		cachep->free_slabs++;
-
-		/*
-		 * TODO CRO: Free free slabs? Limit of free slabs?
-		 */
+		//bprintln("SLUB: Freeing slab from cache %s", cachep->name);
+		list_del(&page->list);
+		free_page(page->paddr);
 	} else {
 
 		/*
@@ -251,28 +243,13 @@ void bfree(void *objp)
 	__bfree(page, page->slab_cache, objp);
 }
 
-void *bmem_cache_alloc(struct bmem_cache *cachep)
+static void *bmem_cache_alloc_object(struct bmem_cache *cachep, struct page *page)
 {
-	struct page *page;
-	void *objp;
+	void *objp = bmem_cache_fetch(page);
 
-	page = bmem_cache_page(cachep);
-
-	if (!page || !cachep->free_objs)
-		page = bmem_cache_grow(cachep);
-
-	objp = bmem_cache_fetch(page);
 	if (!objp)
 		return NULL;
 
-	/*
-	 * Since we use a linked list "inside" the allocated objects, we cannot
-	 * initialize the objects when setting up a new slab structure, because
-	 * it would mess with the linked list pointers.
-	 *
-	 * Initialize the allocated object here, after it has been removed from
-	 * the freelist of its page.
-	 */
 	if (cachep->ctor)
 		cachep->ctor(objp);
 
@@ -280,6 +257,19 @@ void *bmem_cache_alloc(struct bmem_cache *cachep)
 	bmem_cache_fixup(cachep, page);
 
 	return objp;
+}
+
+void *bmem_cache_alloc(struct bmem_cache *cachep)
+{
+	struct page *page = bmem_cache_page(cachep);
+
+	if (!page) {
+		page = bmem_cache_grow(cachep);
+		if (!page)
+			return NULL;
+	}
+
+	return bmem_cache_alloc_object(cachep, page);
 }
 
 void *bmalloc(uint32_t size)
@@ -315,7 +305,7 @@ struct bmem_cache *bmem_cache_create(const char *name, uint32_t size,
 		goto bmem_cache_alloc_free;
 
 	cachep->size  = round_up_pow2(size);
-	cachep->nums  = PAGE_SIZE / cachep->size;
+	cachep->nums  = max(PAGE_SIZE / cachep->size, 1);
 	cachep->order = calculate_cache_order(cachep->size);
 	cachep->ctor  = ctor;
 
@@ -342,7 +332,7 @@ static struct bmem_cache *bmalloc_create_cache(int cache_num)
 
 	cachep->name  = bmalloc_info[cache_num].name;
 	cachep->size  = bmalloc_info[cache_num].size;
-	cachep->nums  = PAGE_SIZE / cachep->size;
+	cachep->nums  = max(PAGE_SIZE / cachep->size, 1);
 	cachep->order = calculate_cache_order(cachep->size);
 
 	return cachep;
@@ -377,7 +367,7 @@ static void bmalloc_create_boot_cache(void)
 	bmem_cache_init(&bmem_cache);
 
 	bmem_cache.size  = round_up_pow2(sizeof(struct bmem_cache));
-	bmem_cache.nums  = PAGE_SIZE / bmem_cache.size;
+	bmem_cache.nums  = max(PAGE_SIZE / bmem_cache.size, 1);
 	bmem_cache.order = calculate_cache_order(bmem_cache.size);
 	bmem_cache.ctor  = bmem_cache_init;
 

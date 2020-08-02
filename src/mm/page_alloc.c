@@ -121,7 +121,7 @@ static void free_page_fix(struct page *page, uint32_t order)
 
 static struct page *get_free_pages(uint32_t order)
 {
-	struct page *page;
+	struct page *buddy, *page = NULL;
 	uint32_t porder;
 
 	for (porder = order; porder < PAGE_MAX_ORDER; porder++) {
@@ -139,8 +139,14 @@ static struct page *get_free_pages(uint32_t order)
 		break;
 	}
 
+	if (!page)
+		return NULL;
+
 	/* Set the head page in all pages */
 	page_set_compound_head(page, order);
+
+	buddy = page_buddy(page, order);
+	page_set_compound_head(buddy, order);
 
 	return page;
 }
@@ -173,9 +179,9 @@ void *get_zeroed_page(void)
 
 static struct page *merge_pages(struct page *page, struct page *buddy)
 {
-	if (page_is_free(page))
-		free_page_del(page);
+	struct page *left;
 
+	free_page_del(page);
 	free_page_del(buddy);
 
 	page->order++;
@@ -184,11 +190,10 @@ static struct page *merge_pages(struct page *page, struct page *buddy)
 	buddy->order++;
 	buddy->flags |= PAGE_FLAG_FREE;
 
-	/*
-	 * TODO CRO: After merging, the compound head changes!
-	 */
+	left = page->paddr < buddy->paddr ? page : buddy;
+	page_set_compound_head(left, left->order);
 
-	return page->paddr < buddy->paddr ? buddy : page;
+	return left;
 }
 
 static void merge_free_page(struct page *page)
@@ -199,10 +204,6 @@ static void merge_free_page(struct page *page)
 	for (order = page->order; order < (PAGE_MAX_ORDER - 1); order++) {
 		buddy = page_buddy(page, page->order);
 
-		/* Cannot merge two pages from different orders */
-		if (buddy->order != page->order)
-			return;
-
 		/* Buddy page is currently in use */
 		if (!page_is_free(buddy))
 			return;
@@ -212,7 +213,6 @@ static void merge_free_page(struct page *page)
 
 		/* Add left buddy to free area */
 		free_page_add(page, order);
-		page->flags |= PAGE_FLAG_FREE;
 	}
 }
 
@@ -325,8 +325,10 @@ static int page_map_init(void)
 	if (!page_map)
 		return -ENOMEM;
 
-	for (order = 0; order < PAGE_MAX_ORDER; order++)
+	for (order = 0; order < PAGE_MAX_ORDER; order++) {
 		list_init(&page_free_area_order(order)->list);
+		page_free_area_order(order)->nr_free = 0;
+	}
 
 	return 0;
 }
