@@ -351,7 +351,7 @@ fill_ata_block_size:
 
 	bdev->block_size = libata_block_size(idedev->private);
 
-#ifdef CONFIG_IDE_DEBUG
+#ifdef CONFIG_DRIVER_IDE_DEBUG
 	bprintln(DRIVER_IDE ": %s: sectors = %llu, block size = %u",
 		bdev->name, bdev->last_block, bdev->block_size);
 #endif
@@ -402,7 +402,7 @@ static int ide_fill_atapi(struct bdev *bdev)
 
 	bdev->flags |= BDEV_FLAGS_LBA;
 
-#ifdef CONFIG_IDE_DEBUG
+#ifdef CONFIG_DRIVER_IDE_DEBUG
 	bprintln(DRIVER_IDE ": %s: sectors = %llu, block size = %u",
 		bdev->name, bdev->last_block, bdev->block_size);
 #endif

@@ -1,1 +1,1 @@
-elfboot-$(CONFIG_ISOFS) += isofs.o
+elfboot-$(CONFIG_FS_ISOFS) += isofs.o

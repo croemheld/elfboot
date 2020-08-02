@@ -1,1 +1,1 @@
-elfboot-$(CONFIG_IDE) += ide.o
+elfboot-$(CONFIG_DRIVER_IDE) += ide.o

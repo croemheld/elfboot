@@ -354,7 +354,7 @@ fill_ata_block_size:
 
 	bdev->block_size = libata_block_size(ahcidev->private);
 
-#ifdef CONFIG_AHCI_DEBUG
+#ifdef CONFIG_DRIVER_AHCI_DEBUG
 	bprintln(DRIVER_AHCI ": %s: sectors = %llu, block size = %u",
 		bdev->name, bdev->last_block, bdev->block_size);
 #endif
@@ -410,7 +410,7 @@ static int ahci_fill_satapi(struct ahci_dev *ahcidev)
 	if (ahci_satapi_read_capacity(bdev))
 		goto ahci_satapi_free_bdev;
 
-#ifdef CONFIG_AHCI_DEBUG
+#ifdef CONFIG_DRIVER_AHCI_DEBUG
 	bprintln(DRIVER_AHCI ": %s: sectors = %llu, block size = %u",
 		bdev->name, bdev->last_block, bdev->block_size);
 #endif
@@ -535,8 +535,6 @@ static int ahci_check_type(struct hba_memory *hba, int port)
 	 */
 	if ((det != 0x03) || (ipm != 0x01))
 		return -ENODEV;
-
-	bprintln(DRIVER_AHCI ": Found AHCI device with signature %lx", hba->ports[port].sig);
 
 	return 0;
 }
