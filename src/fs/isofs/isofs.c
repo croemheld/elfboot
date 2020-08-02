@@ -130,9 +130,8 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	uint32_t length, void *buffer)
 {
 	void *iblock;
-	uint64_t sector, blknum, nbsize;
-	uint64_t ibloff, blkoff, remlen, bufoff = 0;
-	uint32_t ret = 0;
+	uint64_t sector, blknum, blkoff;
+	uint32_t remlen, nbsize, ibloff, bufoff = 0, result = 0;
 
 	nbsize = node->sb->block_size;
 	iblock = bmalloc(nbsize);
@@ -143,25 +142,22 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	blknum = sb_length(node->sb, offset, length);
 
 	for (blkoff = 0; length && blkoff < blknum; blkoff++) {
-		ibloff = blkoff ? 0 : offset;
+		ibloff = blkoff ? 0 : offset % nbsize;
 		remlen = min(nbsize - ibloff, length);
 
-		if (superblock_read(node->sb, sector + blkoff, iblock))
-			goto isofs_read_fail;
+		result = superblock_read(node->sb, sector + blkoff, iblock);
+		if (result)
+			goto isofs_read_done;
 
 		memcpy(buffer + bufoff, iblock + ibloff, remlen);
 		bufoff += remlen;
 		length -= remlen;
 	}
 
+isofs_read_done:
 	bfree(iblock);
 
-	return 0;
-
-isofs_read_fail:
-	bfree(iblock);
-
-	return -EFAULT;
+	return result;
 }
 
 static uint32_t isofs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
