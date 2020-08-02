@@ -7,7 +7,6 @@
 struct file *file_open(const char *path, uint32_t flags)
 {
 	struct file *file;
-	uint32_t size;
 
 	file = bmalloc(sizeof(*file));
 	if (!file)
@@ -21,10 +20,9 @@ struct file *file_open(const char *path, uint32_t flags)
 	if (!file->name)
 		goto free_file;
 
-	size = file->node->length;	
 	file->flags  = flags;
 	file->offset = 0;
-	file->length = size;
+	file->length = file->node->length;
 
 	return file;
 

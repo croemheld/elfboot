@@ -10,10 +10,8 @@
 static uint16_t detect_memory_e820(struct e820_table *table)
 {
 	struct biosregs ireg, oreg;
-	struct e820_entry *desc;
+	struct e820_entry *desc, buf;
 	uint32_t count = 0;
-
-	static struct e820_entry buf;
 
 	desc = table->entries;
 
