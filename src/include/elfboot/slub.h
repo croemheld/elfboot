@@ -12,8 +12,8 @@ struct bmem_info {
 
 #define KMALLOC_CACHE_NUM	13
 
-#define KMALLOC_MIN_SHIFT	 2
-#define KMALLOC_MIN_SIZE	32
+#define KMALLOC_MIN_SHIFT	0
+#define KMALLOC_MIN_SIZE	8
 
 /*
  * We make several shortcuts compared to the Linux implementation
