@@ -1,6 +1,7 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 #include <elfboot/mm.h>
+#include <elfboot/interrupts.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
@@ -38,53 +39,56 @@ extern const char interrupt_list[X86_INTR_NUM][X86_INTR_ENTRY_SIZE];
  * Interrupt Descriptor Table
  */
 
-static struct gate_desc idt_table[X86_IDT_NUM_ENTRIES] = { 0 };
+static struct gate_desc *idt = NULL;
 
 static struct desc_ptr idt_desc;
 
-static void set_intr_gate(uint32_t vector, const void *addr)
+static void set_interrupt_gate(uint32_t vector, const void *addr)
 {
 	struct gate_desc desc = INTG(vector, tuint(addr));
 
-	memcpy(&idt_table[vector], &desc, sizeof(desc));
+	memcpy(&idt[vector], &desc, sizeof(desc));
 }
 
 void handle_generic_interrupt(struct pt_regs *regs)
 {
-	bprintln("INTR: Unknown interrupt %lu with error code %lx at RIP: %08lx",
-		regs->vector, regs->error_code, regs->eip);
+	if (has_interrupt_handler(regs->vector)) {
+		interrupt_callback(regs->vector);
+	} else {
+		bprintln("INTR: Unknown interrupt %lu (%lx) at RIP: %08lx",
+			regs->vector, regs->error_code,  regs->eip);
+		bprintln("INTR: eax: %08lx, ebx: %08lx, ecx: %08lx, edx: %08lx",
+			regs->eax, regs->ebx, regs->ecx, regs->edx);
+		bprintln("INTR: esp: %08lx, ebp: %08lx, esi: %08lx, edi: %08lx",
+			regs->esp, regs->ebp, regs->esi, regs->edi);
 
-	bprintln("INTR: Registers:");
-
-	bprintln("INTR: eax: %08lx, ebx: %08lx, ecx: %08lx, edx: %08lx",
-		regs->eax, regs->ebx, regs->ecx, regs->edx);
-
-	bprintln("INTR: esp: %08lx, ebp: %08lx, esi: %08lx, edi: %08lx",
-		regs->esp, regs->ebp, regs->esi, regs->edi);
-
-	dump_stack(regs->eip, regs->ebp);
+		__dump_stack(regs->eip, regs->ebp);
+	}
 
 	pic_send_eoi(regs->vector);
 }
 
 int arch_init_interrupts(void)
 {
-	uint32_t i;
+	uint32_t vector, len;
 
-	pic_init();
+	len = X86_IDT_NUM_ENTRIES * sizeof(struct gate_desc);
+	idt = bzalloc(len);
+	if (!idt)
+		return -ENOMEM;
 
-	for (i = 0; i < X86_TRAP_NUM; i++)
-		set_intr_gate(i, exception_list[i]);
+	for (vector = 0; vector < X86_TRAP_NUM; vector++)
+		set_interrupt_gate(vector + X86_TRAP_OFFSET, exception_list[vector]);
 
-	for (i = 0; i < X86_INTR_NUM; i++)
-		set_intr_gate(i + 0x20, interrupt_list[i]);
+	for (vector = 0; vector < X86_INTR_NUM; vector++)
+		set_interrupt_gate(vector + X86_INTR_OFFSET, interrupt_list[vector]);
 
-	idt_desc.size = X86_IDT_NUM_ENTRIES * sizeof(struct gate_desc) - 1;
-	idt_desc.addr_lower = tuint(idt_table);
+	idt_desc.limit  = len - 1;
+	idt_desc.offset = tuint(idt);
 
-	bprintln("IDT: Setting IDT (%lx)...", idt_table);
+	bprintln("IDT: Setting IDT (%lx)...", &idt_desc);
 
-	asm volatile("lidt %0" :: "m" (idt_desc));
+	asm volatile("lidt (%0)" :: "r" (&idt_desc));
 
 	return 0;
 }

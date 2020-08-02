@@ -7,3 +7,5 @@ elfboot-y += pci.o
 elfboot-y += printf.o
 elfboot-y += string.o
 elfboot-y += symbol.o
+
+elfboot-$(CONFIG_INTR) += interrupt.o

@@ -2,6 +2,7 @@
 #include <elfboot/linkage.h>
 #include <elfboot/mm.h>
 #include <elfboot/fs.h>
+#include <elfboot/interrupts.h>
 #include <elfboot/memblock.h>
 #include <elfboot/sections.h>
 #include <elfboot/string.h>
@@ -14,6 +15,7 @@
 
 #include <asm/boot.h>
 #include <asm/bda.h>
+#include <asm/pic.h>
 
 #include <uapi/asm/bootparam.h>
 
@@ -103,6 +105,10 @@ static int arch_init_bootdevice(struct boot_params *boot_params)
 int arch_init_late(char *cmdline)
 {
 #ifdef CONFIG_INTR
+	pic_init();
+
+	if (init_interrupts())
+		return -EFAULT;
 
 	/*
 	 * If we want to enable interrupts we have to set up the IDT here. We do
