@@ -46,6 +46,11 @@ struct list_head {
 #define list_for_each_prev(pos, head)					\
 	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
+#define list_first_or_null(ptr)							\
+({														\
+	(ptr)->next != (ptr) ? (ptr)->next : NULL;			\
+})
+
 #define list_first_entry_or_null(ptr, type, member)			\
 ({									\
 	struct list_head *head__ = (ptr);				\
