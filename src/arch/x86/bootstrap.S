@@ -86,9 +86,6 @@ LOCAL(_arch_start16)
 	call    enable_a20
 	jc      .bios_error
 
-	# Prepare to jump into unreal mode
-	cli
-
 	xorw    %ax, %ax
 	movw    %ax, %ds
 
@@ -119,8 +116,6 @@ LOCAL(_arch_start32)
 	calll   arch_setup
 
 	# Halt the machine
-
-	cli
 
 LOCAL(.die)
 	hlt
