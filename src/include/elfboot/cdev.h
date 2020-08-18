@@ -19,19 +19,37 @@ struct cdev_ops {
 };
 
 struct cdev {
+	const char *name;
+
+	/*
+	 * Device-specific private information. For character devices this might
+	 * be the case in TTY where we might have to store additional info about
+	 * the TTY buffer or current positions.
+	 */
+	void *private;
+
+	/*
+	 * Operations for this device. The functions can only be retrieved from a
+	 * module which implements character device functions.
+	 */
 	struct cdev_ops *ops;
+
+	/*
+	 * List of initialized devices in the list_head structure.
+	 */
+	struct list_head list;
 };
 
 /*
  * Character device functions
  */
 
-int cdev_init(struct cdev *cdev, struct cdev_ops *ops);
-
 int cdev_read(struct cdev *cdev, uint64_t offset,
-	uint64_t length, void *buf);
+	uint64_t length, void *buffer);
 
 int cdev_write(struct cdev *cdev, uint64_t offset,
-	uint64_t length, const void *buf);
+	uint64_t length, const void *buffer);
+
+int cdev_init(struct cdev *cdev, struct cdev_ops *ops);
 
 #endif /* __ELFBOOT_CDEV_H__ */

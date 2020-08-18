@@ -1,5 +1,6 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/fs.h>
 #include <elfboot/bdev.h>
 #include <elfboot/bitops.h>
 #include <elfboot/string.h>
@@ -38,9 +39,6 @@ struct bdev *bdev_get(uint32_t flags, struct bdev *from)
 	struct bdev *bdev;
 
 	list_for_each_entry(bdev, (from) ? &from->list : &bdevs, list) {
-		/*
-		 * TODO CRO: Continue list, skip HEAD?
-		 */
 		if (&bdev->list == &bdevs)
 			return NULL;
 
@@ -59,12 +57,15 @@ struct bdev *bdev_get(uint32_t flags, struct bdev *from)
 int bdev_init(struct bdev *bdev, struct bdev_ops *ops)
 {
 	bdev->ops = ops;
-	list_add(&bdev->list, &bdevs);
 
 	/* For convenience, fill the field here */
 	bdev->block_logs = ffs(bdev->block_size);
 
-	bprintln("DEV: Added block device %s", bdev->name);
+	/* Directly mount device to "/dev" node */
+	if (vfs_mount(bdev, "/dev", bdev->name))
+		return -EFAULT;
+
+	list_add(&bdev->list, &bdevs);
 
 	return 0;
 }

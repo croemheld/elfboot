@@ -12,22 +12,6 @@
 
 #include <asm/boot.h>
 
-static int devices_init(void)
-{
-	struct bdev *bdev = bdev_get(0, NULL);
-
-	if (vfs_mount_type(ROOTFS, NULL, "/", "dev"))
-		return -EFAULT;
-
-	while (bdev) {
-		vfs_mount(bdev, "/dev", bdev->name);
-
-		bdev = bdev_get(0, bdev);
-	}
-
-	return 0;
-}
-
 static int symbols_init(void)
 {
 	struct file *file;
