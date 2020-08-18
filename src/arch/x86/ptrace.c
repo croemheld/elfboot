@@ -30,7 +30,7 @@ void __dump_stack(uint32_t eip, uint32_t ebp)
 	for (frame = 0; frame < PTRACE_MAX_FRAMES; frame++) {
 
 		/*
-		 * If we reach the last frame then the EBP should be zweo as we set
+		 * If we reach the last frame then the EBP should be zero as we set
 		 * it to that value when booting.
 		 */
 		if (!ebp)
