@@ -52,7 +52,10 @@ typedef void (*exitcall_t)(void);
 /*
  * The following macros are intended to be used for modules
  */
-#define __modinit			__section(".initcalls")
-#define __modexit			__section(".exitcalls")
+#define __initcall_vfs		__section(".initcalls_vfs")
+#define __initcall_dev		__section(".initcalls_dev")
+#define __initcall			__section(".initcalls")
+
+#define __exitcall			__section(".exitcalls")
 
 #endif /* __ELFBOOT_LINKAGE_H__ */
