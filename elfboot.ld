@@ -47,11 +47,29 @@ SECTIONS
 	 * This section is dedicated to all built-in modules. If a module will
 	 * be included in the elfboot binary, the module_init function pointer
 	 * of that module is placed in this section.
+	 *
+	 * Make sure to initialize built-in filesystems first as we need it to
+	 * setup the root file system node.
 	 */
 
 	.initcalls ALIGN(0x10) : {
+		__initcalls_vfs_start = .;
+
+		/* Built-in file systems */
+		*(.initcalls_vfs*)
+
+		__initcalls_vfs_end = .;
+		__initcalls_dev_start = .;
+
+		/* Built-in devices */
+		*(.initcalls_dev*)
+
+		__initcalls_dev_end = .;
 		__initcalls_start = .;
+
+		/* Built-in modules */
 		*(.initcalls*)
+
 		__initcalls_end = .;
 	}
 

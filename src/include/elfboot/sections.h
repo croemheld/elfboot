@@ -22,6 +22,8 @@ extern char __bss_start[], __bss_end[];
 
 extern char __buffer_start[], __buffer_end[];
 
+extern initcall_t __initcalls_vfs_start[], __initcalls_vfs_end[];
+extern initcall_t __initcalls_dev_start[], __initcalls_dev_end[];
 extern initcall_t __initcalls_start[], __initcalls_end[];
 extern exitcall_t __exitcalls_start[], __exitcalls_end[];
 

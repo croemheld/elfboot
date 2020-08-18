@@ -278,7 +278,7 @@ int modules_init(void)
 		 * to make sure we cleared up everything.
 		 */
 		if (initcall())
-			modules_exit();
+			return -EFAULT;
 	}
 
 	return 0;

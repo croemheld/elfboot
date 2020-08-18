@@ -38,8 +38,21 @@ symbols_free_syms:
 
 static int modules_load(void)
 {
-	if (module_open("/root/modules/tty.ebm"))
+	/*
+/*
+ * elfboot initcall function for initializing built-in modules. This function
+ * uses the extern variables declared in the linker file to initialize 
+ */
+int elfboot_init(initcall_t *start, initcall_t *end)
+{
+	initcall_t initcall, *function = start;
+
+	for (; function < end; function++) {
+		initcall = *function;
+
+		if (initcall())
 		return -EFAULT;
+	}
 
 	return 0;
 }
@@ -54,20 +67,16 @@ int elfboot_main(void)
 	if (bmalloc_init())
 		return -EFAULT;
 
+	/* VFS initialization */
+	if (vfs_init())
+		return -EFAULT;
+
 	/* PCI devices */
 	if (pci_init())
 		return -EFAULT;
 
 	/* Built-in modules */
 	if (modules_init())
-		return -EFAULT;
-
-	/* VFS initialization */
-	if (vfs_init())
-		return -EFAULT;
-
-	/* Mount all devices */
-	if (devices_init())
 		return -EFAULT;
 
 	/* Call arch-specific late init function */

@@ -8,15 +8,37 @@
 
 #ifndef MODULE
 
-#define module_init(init)	initcall_t initcall_##init __modinit = init
-#define module_exit(exit)	exitcall_t exitcall_##exit __modexit = exit
+/*
+ * For built-in modules, we have to make sure to place the init calls in order,
+ * otherwise the initialization process may fail.
+ */
+#define module_init(init)		initcall_t initcall_##init __initcall = init
 
-#else
+#define vfs_module_init(init)	initcall_t initcall_##init __initcall_vfs = init
+#define dev_module_init(init)	initcall_t initcall_##init __initcall_dev = init
 
-#define module_init(init)	int  init_module(void) __alias(#init)
-#define module_exit(exit)	void exit_module(void) __alias(#exit)
+/*
+ * Exitcalls are unordered, we don' have to call them in order.
+ */
+#define module_exit(exit)		exitcall_t exitcall_##exit __exitcall = exit
 
-#endif
+#else /* !MODULE */
+
+/*
+ * If we initialize an external module, there is only one module initialization
+ * function for all kind of modules.
+ */
+#define module_init(init)		int  init_module(void) __alias(#init)
+
+#define vfs_module_init(init)	module_init(init)
+#define dev_module_init(init)	module_init(init)
+
+#define module_exit(exit)		void exit_module(void) __alias(#exit)
+
+#endif /* MODULE */
+
+#define vfs_module_exit(exit)	module_exit(exit)
+#define dev_module_exit(exit)	module_exit(exit)
 
 struct module {
 	char name[32];
@@ -45,7 +67,5 @@ int module_open(const char *name);
 void modules_exit(void);
 
 int modules_init(void);
-
-int parse_module_map(char *table);
 
 #endif /* __ELFBOOT_MODULE_H__ */
