@@ -1,0 +1,1 @@
+elfboot-$(CONFIG_DRIVER_PIT) += pit.o

@@ -10,16 +10,35 @@
 
 struct interrupt_handler {
 	const char *name;
-	void (*callback)(void);
+	void (*callback)(void *info);
 	struct list_head list;
 };
+/*
+ * Keyboard - Enable & disable input
+ */
+
+void enable_keyboard(void);
+
+void disable_keyboard(void);
+
+/*
+ * Clock - Enable & disable clock
+ */
+
+void enable_clock(void);
+
+void disable_clock(void);
+
+/*
+ * Interrupt handler registration
+ */
 
 void register_interrupt_handler(uint32_t vector,
 	struct interrupt_handler *handler);
 
 bool has_interrupt_handler(uint32_t vector);
 
-void interrupt_callback(uint32_t vector);
+void interrupt_callback(uint32_t vector, void *info);
 
 int init_interrupts(void);
 
