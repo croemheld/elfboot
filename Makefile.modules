@@ -65,7 +65,7 @@ $(eval $(call build_target,$(target)))
 quiet_cmd_oc_mod = LD [M]  $@
       cmd_oc_mod = $(OBJCOPY) $(OBJCOPY_SECTION) $< $@
 
-quiet_cmd_cp_mod = CP [M]  build/modules/$(notdir $@)
+quiet_cmd_cp_mod = INSTALL build/modules/$(notdir $@)
       cmd_cp_mod = $(CP) $(2) build/modules
 
 #
