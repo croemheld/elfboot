@@ -11,13 +11,31 @@
  * TODO CRO: Introduce debug functions
  */
 
+static __always_inline void debug_breakp(void)
+{
+#ifdef CONFIG_DEBUG_BOCHS
+	/*
+	 * Bochs only supports x86 emulation, no need for implementing several ways
+	 * for different architectures.
+	 */
+	asm volatile("xchg %bx, %bx");
+#endif
+#ifdef CONFIG_DEBUG_QEMU
+	/*
+	 * QEMU does not support magic breakpoints like Bochs, which is why we have
+	 * to use a simple never ending loop to completely halt execution.
+	 */
+	while (true);
+#endif
+}
+
 static __always_inline void debug_printf(const char *str, int len)
 {
-#ifdef CONFIG_DEBUG_QEMU
-	qemu_bprintf(str, len);
-#endif
 #ifdef CONFIG_DEBUG_BOCHS
 	bochs_bprintf(str, len);
+#endif
+#ifdef CONFIG_DEBUG_QEMU
+	qemu_bprintf(str, len);
 #endif
 }
 
