@@ -18,9 +18,10 @@
 
 #define G(__vector, __addr, __type, __dpl, __segment)	\
 	{													\
-		.offset_lower	= __addr,						\
-		.segment		= __segment,					\
-		.type_attribute	= TYPE_ATTR(__type, __dpl),		\
+		.offset_lower	= (__addr),						\
+		.segment		= (__segment),					\
+		.__reserved		= 0,							\
+		.type_attribute	= TYPE_ATTR((__type), (__dpl)),	\
 		.offset_upper	= 0								\
 	}
 
@@ -53,8 +54,9 @@ static void set_interrupt_gate(uint32_t vector, const void *addr)
 void handle_generic_interrupt(struct pt_regs *regs)
 {
 	if (has_interrupt_handler(regs->vector)) {
-		interrupt_callback(regs->vector);
+		interrupt_callback(regs->vector, regs);
 	} else {
+#ifdef CONFIG_X86_INTERRUPT_INFO
 		bprintln("INTR: Unknown interrupt %lu (%lx) at RIP: %08lx",
 			regs->vector, regs->error_code,  regs->eip);
 		bprintln("INTR: eax: %08lx, ebx: %08lx, ecx: %08lx, edx: %08lx",
@@ -63,6 +65,7 @@ void handle_generic_interrupt(struct pt_regs *regs)
 			regs->esp, regs->ebp, regs->esi, regs->edi);
 
 		__dump_stack(regs->eip, regs->ebp);
+#endif
 	}
 
 	pic_send_eoi(regs->vector);
@@ -77,18 +80,22 @@ int arch_init_interrupts(void)
 	if (!idt)
 		return -ENOMEM;
 
+	bprintln("IDT: Setting IDT (%lx)...", &idt_desc);
+
+	idt_desc.limit  = len - 1;
+	idt_desc.offset = tuint(idt);
+
+	asm volatile("lidt (%0)" :: "r" (&idt_desc));
+
+	pic_init();
+
 	for (vector = 0; vector < X86_TRAP_NUM; vector++)
 		set_interrupt_gate(vector + X86_TRAP_OFFSET, exception_list[vector]);
 
 	for (vector = 0; vector < X86_INTR_NUM; vector++)
 		set_interrupt_gate(vector + X86_INTR_OFFSET, interrupt_list[vector]);
 
-	idt_desc.limit  = len - 1;
-	idt_desc.offset = tuint(idt);
-
-	bprintln("IDT: Setting IDT (%lx)...", &idt_desc);
-
-	asm volatile("lidt (%0)" :: "r" (&idt_desc));
+	asm volatile("sti");
 
 	return 0;
 }

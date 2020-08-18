@@ -104,9 +104,10 @@ static int arch_init_bootdevice(struct boot_params *boot_params)
 
 int arch_init_late(char *cmdline)
 {
-#ifdef CONFIG_INTR
-	pic_init();
-
+	/*
+	 * Initialize generic interrupt handler system before setting up the IDT
+	 * so that we can register interrupt handlers as early as possible.
+	 */
 	if (init_interrupts())
 		return -EFAULT;
 
@@ -117,7 +118,6 @@ int arch_init_late(char *cmdline)
 	 */
 	if (arch_init_interrupts())
 		return -EFAULT;
-#endif
 
 	/*
 	 * Initialize boot device and load the appropiate disk driver
