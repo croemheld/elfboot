@@ -1,39 +1,16 @@
 #include <elfboot/core.h>
 #include <elfboot/string.h>
 #include <elfboot/console.h>
+#include <elfboot/file.h>
+#include <elfboot/printf.h>
 #include <elfboot/math.h>
-
-#include <asm/printf.h>
 
 #include <elfboot/debug.h>
 
 /*
- * format_struct structure for passing arguments to the individual handlers
- * of strings, characters and numbers. This structure should always be used
- * because we don't like making our lifes complicated.
+ * File descriptor to console
  */
-
-typedef enum {
-    PAD_NUL	= 0x00000001,
-    PAD_NEG	= 0x00000002,
-    SGN_POS	= 0x00000004
-} format_flags_t;
-
-struct format_struct {
-	char *buf;
-	uint32_t flags;
-
-	/*
-	 * Purposes of the following fields: pad, pre, len
-	 *
-	 * pad: Padding left or right f the printed string
-	 * pre: Precision for strings, i.e.: string length
-	 * len: Length of string to print, without padding
-	 */
-	int pad;
-	int pre;
-	int len;
-};
+static struct file *fcons = NULL;
 
 /*
  * Individual handlers for characters, strings and numbers
@@ -298,11 +275,20 @@ int bprintf(const char *format, ...)
 	length = vsprintf(buffer, format, &argp);
 	va_end(argp);
 
-	early_printf(buffer, length);
+	file_write(fcons, length, buffer);
 
 #ifdef CONFIG_DEBUG
 	debug_printf(buffer, length);
 #endif
 
 	return length;
+}
+
+int console_init(const char *path)
+{
+	fcons = file_open(path, 0);
+	if (!fcons)
+		return -EFAULT;
+
+	return 0;
 }

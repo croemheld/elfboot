@@ -59,7 +59,7 @@ int file_read(struct file *file, uint32_t nbytes, void *buffer)
 
 int file_write(struct file *file, uint32_t length, const void *buffer)
 {
-	return 0;
+	return vfs_write(file->node, file->offset, length, buffer);
 }
 
 int file_lseek(struct file *file, int pos, uint32_t offset)

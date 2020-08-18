@@ -1,7 +1,10 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/initcall.h>
 #include <elfboot/fs.h>
 #include <elfboot/file.h>
+#include <elfboot/bdev.h>
+#include <elfboot/cdev.h>
 #include <elfboot/super.h>
 #include <elfboot/sections.h>
 #include <elfboot/string.h>
@@ -299,17 +302,36 @@ void vfs_close(struct fs_node *node)
 
 }
 
-uint32_t vfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+uint32_t vfs_read(struct fs_node *node, uint64_t offset, uint32_t length,
+	void *buffer)
 {
+	switch (node->flags & FS_FLAGS_MASK) {
+		case FS_CHARDEVICE:
+			return cdev_read(node->cdev, offset, length, buffer);
+		case FS_BLOCKDEVICE:
+			return bdev_read(node->bdev, offset, length, buffer);
+	}
+
 	if (node->ops && node->ops->read)
-		return node->ops->read(node, off, len, buf);
+		return node->ops->read(node, offset, length, buffer);
 
 	return -ENOTSUP;
 }
 
-uint32_t vfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+uint32_t vfs_write(struct fs_node *node, uint64_t offset, uint32_t length,
+	const void *buffer)
 {
-	return 0;
+	switch (node->flags & FS_FLAGS_MASK) {
+		case FS_CHARDEVICE:
+			return cdev_write(node->cdev, offset, length, buffer);
+		case FS_BLOCKDEVICE:
+			return bdev_write(node->bdev, offset, length, buffer);
+	}
+
+	if (node->ops && node->ops->write)
+		return node->ops->write(node, offset, length, buffer);
+
+	return -ENOTSUP;
 }
 
 struct fs_dent *vfs_readdir(struct fs_node *node, uint32_t index)
@@ -400,6 +422,27 @@ static struct fs_node *vfs_mount_bdev(struct bdev *bdev, const char *name)
 	return NULL;
 }
 
+int vfs_mount_cdev(struct cdev *cdev, const char *path, const char *name)
+{
+	struct fs_node *node, *nent;
+
+	node = vfs_lookup(path);
+	if (!node)
+		return -ENOENT;
+
+	nent = fs_node_alloc(name);
+	if (!nent)
+		return -EFAULT;
+
+	nent->cdev = cdev;
+	nent->ops  = node->ops;
+	nent->flags |= FS_CHARDEVICE;
+
+	tree_node_insert(&nent->tree, &node->tree);
+
+	return 0;
+}
+
 int vfs_mount(struct bdev *bdev, const char *path, const char *name)
 {
 	struct fs_node *node, *nent;
@@ -413,6 +456,8 @@ int vfs_mount(struct bdev *bdev, const char *path, const char *name)
 		bprintln("VFS: No filesystem found for %s, abort...", bdev->name);
 		return -ENOENT;
 	}
+
+	nent->flags |= FS_BLOCKDEVICE;
 
 	tree_node_insert(&nent->tree, &node->tree);
 
@@ -444,8 +489,19 @@ rootfs_free_sb:
 
 int vfs_init(void)
 {
-	struct fs_type *rootfs = vfs_find_type(ROOTFS);
+	struct fs_type *rootfs;
 
+	/*
+	 * Register all file system drivers here. This has to be done in order
+	 * to set up the root file system so we can mount devices.
+	 */
+	if (vfs_initcalls())
+		return -EFAULT;
+
+	/*
+	 * Find the root file system driver. If this fails, we messed up big time.
+	 */
+	rootfs = vfs_find_type(ROOTFS);
 	if (!rootfs)
 		return -EFAULT;
 
@@ -464,6 +520,24 @@ int vfs_init(void)
 	 */
 	if (vfs_init_rootfs(rootfs))
 		return -EFAULT;
+
+	/*
+	 * Set up the device node in our root file system. After the call is
+	 * successful, we can mount any device to the /dev node.
+	 */
+	if (vfs_mount_type(ROOTFS, NULL, "/", "dev"))
+		return -EFAULT;
+
+	/*
+	 * We also set up the TTY driver so we can print to the screen. This
+	 * is done by calling another initcall macro.
+	 */
+	if (dev_initcalls())
+		return -EFAULT;
+
+	/*
+	 * Lastly, initialize the TTY node
+	 */
 
 	return 0;
 }

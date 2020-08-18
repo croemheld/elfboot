@@ -35,7 +35,7 @@ struct fs_node_ops {
 	void (*open)(struct fs_node *);
 	void (*close)(struct fs_node *);
 	uint32_t (*read)(struct fs_node *, uint64_t, uint32_t, void *);
-	uint32_t (*write)(struct fs_node *, uint64_t, uint32_t, void *);
+	uint32_t (*write)(struct fs_node *, uint64_t, uint32_t, const void *);
 	struct fs_dent *(*readdir)(struct fs_node *, uint32_t);
 	struct fs_node *(*finddir)(struct fs_node *, const char *);
 	struct list_head list;
@@ -81,6 +81,8 @@ struct fs_node {
 #define FS_SYMLINK		_BITUL(5)
 #define FS_MOUNTPOINT	_BITUL(6)
 
+#define FS_FLAGS_MASK	(_BITUL(7) - 1)
+
 #define FS_NODE_SIZE	sizeof(struct fs_node)
 #define FS_NODE_CACHE	"fs_node_cache"
 
@@ -125,7 +127,8 @@ void vfs_close(struct fs_node *node);
 
 uint32_t vfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf);
 
-uint32_t vfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf);
+uint32_t vfs_write(struct fs_node *node, uint64_t off, uint32_t len,
+	const void *buf);
 
 struct fs_dent *vfs_readdir(struct fs_node *node, uint32_t index);
 
@@ -133,6 +136,8 @@ struct fs_node *vfs_finddir(struct fs_node *node, const char *name);
 
 int vfs_mount_type(const char *fs_name, struct bdev *bdev, const char *path,
 	const char *name);
+
+int vfs_mount_cdev(struct cdev *cdev, const char *path, const char *name);
 
 int vfs_mount(struct bdev *bdev, const char *path, const char *name);
 
