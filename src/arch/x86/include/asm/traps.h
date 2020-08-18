@@ -74,6 +74,11 @@ enum {
 	X86_TRAP_VE			= 0x14
 };
 
+enum {
+	X86_INTR_PIT		= 0x00,
+	X86_INTR_KBD		= 0x01,
+};
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* __X86_TRAPS_H__ */

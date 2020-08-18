@@ -3,21 +3,40 @@
 
 #include <asm/pic.h>
 
+static uint16_t irq_mask = 0xFFFF & ~(0x04);
+
 void pic_send_eoi(uint8_t irq)
 {
 	if (irq >= 0x28)
 		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
+	
+	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
+}
 
-	outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
+void pic_mask_irq(uint8_t irq)
+{
+	uint16_t mask = irq_mask | (1 << irq);
+
+	/* Update mask */
+	outb(PIC_MASTER_DATA, (mask >> 0) & 0xFF);
+	outb(PIC_SLAVE_DATA,  (mask >> 8) & 0xFF);
+
+	irq_mask = mask;
+}
+
+void pic_unmask_irq(uint8_t irq)
+{
+	uint16_t mask = irq_mask & ~(1 << irq);
+
+	/* Update mask */
+	outb(PIC_MASTER_DATA, (mask >> 0) & 0xFF);
+	outb(PIC_SLAVE_DATA,  (mask >> 8) & 0xFF);
+
+	irq_mask = mask;
 }
 
 void pic_init(void)
 {
-	uint8_t m_data, s_data;
-
-	m_data = inb(PIC_MASTER_DATA);
-	s_data = inb(PIC_SLAVE_DATA);
-
 	/* Cascading mode */
 	outb(PIC_MASTER_CMD,  0x11);
 	outb(PIC_SLAVE_CMD,   0x11);
@@ -34,7 +53,7 @@ void pic_init(void)
 	outb(PIC_MASTER_DATA, 0x01);
 	outb(PIC_SLAVE_DATA,  0x01);
 
-	/* Restore masks */
-	outb(PIC_MASTER_DATA, m_data);
-	outb(PIC_SLAVE_DATA,  s_data);
+	/* Mask interrupts */
+	outb(PIC_MASTER_DATA, 0xFF);
+	outb(PIC_SLAVE_DATA,  0xFF);
 }

@@ -13,6 +13,10 @@
 
 void pic_send_eoi(uint8_t irq);
 
+void pic_mask_irq(uint8_t irq);
+
+void pic_unmask_irq(uint8_t irq);
+
 void pic_init(void);
 
 #endif /* __X86_PIC_H__ */
