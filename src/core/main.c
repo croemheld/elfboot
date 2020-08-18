@@ -1,9 +1,12 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
+#include <elfboot/initcall.h>
 #include <elfboot/fs.h>
 #include <elfboot/pci.h>
 #include <elfboot/bdev.h>
 #include <elfboot/file.h>
+#include <elfboot/input.h>
+#include <elfboot/interrupts.h>
 #include <elfboot/loader.h>
 #include <elfboot/module.h>
 #include <elfboot/symbol.h>
@@ -39,6 +42,20 @@ symbols_free_syms:
 static int modules_load(void)
 {
 	/*
+	 * TODO CRO: Load modules depending on the architecture
+	 *
+	 * E.g. "pit" only available for x86
+	 */
+
+	if (module_open("pit"))
+		return -EFAULT;
+
+	if (module_open("kbd"))
+		return -EFAULT;
+
+	return 0;
+}
+
 /*
  * elfboot initcall function for initializing built-in modules. This function
  * uses the extern variables declared in the linker file to initialize 

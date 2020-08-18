@@ -19,6 +19,13 @@
 	.byte (((base) >> 16) & 0xFF), (access),	\
 		(flags), (((base) >> 24) & 0xFF)
 
+#else /* !__ASSEMBLER__ */
+
+#define RM_SEG(x)		((x) & 0x000ffff0) >> 4
+#define RM_OFF(x)		((x) & 0x0000000f) >> 0
+
+void kernel_realmode_jump(uint16_t rm_seg, uint16_t kn_seg);
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* __X86_SEGMENT_H__ */

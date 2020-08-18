@@ -252,10 +252,12 @@ static int loader_boot_kernel(struct boot_entry *boot_entry)
 
 static int loader_init_module(struct boot_entry *boot_entry)
 {
-	const char *name = loader_modules[boot_entry->prot];
+	const char *name;
 
-	if (!name)
-		return -ENOMEM;
+	if (boot_entry->prot >= ARRAY_SIZE(loader_modules))
+		return -ENOTSUP;
+
+	name = loader_modules[boot_entry->prot];
 
 	bprintln("EBL: Loading module %s", name);
 

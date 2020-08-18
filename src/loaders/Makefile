@@ -1,0 +1,1 @@
+elfboot-m += lxboot.o
