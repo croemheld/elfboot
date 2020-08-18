@@ -19,15 +19,15 @@ boot_gdt:
 	# Real mode code and data segment
 	#
 
-	GDT_SEG(0, 0xFFFF, 0x9A, 0x00)
-	GDT_SEG(0, 0xFFFF, 0x92, 0x00)
+	GDT_SEG(0, 0x0000FFFF, 0x9A, 0x00)
+	GDT_SEG(0, 0x0000FFFF, 0x92, 0x00)
 
 	#
 	# Protected mode code and data segment
 	#
 
-	GDT_SEG(0, 0xFFFF, 0x9A, 0xCF)
-	GDT_SEG(0, 0xFFFF, 0x92, 0xCF)
+	GDT_SEG(0, 0xFFFFFFFF, 0x9A, 0xCF)
+	GDT_SEG(0, 0xFFFFFFFF, 0x92, 0xCF)
 boot_gdt_end:
 
 	.global boot_gdt_desc
@@ -38,24 +38,23 @@ boot_gdt_desc:
 	.long (boot_gdt)
 
 boot_idt_real:
-	.word 0x400
+	.word 0x3FF
 	.long 0
 
 boot_idt_prot:
 	.word 0
+boot_idt_prot_addr:
 	.long 0
 
 
-.section .data
+.section .text
+
+.code16
 
 GLOBAL(pmmode_jmp)
-.code16
-	cli
-
 	xorw    %ax, %ax
 	movw    %ax, %ds
 
-	lgdt    boot_gdt_desc
 	movl    %cr0, %eax
 	orl     $0x1, %eax
 	movl    %eax, %cr0
@@ -79,15 +78,23 @@ GLOBAL(pmmode_jmp)
 	sidt    boot_idt_real
 	lidt    boot_idt_prot
 
-#ifdef CONFIG_INTR
+	/*
+	 * Hack: Only enable interrupts if there is an IDT present for protected
+	 * mode. Otherwise we will cause a triple fault.
+	 */
+
+	cmpl    $0, boot_idt_prot_addr
+	jz      .pmmode_jmp_done
+
 	sti
-#endif
+
+LOCAL(.pmmode_jmp_done)
 
 	retw
 ENDPROC(pmmode_jmp)
 
 GLOBAL(rmmode_jmp)
-	lgdt    boot_gdt_desc
+	cli
 
 	/*
 	 * Switch IDTs
