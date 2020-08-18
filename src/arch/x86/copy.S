@@ -59,7 +59,7 @@ GLOBAL(memset16)
 	pushl   %edi
 
 	movl    0x08(%esp), %edi
-	movzbl  0x0C(%esp), %eax
+	movzwl  0x0C(%esp), %eax
 
 	imull   $0x00010001,%eax
 	movl    0x10(%esp), %ecx
@@ -80,7 +80,7 @@ GLOBAL(memset32)
 	pushl   %edi
 
 	movl    0x08(%esp), %edi
-	movzbl  0x0C(%esp), %eax
+	movl    0x0C(%esp), %eax
 
 	movl    0x10(%esp), %ecx
 	pushl   %ecx
