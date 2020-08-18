@@ -2,6 +2,8 @@
 #include <elfboot/linkage.h>
 #include <elfboot/mm.h>
 #include <elfboot/fs.h>
+#include <elfboot/bdev.h>
+#include <elfboot/cdev.h>
 #include <elfboot/super.h>
 #include <elfboot/module.h>
 #include <elfboot/tree.h>
@@ -52,7 +54,7 @@ static struct fs_node *ramfs_fill_super(struct superblock *sb, const char *name)
 	if (sb->bdev)
 		return NULL;
 
-	node = fs_node_alloc(name);
+	node = ramfs_alloc_node(sb, name);
 	if (!node)
 		return NULL;
 
@@ -84,12 +86,14 @@ static void ramfs_close(struct fs_node *node)
 
 }
 
-static uint32_t ramfs_read(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+static uint32_t ramfs_read(struct fs_node *node, uint64_t offset,
+	uint32_t length, void *buffer)
 {
 	return 0;
 }
 
-static uint32_t ramfs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+static uint32_t ramfs_write(struct fs_node *node, uint64_t offset,
+	uint32_t length, const void *buffer)
 {
 	return 0;
 }
@@ -115,8 +119,6 @@ static struct fs_node_ops ramfs_node_ops = {
 
 static int ramfs_init(void)
 {
-	bprintln(FS_RAM ": Initialize file system module \"ramfs\"...");
-
 	fs_register(&fs_ramfs);
 
 	return 0;
@@ -133,5 +135,5 @@ static void ramfs_exit(void)
 	fs_unregister(&fs_ramfs);
 }
 
-module_init(ramfs_init);
-module_exit(ramfs_exit);
+vfs_module_init(ramfs_init);
+vfs_module_exit(ramfs_exit);

@@ -160,7 +160,8 @@ isofs_read_done:
 	return result;
 }
 
-static uint32_t isofs_write(struct fs_node *node, uint64_t off, uint32_t len, void *buf)
+static uint32_t isofs_write(struct fs_node *node, uint64_t offset,
+	uint32_t length, const void *buffer)
 {
 	return 0;
 }
@@ -251,8 +252,6 @@ static struct fs_node_ops isofs_node_ops = {
 
 static int isofs_init(void)
 {
-	bprintln(FS_ISO ": Initialize file system module \"isofs\"...");
-
 	fs_register(&fs_isofs);
 
 	return 0;
@@ -269,5 +268,5 @@ static void isofs_exit(void)
 	fs_unregister(&fs_isofs);
 }
 
-module_init(isofs_init);
-module_exit(isofs_exit);
+vfs_module_init(isofs_init);
+vfs_module_exit(isofs_exit);
