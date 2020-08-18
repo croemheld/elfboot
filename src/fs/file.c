@@ -2,6 +2,8 @@
 #include <elfboot/mm.h>
 #include <elfboot/fs.h>
 #include <elfboot/file.h>
+#include <elfboot/bdev.h>
+#include <elfboot/cdev.h>
 #include <elfboot/printf.h>
 
 struct file *file_open(const char *path, uint32_t flags)
@@ -87,4 +89,16 @@ int file_lseek(struct file *file, int pos, uint32_t offset)
 	file->offset = fpos;
 
 	return 0;
+}
+
+int file_ioctl(struct file *file, int request, void *args)
+{
+	switch (file->node->flags & FS_FLAGS_MASK) {
+		case FS_CHARDEVICE:
+			return cdev_ioctl(file->node->cdev, request, args);
+		case FS_BLOCKDEVICE:
+			return bdev_ioctl(file->node->bdev, request, args);
+	}
+
+	return -ENOTSUP;
 }

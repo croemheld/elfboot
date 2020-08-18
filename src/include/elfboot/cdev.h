@@ -16,6 +16,7 @@ struct cdev;
 struct cdev_ops {
 	int (*read)(struct cdev *, uint64_t, uint64_t, void *);
 	int (*write)(struct cdev *, uint64_t, uint64_t, const void *);
+	int (*ioctl)(struct cdev *, int, void *);
 };
 
 struct cdev {
@@ -49,6 +50,8 @@ int cdev_read(struct cdev *cdev, uint64_t offset,
 
 int cdev_write(struct cdev *cdev, uint64_t offset,
 	uint64_t length, const void *buffer);
+
+int cdev_ioctl(struct cdev *cdev, int request, void *args);
 
 int cdev_init(struct cdev *cdev, struct cdev_ops *ops);
 

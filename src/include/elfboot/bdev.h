@@ -19,6 +19,7 @@ struct bdev;
 struct bdev_ops {
 	int (*read)(struct bdev *, uint64_t, uint64_t, void *);
 	int (*write)(struct bdev *, uint64_t, uint64_t, const void *);
+	int (*ioctl)(struct bdev *, int, void *);
 
 	/* List of bdev drivers */
 	struct list_head list;
@@ -98,6 +99,8 @@ int bdev_read(struct bdev *bdev, uint64_t sector,
 
 int bdev_write(struct bdev *bdev, uint64_t sector,
 	uint64_t blknum, const void *buffer);
+
+int bdev_ioctl(struct bdev *bdev, int request, void *args);
 
 void bdev_register_driver(struct bdev_ops *ops);
 

@@ -29,6 +29,14 @@ int bdev_write(struct bdev *bdev, uint64_t sector,
 	return -ENOTSUP;
 }
 
+int bdev_ioctl(struct bdev *bdev, int request, void *args)
+{
+	if (bdev->ops && bdev->ops->ioctl)
+		return bdev->ops->ioctl(bdev, request, args);
+
+	return -ENOTSUP;	
+}
+
 void bdev_register_driver(struct bdev_ops *ops)
 {
 	list_add(&ops->list, &bdev_ops);

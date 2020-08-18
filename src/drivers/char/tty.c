@@ -109,9 +109,15 @@ static int tty_write(struct cdev *cdev, uint64_t offset, uint64_t length,
 	return __tty_write(cdev->private, length, buffer);
 }
 
+static int tty_ioctl(struct cdev *cdev, int request, void *args)
+{
+	return 0;
+}
+
 static struct cdev_ops tty_cdev_ops = {
 	.read = tty_read,
-	.write = tty_write
+	.write = tty_write,
+	.ioctl = tty_ioctl
 };
 
 static int tty_init(void)

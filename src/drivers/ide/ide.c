@@ -263,6 +263,11 @@ static int ide_ata_write(struct bdev *device, uint64_t offset,
 	return 0;
 }
 
+static int ide_ata_ioctl(struct bdev *bdev, int request, void *args)
+{
+	return 0;
+}
+
 /*
  * IDE device operations: ATAPI
  */
@@ -296,18 +301,25 @@ static int ide_atapi_write(struct bdev *device, uint64_t offset,
 	return -ENOTSUP;
 }
 
+static int ide_atapi_ioctl(struct bdev *bdev, int request, void *args)
+{
+	return 0;
+}
+
 /*
  * Struct for bdev_ops to be registered by bootloader
  */
 
 static struct bdev_ops ide_ata_bdev_ops = {
 	.read  = ide_ata_read,
-	.write = ide_ata_write
+	.write = ide_ata_write,
+	.ioctl = ide_ata_ioctl
 };
 
 static struct bdev_ops ide_atapi_bdev_ops = {
 	.read  = ide_atapi_read,
-	.write = ide_atapi_write
+	.write = ide_atapi_write,
+	.ioctl = ide_atapi_ioctl
 };
 
 /*

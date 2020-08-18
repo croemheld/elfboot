@@ -25,6 +25,14 @@ int cdev_write(struct cdev *cdev, uint64_t offset,
 	return -ENOTSUP;
 }
 
+int cdev_ioctl(struct cdev *cdev, int request, void *args)
+{
+	if (cdev->ops && cdev->ops->ioctl)
+		return cdev->ops->ioctl(cdev, request, args);
+
+	return -ENOTSUP;	
+}
+
 int cdev_init(struct cdev *cdev, struct cdev_ops *ops)
 {
 	cdev->ops = ops;

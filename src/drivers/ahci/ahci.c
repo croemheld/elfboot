@@ -244,6 +244,11 @@ static int ahci_sata_write(struct bdev *bdev, uint64_t offset, uint64_t num,
 	return 0;
 }
 
+static int ahci_sata_ioctl(struct bdev *bdev, int request, void *args)
+{
+	return 0;
+}
+
 /*
  * AHCI device operations: SATAPI
  */
@@ -285,18 +290,25 @@ static int ahci_satapi_write(struct bdev *bdev, uint64_t offset, uint64_t num,
 	return 0;
 }
 
+static int ahci_satapi_ioctl(struct bdev *bdev, int request, void *args)
+{
+	return 0;
+}
+
 /*
  * Struct for bdev_ops to be registered by bootloader
  */
 
 static struct bdev_ops ahci_sata_bdev_ops = {
 	.read  = ahci_sata_read,
-	.write = ahci_sata_write
+	.write = ahci_sata_write,
+	.ioctl = ahci_sata_ioctl
 };
 
 static struct bdev_ops ahci_satapi_bdev_ops = {
 	.read  = ahci_satapi_read,
-	.write = ahci_satapi_write
+	.write = ahci_satapi_write,
+	.ioctl = ahci_satapi_ioctl
 };
 
 /*
