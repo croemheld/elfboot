@@ -24,7 +24,7 @@ static struct bmem_cache *fs_node_cache;
  * Debug functions
  */
 
-#ifdef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG_FS
 
 static void vfs_show_node(struct tree_info *info)
 {
@@ -102,7 +102,7 @@ void vfs_dump_tree(void)
 	bfree(info.tibuf);
 }
 
-#endif /* CONFIG_DEBUG */
+#endif /* CONFIG_DEBUG_FS */
 
 /*
  * Allocating file system nodes and directory entries

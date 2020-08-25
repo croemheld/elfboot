@@ -8,7 +8,7 @@
 
 LIST_HEAD(pci_devs);
 
-#ifdef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG_PCI
 
 static const char *pci_dev_classes[] = {
 	"Unclassified Device",
@@ -38,15 +38,15 @@ static const char *pci_class_name(struct pci_dev *pcidev)
 	return pci_dev_classes[pcidev->class];
 }
 
-#endif /* CONFIG_DEBUG */
+#endif /* CONFIG_DEBUG_PCI */
 
 static void pci_dump_device(struct pci_dev *pcidev)
 {
-#ifdef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG_PCI
 	const char *name = pci_class_name(pcidev);
 #else
 	const char *name = "";
-#endif /* CONFIG_DEBUG */
+#endif /* CONFIG_DEBUG_PCI */
 
 	bprintln("PCI: %02x:%02x.%01x [%04lx] (%02x): %04lx:%04lx %s",
 		 pcidev->addr.bus, pcidev->addr.slot, pcidev->addr.func,
