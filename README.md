@@ -4,7 +4,7 @@ A multiboot-compliant *Executable and Linking Format* (ELF) bootloader for the x
 
 ### Features ###
 
-The **elfboot** bootloader is highly modular. It supports drivers for both IDE and AHCI/RAID controllers. Also, further modules include file system drivers like *ISO 9660*. For the graphical boot menu, a simple PS/2 keyboard module is available, too.
+![elfboot](images/elfboot-logo-inline.png) is highly modular BIOS bootloader for the x86 architecture . It supports drivers for both IDE and AHCI/RAID controllers. Also, further modules include file system drivers like *ISO 9660*. For the graphical boot menu, a simple PS/2 keyboard module is available, too.
 
 Currently, we support the following modules:
 
@@ -22,7 +22,7 @@ Even the screen is managed by a module, which depends on the screen resolution u
 
 ### Building elfboot ###
 
-**elfboot** requires the use of a dedicated toolchain, included in this project. The toolchain is generated simply by typing
+![elfboot](images/elfboot-logo-inline.png) requires the use of a dedicated toolchain, included in this project. The toolchain is generated simply by typing
 
 ```
 make toolchain
@@ -38,11 +38,19 @@ make iso
 
 ### Booting kernels ###
 
-Each boot entry is defined in the `elfboot.cfg` boot file, which contains information about each kernel found. If only one entry is available, you can configure elfboot to directly boot the kernel without any graphical boot menu.
+Each boot entry is defined in the `elfboot.cfg` boot file, which contains information about each kernel found. If only one entry is available, you can configure elfboot to directly boot the kernel without any graphical boot menu. An example for a valid boot entry for a Linux boot would look as follows:
+
+```
+bootentry "Linux 5.18.0" {
+	kernel linux /root/boot/bzImage
+	initrd /root/boot/rootfs.cpio.gz
+	cmdline root=/dev/sr0 rw
+}
+```
 
 > **Note**: Currently, we only support booting Linux. Further boot protocols are going to be introduced in the near future.
 
-We currently support the following boot protocols:
+![elfboot](images/elfboot-logo-inline.png) currently supports the following boot protocols:
 
  - Linux (module **lxboot**)
 
