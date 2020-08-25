@@ -56,8 +56,7 @@ bootentry "Linux 5.18.0" {
 
 In the near future, we want to at least implement two more protocols:
 
- - Multiboot Legacy
- - Multiboot 2
+ - Multiboot (1, 2)
  - Stivale
 
 ### Screenshot ###
