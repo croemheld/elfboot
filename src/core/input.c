@@ -49,7 +49,7 @@ static char __bgetch(void)
 	return c;
 }
 
-char bgetch_noblock(void)
+unsigned char bgetch_noblock(void)
 {
 	if (!keybuffer_index)
 		return 0;
@@ -57,7 +57,7 @@ char bgetch_noblock(void)
 	return __bgetch();
 }
 
-char bgetch(void)
+unsigned char bgetch(void)
 {
 	while (!keybuffer_index)
 		arch_suspend_machine();

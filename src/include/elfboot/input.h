@@ -31,9 +31,9 @@ int input_copy_to_buffer(char c);
  * Formatting input
  */
 
-char bgetch_noblock(void);
+unsigned char bgetch_noblock(void);
 
-char bgetch(void);
+unsigned char bgetch(void);
 
 int bgets(char *buffer, int length);
 
