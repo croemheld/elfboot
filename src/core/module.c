@@ -257,27 +257,27 @@ module_free_file:
 
 void modules_exit(void)
 {
-	exitcall_t exitcall, *function = __exitcalls_start;
+	modexit_t modexit, *function = __modexit_start;
 
-	for (; function < __exitcalls_end; function++) {
-		exitcall = *function;
-		exitcall();
+	for (; function < __modexit_end; function++) {
+		modexit = *function;
+		modexit();
 	}
 }
 
 int modules_init(void)
 {
-	initcall_t initcall, *function = __initcalls_start;
+	modinit_t modinit, *function = __modinit_start;
 
-	for (; function < __initcalls_end; function++) {
-		initcall = *function;
+	for (; function < __modinit_end; function++) {
+		modinit = *function;
 
 		/*
-		 * Iterate over all initcalls in the dedicated initcall section of the
-		 * elfboot bootloader. If even one initcall fails, we call module_exit
+		 * Iterate over all modinits in the dedicated modinit section of the
+		 * elfboot bootloader. If even one modinit fails, we call module_exit
 		 * to make sure we cleared up everything.
 		 */
-		if (initcall())
+		if (modinit())
 			return -EFAULT;
 	}
 

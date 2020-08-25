@@ -16,16 +16,10 @@ extern char __rodata_start[], __rodata_end[];
 extern char __data_start[], __data_end[];
 extern char __bss_start[], __bss_end[];
 
-/*
- * The following symbols may not always be available
- */
-
-extern char __buffer_start[], __buffer_end[];
-
-extern initcall_t __initcalls_vfs_start[], __initcalls_vfs_end[];
-extern initcall_t __initcalls_dev_start[], __initcalls_dev_end[];
-extern initcall_t __initcalls_start[], __initcalls_end[];
-extern exitcall_t __exitcalls_start[], __exitcalls_end[];
+extern modinit_t __modinit_vfs_start[], __modinit_vfs_end[];
+extern modinit_t __modinit_dev_start[], __modinit_dev_end[];
+extern modinit_t __modinit_start[], __modinit_end[];
+extern modexit_t __modexit_start[], __modexit_end[];
 
 /*
  * Accessing section address values

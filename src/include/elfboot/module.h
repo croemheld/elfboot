@@ -12,15 +12,15 @@
  * For built-in modules, we have to make sure to place the init calls in order,
  * otherwise the initialization process may fail.
  */
-#define module_init(init)		initcall_t initcall_##init __initcall = init
+#define module_init(init)		modinit_t modinit_##init __modinit = init
 
-#define vfs_module_init(init)	initcall_t initcall_##init __initcall_vfs = init
-#define dev_module_init(init)	initcall_t initcall_##init __initcall_dev = init
+#define vfs_module_init(init)	modinit_t modinit_##init __modinit_vfs = init
+#define dev_module_init(init)	modinit_t modinit_##init __modinit_dev = init
 
 /*
  * Exitcalls are unordered, we don' have to call them in order.
  */
-#define module_exit(exit)		exitcall_t exitcall_##exit __exitcall = exit
+#define module_exit(exit)		modexit_t modexit_##exit __modexit = exit
 
 #else /* !MODULE */
 

@@ -495,7 +495,7 @@ int vfs_init(void)
 	 * Register all file system drivers here. This has to be done in order
 	 * to set up the root file system so we can mount devices.
 	 */
-	if (vfs_initcalls())
+	if (vfs_modinit())
 		return -EFAULT;
 
 	/*
@@ -532,12 +532,8 @@ int vfs_init(void)
 	 * We also set up the TTY driver so we can print to the screen. This
 	 * is done by calling another initcall macro.
 	 */
-	if (dev_initcalls())
+	if (dev_modinit())
 		return -EFAULT;
-
-	/*
-	 * Lastly, initialize the TTY node
-	 */
 
 	return 0;
 }

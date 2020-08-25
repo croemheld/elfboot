@@ -4,28 +4,8 @@ ENTRY(_arch_start)
 SECTIONS
 {
 	/*
-	 * The boot stack starts at 0x6000 and grows towards lower addresses.
-	 * The stack is designed to be only one page in size, which should be
-	 * sufficient for the bootstrap stage.
-	 */
-
-	. = 0x6000;
-	__stack_start = .;
-
-	/*
-	 * Buffer for reading files from the boot device. Usually boot devices
-	 * are designed to read data in chunks of 0x200 (512) or 0x800 (2048)
-	 * bytes. The buffer is large enough to read 4 512 or 2 2048 chunks of
-	 * data from the disk.
-	 */
-
-	__buffer_start = .;
-
-	. = 0x7000;
-	__buffer_end = .;
-
-	/*
-	 * Actual bootstrap stage code and data.
+	 * Start of the bootloader text section. This has to be placed at this
+	 * offset since we continue directly after the boot sector.
 	 */
 
 	. = 0x7E00;
@@ -37,46 +17,45 @@ SECTIONS
 		__text_end = .;
 	}
 
-	.rodata ALIGN(0x10) : {
-		__rodata_start = .;
-		*(.rodata*)
-		__rodata_end = .;
-	}
-
 	/*
 	 * This section is dedicated to all built-in modules. If a module will
 	 * be included in the elfboot binary, the module_init function pointer
 	 * of that module is placed in this section.
-	 *
-	 * Make sure to initialize built-in filesystems first as we need it to
-	 * setup the root file system node.
 	 */
 
-	.initcalls ALIGN(0x10) : {
-		__initcalls_vfs_start = .;
-
+	.modinit ALIGN(0x10) : {
 		/* Built-in file systems */
-		*(.initcalls_vfs*)
+		__modinit_vfs_start = .;
+		*(.modinit_vfs*)
+		__modinit_vfs_end = .;
 
-		__initcalls_vfs_end = .;
-		__initcalls_dev_start = .;
+		/* Built-in devices */		
+		__modinit_dev_start = .;
+		*(.modinit_dev*)
+		__modinit_dev_end = .;
 
-		/* Built-in devices */
-		*(.initcalls_dev*)
-
-		__initcalls_dev_end = .;
-		__initcalls_start = .;
-
-		/* Built-in modules */
-		*(.initcalls*)
-
-		__initcalls_end = .;
+		/* Built-in modules */		
+		__modinit_start = .;
+		*(.modinit*)
+		__modinit_end = .;
 	}
 
-	.exitcalls ALIGN(0x10) : {
-		__exitcalls_start = .;
-		*(.exitcalls*)
-		__exitcalls_end = .;
+	.modexit ALIGN(0x10) : {
+		__modexit_start = .;
+		*(.modexit*)
+		__modexit_end = .;
+	}
+
+	/*
+	 * Data sections. We have to place the .rodata section at the very end
+	 * of the file since the ordering of the sections may introduce a huge
+	 * gap with null bytes which are contained in the final binary.
+	 */
+
+	.bss ALIGN(0x10) : {
+		__bss_start = .;
+		*(.bss*)
+		__bss_end = .;
 	}
 
 	.data ALIGN(0x10) : {
@@ -85,10 +64,10 @@ SECTIONS
 		__data_end = .;
 	}
 
-	.bss ALIGN(0x10) : {
-		__bss_start = .;
-		*(.bss*)
-		__bss_end = .;
+	.rodata ALIGN(0x10) : {
+		__rodata_start = .;
+		*(.rodata*)
+		__rodata_end = .;
 	}
 
 	__bootstrap_end = .;

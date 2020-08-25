@@ -6,8 +6,8 @@
 
 #include <asm/linkage.h>
 
-typedef int  (*initcall_t)(void);
-typedef void (*exitcall_t)(void);
+typedef int  (*modinit_t)(void);
+typedef void (*modexit_t)(void);
 
 /*
  * Sections
@@ -52,10 +52,10 @@ typedef void (*exitcall_t)(void);
 /*
  * The following macros are intended to be used for modules
  */
-#define __initcall_vfs		__section(".initcalls_vfs")
-#define __initcall_dev		__section(".initcalls_dev")
-#define __initcall			__section(".initcalls")
+#define __modinit_vfs		__section(".modinit_vfs")
+#define __modinit_dev		__section(".modinit_dev")
+#define __modinit			__section(".modinit")
 
-#define __exitcall			__section(".exitcalls")
+#define __modexit			__section(".modexit")
 
 #endif /* __ELFBOOT_LINKAGE_H__ */
