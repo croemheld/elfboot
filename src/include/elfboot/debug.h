@@ -7,10 +7,6 @@
 #include <elfboot/debug/qemu.h>
 #include <elfboot/debug/bochs.h>
 
-/*
- * TODO CRO: Introduce debug functions
- */
-
 static __always_inline void debug_breakp(void)
 {
 #ifdef CONFIG_DEBUG_BOCHS

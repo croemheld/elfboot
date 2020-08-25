@@ -217,9 +217,6 @@ char *strtok_r(char *str, const char *delim, char **store)
 
 #define TOLOWER(x) ((x) | 0x20)
 
-/*
- * TODO CRO: Merge with base "guesser" from core/printf.c.
- */
 static unsigned int simple_guess_base(const char *cp)
 {
 	if (cp[0] == '0') {

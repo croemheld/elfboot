@@ -220,7 +220,6 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	list_add_tail(new, &page->freelist);
 
 	if (!--page->inuse) {
-		//bprintln("SLUB: Freeing slab from cache %s", cachep->name);
 		list_del(&page->list);
 		free_page(page->paddr);
 	} else {
