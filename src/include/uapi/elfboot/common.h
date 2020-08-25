@@ -1,5 +1,5 @@
-#ifndef __UAPI_COMMON_H__
-#define __UAPI_COMMON_H__
+#ifndef __UAPI_ELFBOOT_COMMON_H__
+#define __UAPI_ELFBOOT_COMMON_H__
 
 #include <elfboot/core.h>
 
@@ -76,4 +76,4 @@
 #define fptr(ptr)					\
 	tvptr(fptr_val((ptr) >> 16, (ptr) & 0xffff))
 
-#endif /* __UAPI_COMMON_H__ */
+#endif /* __UAPI_ELFBOOT_COMMON_H__ */

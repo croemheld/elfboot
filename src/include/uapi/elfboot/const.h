@@ -1,5 +1,5 @@
-#ifndef __CONST_H__
-#define __CONST_H__
+#ifndef __UAPI_ELFBOOT_CONST_H__
+#define __UAPI_ELFBOOT_CONST_H__
 
 /*
  * Constant macros
@@ -14,4 +14,4 @@
 #define _BITUL(x)                                 (_UL(1) << (x))
 #define _BITULL(x)                                (_ULL(1) << (x))
 
-#endif /* __CONST_H__ */
+#endif /* __UAPI_ELFBOOT_CONST_H__ */
