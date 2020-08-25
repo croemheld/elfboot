@@ -284,6 +284,23 @@ int bprintf(const char *format, ...)
 	return length;
 }
 
+int dprintf(const char *format, ...)
+{
+	va_list argp;
+	char buffer[256];
+	int length;
+
+	va_start(argp, format);
+	length = vsprintf(buffer, format, &argp);
+	va_end(argp);
+
+#ifdef CONFIG_DEBUG
+	debug_printf(buffer, length);
+#endif
+
+	return length;
+}
+
 int console_init(const char *path)
 {
 	fcons = file_open(path, 0);

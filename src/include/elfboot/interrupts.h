@@ -36,6 +36,8 @@ void disable_clock(void);
 void register_interrupt_handler(uint32_t vector,
 	struct interrupt_handler *handler);
 
+void unregister_interrupt_handler(struct interrupt_handler *handler);
+
 bool has_interrupt_handler(uint32_t vector);
 
 void interrupt_callback(uint32_t vector, void *info);
