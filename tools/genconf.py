@@ -26,11 +26,11 @@ def parse_config_macro(file, line):
 
 	# The configuration is active, no value given
 	elif value == 'y':
-		file.write("#define CONFIG_%s\n" % name)
+		file.write("#define CONFIG_%s CONFIG_Y\n" % name)
 
 	# Everything else is simply defined with a value
-	else:
-		file.write("#define CONFIG_%s %s\n" % (name, value))
+	elif value == 'm':
+		file.write("#define CONFIG_%s CONFIG_M\n" % name)
 
 
 parser = argparse.ArgumentParser(description="elfboot genconf")
@@ -50,6 +50,9 @@ with open(ifile, "r") as config, open(ofile, "w+") as header:
 
 	header.write("#ifndef __ELFBOOT_CONFIG_H__\n")
 	header.write("#define __ELFBOOT_CONFIG_H__\n\n")
+
+	header.write("#define CONFIG_Y 1\n")
+	header.write("#define CONFIG_M 2\n\n")
 
 	for line in lines:
 		parse_config_macro(header, line)
