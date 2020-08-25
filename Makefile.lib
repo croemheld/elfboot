@@ -87,9 +87,6 @@ quiet_cmd_ec_elf = ELFCONF $(2).elf
 quiet_cmd_oc_bin = OBJCOPY $(2).bin
       cmd_oc_bin = $(OBJCOPY) -O binary $(2).elf $(2).bin
 
-quiet_cmd_oc_bin = OBJCOPY $(2).bin
-      cmd_oc_bin = $(OBJCOPY) -O binary $(2).elf $(2).bin
-
 elfconf = $(call cmd,ec_elf,$(1),$(2),$(3))
 objcopy = $(call cmd,oc_bin,$(1))
 mod_map = $(call cmd,ko_map)
