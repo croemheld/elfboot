@@ -47,6 +47,11 @@ static int modules_load(void)
 	 * E.g. "pit" only available for x86
 	 */
 
+#if CONFIG_DRIVER_TTY == CONFIG_M
+	if (module_open("tty"))
+		return -EFAULT;
+#endif /* CONFIG_DRIVER_TTY */
+
 	if (module_open("pit"))
 		return -EFAULT;
 
@@ -57,18 +62,18 @@ static int modules_load(void)
 }
 
 /*
- * elfboot initcall function for initializing built-in modules. This function
+ * elfboot modinit function for initializing built-in modules. This function
  * uses the extern variables declared in the linker file to initialize 
  */
-int elfboot_init(initcall_t *start, initcall_t *end)
+int elfboot_init(modinit_t *start, modinit_t *end)
 {
-	initcall_t initcall, *function = start;
+	modinit_t modinit, *function = start;
 
 	for (; function < end; function++) {
-		initcall = *function;
+		modinit = *function;
 
-		if (initcall())
-		return -EFAULT;
+		if (modinit())
+			return -EFAULT;
 	}
 
 	return 0;
@@ -109,8 +114,8 @@ int elfboot_main(void)
 		return -EFAULT;
 
 	/* Initialize loader */
-	if (loader_init())
-		return -EFAULT;
+ 	if (loader_init())
+ 		return -EFAULT;
 
 	return 0;
 }
