@@ -131,7 +131,7 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 {
 	void *iblock;
 	uint64_t sector, blknum, blkoff;
-	uint32_t remlen, nbsize, ibloff, bufoff = 0, result = 0;
+	uint32_t nbsize, ibloff, remlen = 0, bufoff = 0, result = 0;
 
 	nbsize = node->sb->block_size;
 	iblock = bmalloc(nbsize);
@@ -157,7 +157,7 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 isofs_read_done:
 	bfree(iblock);
 
-	return result;
+	return length - remlen;
 }
 
 static uint32_t isofs_write(struct fs_node *node, uint64_t offset,

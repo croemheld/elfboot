@@ -47,20 +47,23 @@ int file_read(struct file *file, uint32_t nbytes, void *buffer)
 {
 	uint64_t length = min(nbytes, file->length - file->offset);
 
+	if (!file)
+		return -ENOENT;
+
 	/*
 	 * The most important function for reading from files: Make sure that
 	 * every file system module implementation allocates a buffer to read
 	 * the correct amount of bytes from the file.
 	 */
 
-	if (vfs_read(file->node, file->offset, length, buffer))
-		return 0;
-
-	return length;
+	return vfs_read(file->node, file->offset, length, buffer);
 }
 
 int file_write(struct file *file, uint32_t length, const void *buffer)
 {
+	if (!file)
+		return -ENOENT;
+
 	return vfs_write(file->node, file->offset, length, buffer);
 }
 
@@ -68,19 +71,12 @@ int file_lseek(struct file *file, int pos, uint32_t offset)
 {
 	uint32_t fpos;
 
-	if (offset >= file->length)
-		return -1;
-
 	switch (pos) {
 		case FILE_SET: fpos = offset;
 			break;
-		case FILE_CUR:
-			if (file->offset + offset >= file->length)
-				return -1;
-
-			fpos = file->offset + offset;
+		case FILE_CUR: fpos = file->offset + offset;
 			break;
-		case FILE_END: fpos = file->length + offset;
+		case FILE_END: fpos = file->length - offset;
 			break;
 		default:
 			fpos = file->offset;

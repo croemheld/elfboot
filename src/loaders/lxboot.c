@@ -133,7 +133,7 @@ static int lxboot_prepare_farjmp(struct lxboot_info *info)
 
 	kernel_realmode_jump(rmcodeseg, rmcodeseg + 0x20);
 
-	return 0;
+	return -EFAULT;
 }
 
 static int lxboot_boot(struct boot_entry *boot_entry)
