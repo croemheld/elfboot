@@ -63,13 +63,8 @@ GLOBAL(memset16)
 
 	imull   $0x00010001,%eax
 	movl    0x10(%esp), %ecx
-	pushl   %ecx
-	shrl    $2, %ecx
-	rep stosl
-
-	popl    %ecx
-	andl    $3, %ecx
-	rep stosb
+	shrl    $1, %ecx
+	rep stosw
 
 	popl    %edi
 
@@ -83,13 +78,8 @@ GLOBAL(memset32)
 	movl    0x0C(%esp), %eax
 
 	movl    0x10(%esp), %ecx
-	pushl   %ecx
 	shrl    $2, %ecx
 	rep stosl
-
-	popl    %ecx
-	andl    $3, %ecx
-	rep stosb
 
 	popl    %edi
 
