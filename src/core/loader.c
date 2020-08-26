@@ -55,7 +55,7 @@ struct tmg_header *logo;
 /*
  * Messages to print on the boot menu
  */
-const  char control[] = "Use arrow keys (\x18 and \x19) to change the selection.";
+const  char control[] = "Use arrow keys (\x18 and \x19) to change the selection";
 const  char boption[] = "The selected entry will be chosen in %2d seconds.";
 static char *boptstr = NULL;
 
@@ -336,6 +336,7 @@ static void loader_timeout_callback(void *info)
 	if (!boptstr)
 		return;
 
+	menu_attr->xpos = (menu_attr->width - strlen(control)) / 2;
 	menu_attr->ypos = menu_attr->height - 2;
 	file_ioctl(menu, IOCTL_RESET, menu_attr);
 
@@ -551,6 +552,7 @@ static int loader_menu_init(void)
 	menu_attr->ypos = 4 + (logo->height / 2);
 	memcpy(&cons_attr, menu_attr, sizeof(cons_attr));
 
+	cons_attr.xpos = (menu_attr->width - strlen(control)) / 2;
 	cons_attr.ypos = cons_attr.height - 3;
 	file_ioctl(menu, IOCTL_RESET, &cons_attr);
 	file_write(menu, logo->width, control);
