@@ -4,7 +4,7 @@ A multiboot-compliant *Executable and Linking Format* (ELF) bootloader for the x
 
 ### Features ###
 
-![elfboot](images/elfboot-logo-inline.png) is highly modular BIOS bootloader for the x86 architecture . It supports drivers for both IDE and AHCI/RAID controllers. Also, further modules include file system drivers like *ISO 9660*. For the graphical boot menu, a simple PS/2 keyboard module is available, too.
+![elfboot](images/elfboot-logo-inline.png) is a highly modular BIOS bootloader for the x86 architecture . It supports drivers for both IDE and AHCI/RAID controllers. Further modules include file system drivers like *ISO 9660*. For the graphical boot menu, a simple PS/2 keyboard module is available, too.
 
 Currently, we support the following modules:
 
@@ -16,11 +16,15 @@ For PCI devices, we also provide modules for:
  - IDE controller
  - AHCI/RAID controller
 
+As for file systems, we currently support:
+
+ - ISO 9660
+
 Even the screen is managed by a module, which depends on the screen resolution used:
 
  - TTY driver <sub>(currently VGA only)</sub>
 
-### Building elfboot ###
+### Building elfboot-toolchain ###
 
 ![elfboot](images/elfboot-logo-inline.png) requires the use of a dedicated toolchain, included in this project. The toolchain is generated simply by typing
 
@@ -28,7 +32,11 @@ Even the screen is managed by a module, which depends on the screen resolution u
 make toolchain
 ```
 
-All that's left is to configure the elfboot settings in the `elfboot.config` file. If you are happy with the configured options, build the bootloader by typing
+### Configuring and building elfboot ###
+
+![elfboot](images/elfboot-logo-inline.png) is highly customizable. You can see a few sample configurations in the `configs` folder. For a more detailed description of how the different configurations affect the build of the bootloader, see [configs/README.md](configs/README.md).
+
+All that's left is to create a configuration file `elfboot.config` in the root folder of this project and adjust the settings accordingly. If you are happy with the configured options, build the bootloader by typing
 
 ```
 make iso
