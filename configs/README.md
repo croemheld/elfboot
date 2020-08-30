@@ -70,3 +70,8 @@ Most of the times, each module configuration supports the additional configurati
 
  - Possible values: `y`, `m`, `n`
  - File system module for the *ISO 9660* file system. Mandatory if you want to be able to boot from CD.
+
+##### `FS_EXT2FS` #####
+
+ - Possible values: `y`, `m`, `n`
+ - File system module for the *ext2* file system. Mandatory if you want to be able to boot from HDD or a flat disk image.

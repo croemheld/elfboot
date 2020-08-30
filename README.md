@@ -19,6 +19,7 @@ For PCI devices, we also provide modules for:
 As for file systems, we currently support:
 
  - ISO 9660
+ - ext2
 
 Even the screen is managed by a module, which depends on the screen resolution used:
 
