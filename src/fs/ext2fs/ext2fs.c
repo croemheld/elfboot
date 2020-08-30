@@ -139,8 +139,6 @@ static struct ext2_inode *ext2fs_create_inode(struct superblock *sb,
 	if (ext2fs_lookup_inode(sb, esb, inode, ino))
 		goto ext2_inode_free;
 
-	dprintf(FS_EXT2 ": Inode type: %04x\n", inode->type);
-
 	return inode;
 
 ext2_inode_free:
@@ -195,50 +193,6 @@ ext2_inode_read_done:
 	return totlen - length;
 }
 
-static struct ext2_directory *ext2fs_lookup_edent(struct superblock *sb,
-	struct ext2_inode *inode, const char *name)
-{
-	/*
-	char *part;
-	struct ext2_directory *dent;
-	uint32_t rlen, size = 0;
-
-	dent = bmalloc(sizeof(*dent));
-	if (!dent)
-		return NULL;
-
-	while (size < inode->size_lower) {
-		rlen = sizeof(*dent);
-
-		if (ext2fs_inode_read(sb, inode, size, rlen, dent))
-			goto ext2_lookup_edent_fail;
-
-		part = bmalloc(dent->name_length);
-		if (!part)
-			goto ext2_lookup_edent_fail;
-
-		rlen = dent->name_length;
-		if (ext2fs_inode_read(sb, inode, size + sizeof(*dent), rlen, part))
-			goto ext2_lookup_ename_fail;
-
-		if (!strncmp(name, part, rlen)) {
-			bfree(part);
-
-			return dent;
-		}
-
-		size += dent->size;
-	}
-
-ext2_lookup_ename_fail:
-	bfree(part);
-
-ext2_lookup_edent_fail:
-	bfree(dent);
-*/
-	return NULL;
-}
-
 static struct fs_node *ext2fs_alloc_dent(struct superblock *sb,
 	uint32_t ino, const char *name)
 {
@@ -268,7 +222,6 @@ ext2fs_alloc_free_node:
 static struct fs_node *ext2fs_fill_super(struct superblock *sb, const char *name)
 {
 	struct ext2_superblock *esb;
-	struct ext2_inode *rino;
 	struct fs_node *node;
 	uint64_t sector, blknum;
 
@@ -299,11 +252,6 @@ static struct fs_node *ext2fs_fill_super(struct superblock *sb, const char *name
 	node = ext2fs_alloc_dent(sb, EXT2_ROOT_INODE, name);
 	if (!node)
 		goto ext2fs_fill_free_esb;
-
-	rino = node->private;
-
-	if (rino->type & EXT2_TYPE_DIR)
-		dprintf(FS_EXT2 ": Root inode is confirmed to be a directory!\n");
 
 	/* Root inode */
 	node->sb = sb;
