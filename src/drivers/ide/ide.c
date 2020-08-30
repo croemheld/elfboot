@@ -173,7 +173,7 @@ static int ide_send_command(struct ide_dev *idedev, struct ata_cmd *cmd)
 
 		if (cmd->write)
 			ide_write_io(idedev, cmd->buf + nbread, cnt);
-		else
+		else 
 			ide_read_io(idedev, cmd->buf + nbread, cnt);
 
 		nbread += cnt;
@@ -251,14 +251,46 @@ static int ide_atapi_read_capacity(struct bdev *bdev)
  * IDE device operations: ATA
  */
 
-static int ide_ata_read(struct bdev *device, uint64_t offset,
-	uint64_t num, void *buffer)
+static int ide_ata_send(struct ide_dev *idedev, struct ata_cmd *cmd,
+	uint8_t command)
 {
+	cmd->reg.disk = idedev->disk;
+	cmd->reg.cmd  = command;
+
+	return ide_send_command(idedev, cmd);
+}
+
+static int ide_ata_read(struct bdev *bdev, uint64_t sector, uint64_t blknum,
+	void *buffer)
+{
+	struct ata_cmd cmd = { 0 };
+
+	if (bdev->flags & BDEV_FLAGS_LBA) {
+		cmd.reg.sectors48  = (blknum >>  8) & 0xFF;
+		cmd.reg.lba48_low  = (sector >> 24) & 0xFF;
+		cmd.reg.lba48_mid  = (sector >> 32) & 0xFF;
+		cmd.reg.lba48_high = (sector >> 40) & 0xFF;
+	}
+
+	cmd.reg.sectors  = (blknum >>  0) & 0xFF;
+	cmd.reg.lba_low  = (sector >>  0) & 0xFF;
+	cmd.reg.lba_mid  = (sector >>  8) & 0xFF;
+	cmd.reg.lba_high = (sector >> 16) & 0xFF;
+
+	cmd.buf = buffer;
+	cmd.bufsize = bdev->block_size * blknum;
+
+	if (ide_ata_send(bdev->private, &cmd, ATA_CMD_READ_PIO_EXT))
+		return -EFAULT;
+
+	if (cmd.bufsize != bdev->block_size * blknum)
+		return -EFAULT;
+
 	return 0;
 }
 
-static int ide_ata_write(struct bdev *device, uint64_t offset,
-	uint64_t num, const void *buffer)
+static int ide_ata_write(struct bdev *bdev, uint64_t sector, uint64_t blknum,
+	const void *buffer)
 {
 	return 0;
 }
@@ -272,17 +304,17 @@ static int ide_ata_ioctl(struct bdev *bdev, int request, void *args)
  * IDE device operations: ATAPI
  */
 
-static int ide_atapi_read(struct bdev *bdev, uint64_t offset,
-	uint64_t num, void *buffer)
+static int ide_atapi_read(struct bdev *bdev, uint64_t sector, uint64_t blknum,
+	void *buffer)
 {
 	int ret;
 	struct scsi_xfer12 xf = {
 		.cmd = SCSI_CMD_READ12,
-		.lba = cputobe32(offset),
-		.num = cputobe32(num)
+		.lba = cputobe32(sector),
+		.num = cputobe32(blknum)
 	};
 
-	ret = ide_atapi_send(bdev, &xf, sizeof(xf), buffer, num * bdev->block_size);
+	ret = ide_atapi_send(bdev, &xf, sizeof(xf), buffer, blknum * bdev->block_size);
 	if (ide_atapi_request_sense(bdev))
 		return -EFAULT;
 
@@ -292,8 +324,8 @@ static int ide_atapi_read(struct bdev *bdev, uint64_t offset,
 	return 0;
 }
 
-static int ide_atapi_write(struct bdev *device, uint64_t offset,
-	uint64_t num, const void *buffer)
+static int ide_atapi_write(struct bdev *bdev, uint64_t sector, uint64_t blknum,
+	const void *buffer)
 {
 	/*
 	 * Not supported for this device.
