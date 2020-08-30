@@ -1,0 +1,1 @@
+elfboot-$(CONFIG_FS_EXT2FS) += ext2fs.o

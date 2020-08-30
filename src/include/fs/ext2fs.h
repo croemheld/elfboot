@@ -3,7 +3,8 @@
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
-#include <elfboot/super.h>
+
+#define FS_EXT2		"EXT"
 
 struct ext2_superblock {
 	uint32_t inodes_count;
@@ -14,7 +15,7 @@ struct ext2_superblock {
 	uint32_t first_data_block;
 	uint32_t log_block_size;
 	uint32_t log_frag_size;
-	uint32_t blocks_per_grpup;
+	uint32_t blocks_per_group;
 	uint32_t frags_per_group;
 	uint32_t inodes_per_group;
 	uint32_t mtime;
@@ -59,15 +60,6 @@ struct ext2_superblock {
 	uint32_t journal_device;
 	uint32_t last_orphan;
 
-	/*
-	 * The following fields are used to access information
-	 * which rarely change during the lifetime of an ext2
-	 * formatted device.
-	 */
-
-	uint32_t block_group_count;
-	struct ext2_block_group_desc **block_groups;
-
 	uint8_t  unused[780];
 } __packed;
 
@@ -84,11 +76,10 @@ struct ext2_block_group_desc {
 	uint8_t  unused[14];
 } __packed;
 
-#define EXT2_GROUP_DESC_OFFSET	\
-	(EXT2_SUPERBLOCK_OFFSET + EXT2_SUPERBLOCK_LENGTH)
-#define EXT2_GROUP_DESC_LENGTH	sizeof(struct ext2_block_group_desc)
+#define EXT2_BLKGRP_DESC_SIZE	sizeof(struct ext2_block_group_desc)
 
-#define EXT2_NUM_BLOCKS		12
+#define EXT2_DLP_NUM		12
+#define EXT2_MLP_BLK_SIZE	 4
 
 struct ext2_inode {
 	uint16_t type;
@@ -139,7 +130,7 @@ struct ext2_inode {
 #define EXT2_JOURNAL_FILE_DATA	0x00040000
 
 	uint32_t osd1;
-	uint32_t dbp[EXT2_NUM_BLOCKS];
+	uint32_t dbp[EXT2_DLP_NUM];
 	uint32_t singly_block;
 	uint32_t doubly_block;
 	uint32_t triply_block;
@@ -152,6 +143,8 @@ struct ext2_inode {
 	uint32_t fragment_block;
 	uint8_t  osd2[12];
 } __packed;
+
+#define EXT2_ROOT_INODE		2
 
 struct ext2_directory {
 	uint32_t inode;
@@ -170,27 +163,5 @@ struct ext2_directory {
 
 	char name[0];
 } __packed;
-
-static inline struct ext2_superblock *ext2_sb(struct superblock *sb)
-{
-	return sb->fs_info;
-}
-
-#define EXT2_STANDARD_REVISION		1
-#define EXT2_STANDARD_INODE_SIZE	sizeof(struct ext2_inode)
-
-#define EXT2_INODES_COUNT(sb)		(ext2_sb(sb)->inodes_count)
-#define EXT2_BLOCKS_COUNT(sb)		(ext2_sb(sb)->blocks_count)
-
-#define EXT2_INODE_SIZE(sb)						\
-	(letocpu16(ext2_sb(sb)->revision) < EXT2_STANDARD_REVISION ? 	\
-		EXT2_STANDARD_INODE_SIZE :				\
-		letocpu16(ext2_sb(sb)->inode_size))
-
-#define EXT2_BLOCK_SIZE(sb)		(1024 << ext2_sb(sb)->log_block_size)
-#define EXT2_INODES_PER_GROUP(sb)	(ext2_sb(sb)->inodes_per_group)
-#define EXT2_BLOCKS_PER_GROUP(sb)	(ext2_sb(sb)->blocks_per_grpup)
-
-void ext2_fs_init(void);
 
 #endif /* __EXT2_FS_H__ */

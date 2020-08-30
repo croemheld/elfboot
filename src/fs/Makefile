@@ -1,4 +1,5 @@
 elfboot-d += ramfs
+elfboot-d += ext2fs
 elfboot-d += isofs
 
 elfboot-y += fs.o
