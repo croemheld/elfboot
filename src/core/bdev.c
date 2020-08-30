@@ -64,16 +64,26 @@ struct bdev *bdev_get(uint32_t flags, struct bdev *from)
 
 int bdev_init(struct bdev *bdev, struct bdev_ops *ops)
 {
-	bdev->ops = ops;
+	struct fs_node *nent, *node;
+
+	node = vfs_open("/dev");
+	if (!node)
+		return -ENOENT;
+
+	nent = fs_node_alloc(bdev->name);
+	if (!nent)
+		return -ENOMEM;
+
+	list_add(&bdev->list, &bdevs);
+
+	nent->bdev = bdev;
+	nent->flags |= FS_BLOCKDEVICE;
 
 	/* For convenience, fill the field here */
 	bdev->block_logs = ffs(bdev->block_size);
+	bdev->ops = ops;
 
-	/* Directly mount device to "/dev" node */
-	if (vfs_mount(bdev, "/dev", bdev->name))
-		return -EFAULT;
-
-	list_add(&bdev->list, &bdevs);
+	tree_node_insert(&nent->tree, &node->tree);
 
 	return 0;
 }

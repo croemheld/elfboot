@@ -9,6 +9,7 @@
 #include <elfboot/module.h>
 #include <elfboot/bdev.h>
 #include <elfboot/pci.h>
+#include <elfboot/tree.h>
 #include <elfboot/printf.h>
 
 #include <crypto/crc32.h>
@@ -61,36 +62,30 @@ verify_free_buffer:
 
 static int arch_init_bootdevice(struct boot_params *boot_params)
 {
-	struct bdev *bdev = bdev_get(0, NULL);
+	struct fs_node *node, *npos;
 
-	while (bdev) {
-		if (!arch_init_boot_verify(bdev))
+	node = vfs_open("/dev");
+	if (!node)
+		return -ENOENT;
+
+	tree_for_each_child_entry(npos, node, tree) {
+
+		/*
+		 * We are only interested in block devices, which is why we simply skip
+		 * those nodes that don't have that specific flag set.
+		 */
+		if (!(npos->flags & FS_BLOCKDEVICE))
+			continue;
+
+		if (!arch_init_boot_verify(npos->bdev))
 			break;
-
-		bdev = bdev_get(0, bdev);
 	}
 
-	if (!bdev) {
-		bprintln("ERR: Boot device not found, abort");
-
-		/*
-		 * The boot device should have a identification file which marks the
-		 * device as the one where we booted from. If that file has not been
-		 * found on any device, then the installer is most likely at fault.
-		 */
+	if (!npos || !(npos->flags & FS_BLOCKDEVICE) || !npos->bdev)
 		return -ENODEV;
-	}
 
-	if (vfs_mount(bdev, "/", "root")) {
-		bprintln("ERR: Could not mount device %s to /dev, abort", bdev->name);
-
-		/*
-		 * If we fail here, then the file system for the boot device is most
-		 * likely not built-in but was externally built as a module. This is
-		 * most likely the fault of the installer, again.
-		 */
+	if (vfs_mount(npos->bdev, "/", "root"))
 		return -EFAULT;
-	}
 
 	return 0;
 }
