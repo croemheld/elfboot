@@ -14,21 +14,24 @@ struct superblock *superblock_alloc(struct fs_type *fs, struct bdev *bdev)
 	if (!sb)
 		return NULL;
 
+	sb->block_logs = bdev->block_logs;
+	sb->block_size = bdev->block_size;
+
 	sb->fs = fs;
 	sb->bdev = bdev;
 
 	return sb;
 }
 
-int superblock_read(struct superblock *sb, uint32_t sector, void *buffer)
+int superblock_read(struct superblock *sb, uint64_t sector, void *buffer)
 {
 	return bdev_read(sb->bdev, sector, 1, buffer);
 }
 
-int superblock_read_blocks(struct superblock *sb, uint32_t sector,
-	uint32_t blknum, void *buffer)
+int superblock_read_blocks(struct superblock *sb, uint64_t sector,
+	uint64_t blknum, void *buffer)
 {
-	uint32_t blk;
+	uint64_t blk;
 
 	for (blk = 0; blk < blknum; blk++) {
 

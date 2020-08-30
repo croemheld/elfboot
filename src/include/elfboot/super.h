@@ -34,6 +34,12 @@ struct superblock {
 	struct fs_node *mount;
 
 	struct superblock_ops *ops;
+
+	/*
+	 * Private (file system specific) information. The field can be used for
+	 * storing file system superblocks or in general meta data.
+	 */
+	void *private;
 };
 
 #define SUPERBLOCK_SIZE		sizeof(struct superblock)
@@ -41,20 +47,20 @@ struct superblock {
 static inline uint64_t sb_sector(struct superblock *sb, uint64_t sector,
 	uint64_t offset)
 {
-	return sector + (round_down(offset, sb->block_size) >> sb->block_logs);
+	return sector + (round_down(offset, sb->bdev->block_size) >> sb->bdev->block_logs);
 }
 
 static inline uint64_t sb_length(struct superblock *sb, uint64_t offset,
 	uint64_t length)
 {
-	return round_up(offset + length, sb->block_size) >> sb->block_logs;
+	return round_up(offset + length, sb->bdev->block_size) >> sb->bdev->block_logs;
 }
 
 struct superblock *superblock_alloc(struct fs_type *fs, struct bdev *bdev);
 
-int superblock_read(struct superblock *sb, uint32_t sector, void *buffer);
+int superblock_read(struct superblock *sb, uint64_t sector, void *buffer);
 
-int superblock_read_blocks(struct superblock *sb, uint32_t sector,
-	uint32_t blknum, void *buffer);
+int superblock_read_blocks(struct superblock *sb, uint64_t sector,
+	uint64_t blknum, void *buffer);
 
 #endif /* __ELFBOOT_SUPERBLOCK_H__ */
