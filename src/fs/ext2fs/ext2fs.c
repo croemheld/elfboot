@@ -203,11 +203,12 @@ static uint32_t ext2fs_inode_block(struct superblock *sb,
 
 	blktlp  = blkdlp;
 	blktlp *= blktlp;
-	cblock -= blktlp; /* cblock = index of data block */
+	cblock -= blktlp;
 
 	/* Index in triply indirect block */
 	blkidx = cblock / blktlp;
 
+	/* Trebly indirect block pointers */
 	sector = sb_sector(sb, 0, inode->triply_block * sb->block_size);
 	if (superblock_read_blocks(sb, sector, blknum, buffer))
 		goto ext2fs_inode_free_buffer;
