@@ -147,12 +147,99 @@ ext2_inode_free:
 	return NULL;
 }
 
+static uint32_t ext2fs_inode_block(struct superblock *sb,
+	struct ext2_inode *inode, uint32_t offset)
+{
+	uint32_t cblock, blkidx, blkdlp, blktlp, blkoff, *buffer;
+	uint64_t sector, blknum;
+
+	cblock = offset / sb->block_size;
+
+	/* Direct block pointers */
+	if (cblock < EXT2_DLP_NUM)
+		return inode->dbp[cblock];
+
+	buffer = bmalloc(sb->block_size);
+	if (!buffer)
+		return 0;
+
+	blknum  = sb_length(sb, 0, sb->block_size);
+	cblock -= EXT2_DLP_NUM;
+
+	/* Indirect block pointers */
+	if (cblock * EXT2_MLP_LEN < sb->block_size) {
+		sector = sb_sector(sb, 0, inode->singly_block * sb->block_size);
+		if (superblock_read_blocks(sb, sector, blknum, buffer))
+			goto ext2fs_inode_free_buffer;
+
+		bfree(buffer);
+
+		return buffer[cblock];
+	}
+
+	blkdlp  = sb->block_size / EXT2_MLP_LEN;
+	cblock -= blkdlp;
+
+	/* Index in doubly indirect block */
+	blkidx  = cblock / blkdlp;
+
+	/* Doubly indirect block pointers */
+	if (blkidx * EXT2_MLP_LEN < sb->block_size) {
+		sector = sb_sector(sb, 0, inode->doubly_block * sb->block_size);
+		if (superblock_read_blocks(sb, sector, blknum, buffer))
+			goto ext2fs_inode_free_buffer;
+
+		/* Block to doubly block list */
+		blkoff = buffer[blkidx];
+
+		sector = sb_sector(sb, 0, blkoff * sb->block_size);
+		if (superblock_read_blocks(sb, sector, blknum, buffer))
+			goto ext2fs_inode_free_buffer;
+
+		bfree(buffer);
+
+		return buffer[cblock % blkdlp];
+	}
+
+	blktlp  = blkdlp;
+	blktlp *= blktlp;
+	cblock -= blktlp; /* cblock = index of data block */
+
+	/* Index in triply indirect block */
+	blkidx = cblock / blktlp;
+
+	sector = sb_sector(sb, 0, inode->triply_block * sb->block_size);
+	if (superblock_read_blocks(sb, sector, blknum, buffer))
+		goto ext2fs_inode_free_buffer;
+
+	/* Block to doubly block list */
+	blkoff = buffer[blkidx];
+
+	sector = sb_sector(sb, 0, blkoff * sb->block_size);
+	if (superblock_read_blocks(sb, sector, blknum, buffer))
+		goto ext2fs_inode_free_buffer;
+
+	/* Block to triply block list */
+	blkoff = buffer[(cblock / blkdlp) % blkdlp];
+
+	sector = sb_sector(sb, 0, blkoff * sb->block_size);
+	if (superblock_read_blocks(sb, sector, blknum, buffer))
+		goto ext2fs_inode_free_buffer;
+
+	return buffer[cblock % blkdlp];
+
+ext2fs_inode_free_buffer:
+	bfree(buffer);
+
+	return 0;
+}
+
 static uint32_t ext2fs_inode_read(struct superblock *sb,
 	struct ext2_inode *inode, uint64_t offset, uint32_t length, void *buffer)
 {
 	void *iblock;
 	uint64_t sector, blknum, blkoff, sblnum;
-	uint32_t nbsize, ibloff, blkidx, cblock, totlen;
+	uint32_t nbsize, ibloff, blkidx, totlen;
 	uint32_t remlen = 0, bufoff = 0;
 
 	totlen = length;
@@ -166,16 +253,10 @@ static uint32_t ext2fs_inode_read(struct superblock *sb,
 	for (blkoff = 0; length && blkoff < sblnum; blkoff++) {
 		ibloff = blkoff ? 0 : offset % nbsize;
 		remlen = min(nbsize - ibloff, length);
-		cblock = (blkoff * remlen) / sb->block_size;
-
-		/*
-		 * TODO CRO: Support for singly, doubly and trebly linked blocks
-		 */
-
-		if (cblock >= EXT2_DLP_NUM)
+		blkidx = ext2fs_inode_block(sb, inode, blkoff * remlen);
+		if (!blkidx)
 			goto ext2_inode_read_done;
 
-		blkidx = inode->dbp[cblock];
 		sector = sb_sector(sb, 0, blkidx * nbsize);
 		blknum = sb_length(sb, ibloff, remlen);
 

@@ -79,7 +79,7 @@ struct ext2_block_group_desc {
 #define EXT2_BLKGRP_DESC_SIZE	sizeof(struct ext2_block_group_desc)
 
 #define EXT2_DLP_NUM		12
-#define EXT2_MLP_BLK_SIZE	 4
+#define EXT2_MLP_LEN		 4
 
 struct ext2_inode {
 	uint16_t type;
