@@ -172,9 +172,10 @@ static uint32_t ext2fs_inode_block(struct superblock *sb,
 		if (superblock_read_blocks(sb, sector, blknum, buffer))
 			goto ext2fs_inode_free_buffer;
 
+		blkidx = buffer[cblock];
 		bfree(buffer);
 
-		return buffer[cblock];
+		return blkidx;
 	}
 
 	blkdlp  = sb->block_size / EXT2_MLP_LEN;
@@ -196,9 +197,10 @@ static uint32_t ext2fs_inode_block(struct superblock *sb,
 		if (superblock_read_blocks(sb, sector, blknum, buffer))
 			goto ext2fs_inode_free_buffer;
 
+		blkidx = buffer[cblock % blkdlp];
 		bfree(buffer);
 
-		return buffer[cblock % blkdlp];
+		return blkidx;
 	}
 
 	blktlp  = blkdlp;
@@ -227,7 +229,10 @@ static uint32_t ext2fs_inode_block(struct superblock *sb,
 	if (superblock_read_blocks(sb, sector, blknum, buffer))
 		goto ext2fs_inode_free_buffer;
 
-	return buffer[cblock % blkdlp];
+	blkidx = buffer[cblock % blkdlp];
+	bfree(buffer);
+
+	return blkidx;
 
 ext2fs_inode_free_buffer:
 	bfree(buffer);
