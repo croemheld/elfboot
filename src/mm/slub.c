@@ -56,7 +56,7 @@ static struct bmem_cache *bmalloc_caches[KMALLOC_CACHE_NUM];
 
 static LIST_HEAD(bmem_caches);
 
-#ifdef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG_MM
 
 static void __slab_dump(struct bmem_cache *cachep)
 {
@@ -83,7 +83,7 @@ void slab_dump(void)
 		__slab_dump(cachep);
 }
 
-#endif /* CONFIG_DEBUG */
+#endif /* CONFIG_DEBUG_MM */
 
 static inline int bmalloc_index(uint32_t size)
 {

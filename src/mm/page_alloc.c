@@ -23,7 +23,7 @@ struct page *page_map;
  * Utility functions
  */
 
-#ifdef CONFIG_DEBUG
+#ifdef CONFIG_DEBUG_MM
 
 void page_dump(void)
 {
@@ -36,7 +36,7 @@ void page_dump(void)
 	bprintln("-----------------------------------------");
 }
 
-#endif /* CONFIG_DEBUG */
+#endif /* CONFIG_DEBUG_MM */
 
 static inline bool page_is_aligned(uint32_t addr, uint32_t order)
 {
