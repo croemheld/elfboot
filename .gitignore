@@ -26,6 +26,7 @@
 *.img
 *.ini
 *.o
+*.bc
 *.o.d
 *.ebm
 *.elf
