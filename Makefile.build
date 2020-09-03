@@ -70,7 +70,7 @@ $(eval $(call build_target,$(target)))
 #
 
 quiet_cmd_ld_elf = LD      $@
-      cmd_ld_elf = $(LD) -o $@ -T $(2).ld $($(2)-objs) $(LDFLAGS)
+      cmd_ld_elf = $(LD) $(LDFLAGS) -T $(2).ld $($(2)-objs) -o $@
 
 quiet_cmd_oc_elf = OBJCOPY $@
       cmd_oc_elf = $(OBJCOPY) $(OBJCOPY_SECTION) $(2).elf

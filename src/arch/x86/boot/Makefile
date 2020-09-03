@@ -3,6 +3,7 @@
 #
 
 BOOTIMG_CFLAGS := -m16
+BOOTIMG_CFLAGS += -Wno-unused-macros
 BOOTIMG_CFLAGS += -fomit-frame-pointer
 BOOTIMG_CFLAGS += -fno-stack-protector
 

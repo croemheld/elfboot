@@ -5,9 +5,22 @@ __lib:
 # Compiler, linker and additional programs
 #
 
-CC := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
-LD := $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+
+ifneq ($(shell $(CC) --version 2>&1 | head -n 1 | grep clang),)
+LLVM	:= 1
+endif
+
+ifneq ($(LLVM),)
+CC		:= clang
+LD 		:= ld.lld
+STRIP 	:= llvm-strip
+OBJCOPY := llvm-objcopy
+else
+CC		:= $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+LD 		:= $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
+STRIP 	:= $(ELFBOOT_TARGET)-$(ELFBOOT)-strip
 OBJCOPY := $(ELFBOOT_TARGET)-$(ELFBOOT)-objcopy
+endif
 
 #
 # Additional programs
@@ -26,13 +39,24 @@ XR := xorriso -as mkisofs
 
 DEPFLAGS  = -MMD -MP -MF $@.d
 
-CFLAGS	:= -std=gnu99 -ffreestanding -Wextra -Os
-CFLAGS	+= -Wall -Wstrict-prototypes -march=i386
-CFLAGS	+= -fno-strict-aliasing -fno-pic
-CFLAGS	+= -mno-mmx -mno-sse
-CFLAGS	+= -Wunused-macros
+CFLAGS	:= -ffreestanding -Wextra -Os
+CFLAGS	+= -Wall -Wstrict-prototypes
+CFLAGS	+= -fno-pic
 
-LDFLAGS := -O2 -nostdlib -lgcc
+ifneq ($(LLVM),)
+CFLAGS	+= -target i386-pc-none-elf
+else
+CFLAGS	+= -march=i386 -Wl,--gc-sections
+endif
+
+LDFLAGS := 
+
+ifneq ($(LLVM),)
+LDFLAGS += -m elf_i386 --gc-sections --no-dynamic-linker
+else
+LDFLAGS += -O2 -nostdlib -lgcc
+endif
+
 MODULE_LDFLAGS := $(LDFLAGS)
 
 NMFLAGS	+= -ng
@@ -84,10 +108,14 @@ ELFCONF	:= $(srctree)/tools/elfconf
 quiet_cmd_ec_elf = ELFCONF $(2).elf
       cmd_ec_elf = $(ELFCONF) -f $(2).elf -s $(3) -v $(shell stat -L -c %s $(4))
 
+quiet_cmd_st_elf = STRIP   $(2).elf
+      cmd_st_elf = $(STRIP) -S $(2).elf
+
 quiet_cmd_oc_bin = OBJCOPY $(2).bin
       cmd_oc_bin = $(OBJCOPY) -O binary $(2).elf $(2).bin
 
 elfconf = $(call cmd,ec_elf,$(1),$(2),$(3))
+gcstrip = $(call cmd,st_elf,$(1))
 objcopy = $(call cmd,oc_bin,$(1))
 mod_map = $(call cmd,ko_map)
 

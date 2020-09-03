@@ -26,23 +26,23 @@ SECTIONS
 	.modinit ALIGN(0x10) : {
 		/* Built-in file systems */
 		__modinit_vfs_start = .;
-		*(.modinit_vfs*)
+		KEEP(*(.modinit_vfs*))
 		__modinit_vfs_end = .;
 
 		/* Built-in devices */		
 		__modinit_dev_start = .;
-		*(.modinit_dev*)
+		KEEP(*(.modinit_dev*))
 		__modinit_dev_end = .;
 
 		/* Built-in modules */		
 		__modinit_start = .;
-		*(.modinit*)
+		KEEP(*(.modinit*))
 		__modinit_end = .;
 	}
 
 	.modexit ALIGN(0x10) : {
 		__modexit_start = .;
-		*(.modexit*)
+		KEEP(*(.modexit*))
 		__modexit_end = .;
 	}
 
