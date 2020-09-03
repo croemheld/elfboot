@@ -27,7 +27,44 @@ Even the screen is managed by a module, which depends on the screen resolution u
 
 ### Building elfboot-toolchain ###
 
-![elfboot](images/elfboot-logo-inline.png) requires the use of a dedicated toolchain, included in this project. The toolchain is generated simply by typing
+![elfboot](images/elfboot-logo-inline.png) can be built with both a custom GCC toolchain included as a git submodule in this project as well as [clang](https://github.com/llvm/llvm-project). The steps to prepare each toolchain is described below.
+
+#### clang ####
+
+To use clang as the compiler to build this project, make sure that it supports the `x86` target. If you haven't built the LLVM project yet, you can use this script and place it in the root directory of the LLVM repository:
+
+```
+#!/bin/sh
+
+mkdir build
+cd build
+
+# We set the following options:
+#
+# CMAKE_BUILD_TYPE=Release
+# 	Build the Release version for a faster compiler
+#
+# LLVM_ENABLE_PROJECTS=clang\;lld
+# 	We want to build both LLVM and clang, the latter
+# 	has to be named explicitely. Same for lld.
+#
+# LLVM_STATIC_LINK_CXX_STDLIB=ON
+#	Increase performance by statically linking libstdc++
+#
+# LLVM_TARGETS_TO_BUILD=X86
+# 	For now, we only support x86/x86-64
+
+cmake 	-DCMAKE_BUILD_TYPE=Release		\
+	-DLLVM_ENABLE_PROJECTS=clang\;lld\;	\
+	-DLLVM_STATIC_LINK_CXX_STDLIB=ON	\
+	-DLLVM_TARGETS_TO_BUILD=X86			\
+	../llvm
+```
+After `cmake` finishes, you can `cd` into the `build` directory created by this script and build the LLVM binaries via `make`.
+
+#### GCC toolchain ####
+
+If you want to use the GCC toolchain, the steps you have to take are mostly done for you already. This project includes the toolchain as a git submodule. The toolchain is generated simply by typing
 
 ```
 make toolchain
