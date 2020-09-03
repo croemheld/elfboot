@@ -403,7 +403,6 @@ static int ahci_satapi_read_capacity(struct bdev *bdev)
 static int ahci_fill_satapi(struct ahci_dev *ahcidev)
 {
 	struct bdev *bdev;
-	struct scsi_read_capacity10_data rcd;
 
 	ahcidev->atapi = 1;
 
@@ -437,7 +436,6 @@ ahci_satapi_free_bdev:
 
 static int ahci_identify_ahcidev(struct ahci_dev *ahcidev)
 {
-	struct hba_cmd_hdr *chdr;
 	struct hba_cmd_tbl *ctbl;
 	struct hba_fis_reg *freg;
 	int slot, ret;
@@ -488,10 +486,7 @@ ahci_identify_destroy_command:
 static int ahci_init_ahcidev(struct ahci_dev *ahcidev,
 	volatile struct hba_port *port)
 {
-	struct hba_cmd_hdr *hdr;
-	struct hba_cmd_tbl *tbl;
-	struct hba_fis_reg *fis;
-	int slot, ret, spin = 0;
+	int ret;
 
 	if (ahci_port_rebase(port))
 		return -EFAULT;
