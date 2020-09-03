@@ -92,7 +92,7 @@ static int ext2fs_lookup_inode(struct superblock *sb,
 	uint32_t ino)
 {
 	struct ext2_block_group_desc desc;
-	uint32_t inoidx, blkpgr;
+	uint32_t inoidx;
 	uint64_t sector, blknum, offset;
 	void *buffer;
 
@@ -103,7 +103,6 @@ static int ext2fs_lookup_inode(struct superblock *sb,
 	if (ext2fs_lookup_block_group(sb, esb, &desc, ino))
 		goto ext2_inode_free_buffer;
 
-	blkpgr = esb->blocks_per_group;
 	inoidx = (ino - 1) % esb->inodes_per_group;
 	offset = desc.inode_table_block * sb->block_size;
 	offset = offset + (inoidx * esb->inode_size);

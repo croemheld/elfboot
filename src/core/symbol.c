@@ -92,13 +92,13 @@ const char *symbol_lookup_caller(uint32_t addr)
 
 int symbol_parse_map(char *syms)
 {
-	char *addr, *type, *name;
+	char *addr, *name;
 	const char delimiter[] = " \n";
 
 	addr = strtok(syms, delimiter);
 
 	while (addr) {
-		type = strtok(NULL, delimiter);
+		name = strtok(NULL, delimiter);
 		name = strtok(NULL, delimiter);
 
 		/*
