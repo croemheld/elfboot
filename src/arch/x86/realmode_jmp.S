@@ -26,5 +26,5 @@ GLOBAL(kernel_realmode_jump)
 	pushw   %dx
 	pushw   $0
 
-	retf
+	lret
 ENDPROC(kernel_realmode_jump)
