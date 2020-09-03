@@ -213,7 +213,7 @@ static int tty_write(struct cdev *cdev, uint64_t offset, uint64_t length,
 	struct console *cons = cdev->private;
 
 	if (offset)
-		cons->ypos = div_u64_rem(offset, TTY_MAX_WIDTH, &cons->xpos);
+		cons->ypos = div(offset, TTY_MAX_WIDTH, &cons->xpos);
 
 	return __tty_write(cons, offset, length, buffer);
 }

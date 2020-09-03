@@ -143,7 +143,10 @@ static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	blknum = sb_length(node->sb, offset, length);
 
 	for (blkoff = 0; length && blkoff < blknum; blkoff++) {
-		ibloff = blkoff ? 0 : offset % nbsize;
+		div(offset, nbsize, &ibloff);
+		if (blkoff)
+			ibloff = 0;
+
 		remlen = min(nbsize - ibloff, length);
 
 		if (superblock_read(node->sb, sector + blkoff, iblock))

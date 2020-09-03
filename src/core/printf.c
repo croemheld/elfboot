@@ -69,7 +69,8 @@ static void vsprintf_put_number(struct format_struct *fmts,
 	static const char digits[16] = "0123456789ABCDEF";
 
 	char c, sign, buf[66];
-	int i, d;
+	uint32_t d;
+	int i;
 
 	/*
 	 * That should not happen!
@@ -95,8 +96,7 @@ static void vsprintf_put_number(struct format_struct *fmts,
 		buf[i++] = '0';
 	else
 		while (n != 0) {
-			d = (unsigned long long)n % (unsigned int)base;
-			n = (unsigned long long)n / (unsigned int)base;
+			n = div(n, base, &d);
 			buf[i++] = digits[d];
 		}
 

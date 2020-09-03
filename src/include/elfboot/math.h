@@ -4,6 +4,8 @@
 #include <elfboot/core.h>
 #include <elfboot/bitops.h>
 
+#include <asm/math.h>
+
 static inline int log2(uint32_t val)
 {
 	return fls(val) - 1;
@@ -32,27 +34,9 @@ static inline uint32_t round_down_pow2(uint32_t val)
  * Division with remainder
  */
 
-static inline uint64_t div_u64_rem(uint64_t dividend, uint32_t divisor,
-				   uint32_t *remainder)
+static inline uint64_t div(uint64_t val, uint32_t div, uint32_t *rem)
 {
-	union {
-		uint64_t v64;
-		uint32_t v32[2];
-	} d = { dividend };
-	uint32_t upper;
-
-	upper = d.v32[1];
-	d.v32[1] = 0;
-
-	if (upper >= divisor) {
-		d.v32[1] = upper / divisor;
-		upper %= divisor;
-	}
-
-	asm ("divl %2" : "=a" (d.v32[0]), "=d" (*remainder) :
-		"rm" (divisor), "0" (d.v32[0]), "1" (upper));
-
-	return d.v64;
+	return arch_div(val, div, rem);
 }
 
 #endif /* __ELFBOOT_MATH_H__ */

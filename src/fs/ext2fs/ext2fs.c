@@ -254,10 +254,13 @@ static uint32_t ext2fs_inode_read(struct superblock *sb,
 	if (!iblock)
 		return -ENOMEM;
 
-	sblnum = ((length - 1) / nbsize) + 1;
+	sblnum = div(length - 1, nbsize, &remlen);
 
 	for (blkoff = 0; length && blkoff < sblnum; blkoff++) {
-		ibloff = blkoff ? 0 : offset % nbsize;
+		div(offset, nbsize, &ibloff);
+		if (blkoff)
+			ibloff = 0;
+
 		remlen = min(nbsize - ibloff, length);
 		blkidx = ext2fs_inode_block(sb, inode, blkoff * remlen);
 		if (!blkidx)
