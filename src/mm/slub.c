@@ -219,9 +219,12 @@ static void __bfree(struct page *page, struct bmem_cache *cachep, void *objp)
 	
 	list_add_tail(new, &page->freelist);
 
+	cachep->free_objs++;
+
 	if (!--page->inuse) {
 		list_del(&page->list);
 		free_page(page->paddr);
+		cachep->free_objs -= cachep->nums;
 	} else {
 
 		/*
