@@ -185,10 +185,7 @@ static struct page *merge_pages(struct page *page, struct page *buddy)
 	free_page_del(buddy);
 
 	page->order++;
-	page->flags |= PAGE_FLAG_FREE;
-
 	buddy->order++;
-	buddy->flags |= PAGE_FLAG_FREE;
 
 	left = page->paddr < buddy->paddr ? page : buddy;
 	page_set_compound_head(left, left->order);
@@ -261,8 +258,7 @@ static void compound_page_init(uint32_t paddr, uint32_t order)
 
 static void __page_map_free_bootmem(struct memblock_region *region)
 {
-	uint32_t addr, rest, align, order, offset;
-	struct page *page;
+	uint32_t addr, rest, align, order;
 
 	addr = region->base;
 	rest = region->size;
@@ -283,13 +279,10 @@ static void __page_map_free_bootmem(struct memblock_region *region)
 		compound_page_init(addr, order);
 
 		/* Get compound page head */
-		page = phys_to_page(addr);
-		free_page_append(page, order);
+		free_page_append(phys_to_page(addr), order);
 
-		offset = (1UL << order) * PAGE_SIZE;
-
-		rest -= offset;
-		addr += offset;
+		rest -= (1UL << order) * PAGE_SIZE;
+		addr += (1UL << order) * PAGE_SIZE;
 	}
 }
 
