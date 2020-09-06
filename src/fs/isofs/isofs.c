@@ -178,6 +178,7 @@ static struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
 {
 	struct iso_directory_record *dpos, *dent, *dbeg;
 	uint32_t size, numblk, name_len;
+	struct fs_node *nnde;
 
 	size = node->length;
 	dbeg = bmalloc(size);
@@ -230,9 +231,13 @@ static struct fs_node *isofs_finddir(struct fs_node *node, const char *name)
 		if (strncmp(name, dpos->name, name_len))
 			goto isofs_finddir_next;
 
+		nnde = isofs_alloc_dent(node->sb, dpos, name);
+		if (!nnde)
+			goto isofs_finddir_free_dent;
+
 		bfree(dbeg);
 
-		return isofs_alloc_dent(node->sb, dpos, name);
+		return nnde;
 
 isofs_finddir_next:
 		dpos = vptradd(dpos, isonum_711(dpos->length));

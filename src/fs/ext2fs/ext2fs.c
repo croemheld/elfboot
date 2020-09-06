@@ -398,6 +398,7 @@ static struct fs_node *ext2fs_finddir(struct fs_node *node, const char *name)
 	struct ext2_inode *inode;
 	struct ext2_directory *dpos, *dbeg;
 	uint32_t size;
+	struct fs_node *dent;
 
 	inode = node->private;
 
@@ -418,9 +419,13 @@ static struct fs_node *ext2fs_finddir(struct fs_node *node, const char *name)
 		if (strncmp(name, dpos->name, dpos->name_length))
 			goto ext2fs_finddir_next;
 
+		dent = ext2fs_alloc_dent(node->sb, dpos->inode, name);
+		if (!dent)
+			goto ext2fs_finddir_free_dent;
+
 		bfree(dbeg);
 
-		return ext2fs_alloc_dent(node->sb, dpos->inode, name);
+		return dent;
 
 ext2fs_finddir_next:
 		dpos = vptradd(dpos, dpos->size);
