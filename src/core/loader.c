@@ -318,9 +318,12 @@ static int loader_init_module(struct boot_entry *boot_entry)
 
 #ifdef CONFIG_DRIVER_TTY
 
-static void loader_timeout_callback(void *info)
+static void loader_timeout_callback(void *info __unused)
 {
 	int secsold, secsnew;
+
+	if (!boot_timeout)
+		return;
 
 	secsold = TIME_MILLITOSECS(boot_timeout--);
 	secsnew = TIME_MILLITOSECS(boot_timeout);

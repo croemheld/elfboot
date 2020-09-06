@@ -155,7 +155,7 @@ static void kbd_handle_pressed(uint8_t scancode)
 	}
 }
 
-static void kbd_interrupt_callback(void *info)
+static void kbd_interrupt_callback(void *info __unused)
 {
 	uint8_t scancode = inb(0x60);
 
