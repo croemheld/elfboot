@@ -92,7 +92,7 @@ static int ext2fs_lookup_inode(struct superblock *sb,
 	uint32_t ino)
 {
 	struct ext2_block_group_desc desc;
-	uint32_t inoidx;
+	uint32_t inoidx, inooff;
 	uint64_t sector, blknum, offset;
 	void *buffer;
 
@@ -113,8 +113,8 @@ static int ext2fs_lookup_inode(struct superblock *sb,
 	if (superblock_read_blocks(sb, sector, blknum, buffer))
 		goto ext2_inode_free_buffer;
 
-	buffer = vptradd(buffer, inoidx * esb->inode_size);
-	memcpy(inode, buffer, esb->inode_size);
+	div(offset, sb->bdev->block_size, &inooff);
+	memcpy(inode, buffer + inooff, esb->inode_size);
 
 	bfree(buffer);
 
@@ -253,7 +253,7 @@ static uint32_t ext2fs_inode_read(struct superblock *sb,
 	if (!iblock)
 		return -ENOMEM;
 
-	sblnum = div(length - 1, nbsize, &remlen);
+	sblnum = div(length - 1, nbsize, &remlen) + 1;
 
 	for (blkoff = 0; length && blkoff < sblnum; blkoff++) {
 		div(offset, nbsize, &ibloff);
@@ -261,7 +261,7 @@ static uint32_t ext2fs_inode_read(struct superblock *sb,
 			ibloff = 0;
 
 		remlen = min(nbsize - ibloff, length);
-		blkidx = ext2fs_inode_block(sb, inode, blkoff * remlen);
+		blkidx = ext2fs_inode_block(sb, inode, blkoff * nbsize);
 		if (!blkidx)
 			goto ext2_inode_read_done;
 
