@@ -66,8 +66,7 @@ static uint8_t ahci_is_atapi(volatile struct hba_port *port)
 	}
 }
 
-static int ahci_port_rebase_headers(volatile struct hba_port *port,
-	struct hba_cmd_hdr *hdr)
+static int ahci_port_rebase_headers(struct hba_cmd_hdr *hdr)
 {
 	int slot;
 
@@ -98,7 +97,7 @@ static int ahci_port_rebase(volatile struct hba_port *port)
 	port->fbu = 0;
 
 	hdr = tvptr(port->clb);
-	if (ahci_port_rebase_headers(port, hdr))
+	if (ahci_port_rebase_headers(hdr))
 		goto ahci_port_free_fb;
 
 	ahci_start_command(port);

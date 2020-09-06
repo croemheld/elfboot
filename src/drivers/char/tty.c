@@ -165,17 +165,14 @@ static void tty_scroll(struct console *cons, int direction, int units)
 	memset16(dst, tty_char(cons, CONSOLE_CHAR_SPACE), console_bpl(cons) * units);
 }
 
-static int tty_read(struct cdev *cdev, uint64_t offset, uint64_t length,
-	void *buffer)
-{
-	return -ENOTSUP;
-}
-
 static int __tty_write(struct console *cons, uint64_t offset, uint64_t length,
 	const char *buffer)
 {
 	uint64_t index;
 	uint16_t *unit;
+
+	if (offset)
+		cons->ypos = div(offset, TTY_MAX_WIDTH, &cons->xpos);
 
 	for (index = 0; index < length && buffer[index]; index++) {
 		/* Handle TTY scrolling case */
@@ -210,12 +207,7 @@ static int __tty_write(struct console *cons, uint64_t offset, uint64_t length,
 static int tty_write(struct cdev *cdev, uint64_t offset, uint64_t length,
 	const void *buffer)
 {
-	struct console *cons = cdev->private;
-
-	if (offset)
-		cons->ypos = div(offset, TTY_MAX_WIDTH, &cons->xpos);
-
-	return __tty_write(cons, offset, length, buffer);
+	return __tty_write(cdev->private, offset, length, buffer);
 }
 
 static int tty_ioctl(struct cdev *cdev, int request, void *args)
@@ -241,7 +233,6 @@ static int tty_ioctl(struct cdev *cdev, int request, void *args)
 }
 
 static struct cdev_ops tty_cdev_ops = {
-	.read = tty_read,
 	.write = tty_write,
 	.ioctl = tty_ioctl
 };

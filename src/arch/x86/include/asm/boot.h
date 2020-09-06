@@ -77,7 +77,7 @@ int detect_videos(struct boot_params *boot_params);
 
 int arch_init_interrupts(void);
 
-int arch_init_late(char *cmdline);
+int arch_init_late(void);
 
 int elfboot_main(void);
 

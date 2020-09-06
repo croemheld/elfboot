@@ -102,7 +102,7 @@ int elfboot_main(void)
 		return -EFAULT;
 
 	/* Call arch-specific late init function */
-	if (arch_init_late(NULL))
+	if (arch_init_late())
 		return -EFAULT;
 
 	/* Parse symbol map */

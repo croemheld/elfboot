@@ -12,7 +12,7 @@
 #include <loader/lxboot.h>
 
 static int lxboot_prepare_fields(struct boot_entry *boot_entry,
-	struct file *kernel, struct lxboot_info *info)
+	struct lxboot_info *info)
 {
 	uint16_t heap_end;
 	struct lxboot_rm_header *rmcodehdr;
@@ -96,7 +96,7 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 	/*
 	 * Modify the required fields in the real-mode header
 	 */
-	if (lxboot_prepare_fields(boot_entry, kernel, info))
+	if (lxboot_prepare_fields(boot_entry, info))
 		return -EFAULT;
 
 	// TODO CRO: Beautify
@@ -111,8 +111,7 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 	return 0;
 }
 
-static int lxboot_prepare_initrd(struct boot_entry *boot_entry,
-	struct file *initrd, struct lxboot_info *info)
+static int lxboot_prepare_initrd(struct file *initrd, struct lxboot_info *info)
 {
 	struct lxboot_rm_header *rmcodehdr = info->rmcodehdr;
 
@@ -152,7 +151,7 @@ static int lxboot_boot(struct boot_entry *boot_entry)
 	if (lxboot_prepare_kernel(boot_entry, kernel, &info))
 		return -EFAULT;
 
-	if (lxboot_prepare_initrd(boot_entry, initrd, &info))
+	if (lxboot_prepare_initrd(initrd, &info))
 		return -EFAULT;
 
 	if (lxboot_prepare_farjmp(&info))

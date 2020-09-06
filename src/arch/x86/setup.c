@@ -97,7 +97,7 @@ static int arch_init_bootdevice(struct boot_params *boot_params)
  * the kernel and jump to it afterwards.
  */
 
-int arch_init_late(char *cmdline)
+int arch_init_late(void)
 {
 	/*
 	 * Initialize generic interrupt handler system before setting up the IDT
