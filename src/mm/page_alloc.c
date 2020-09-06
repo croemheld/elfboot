@@ -212,7 +212,7 @@ static void merge_free_page(struct page *page)
 		page = merge_pages(page, buddy);
 
 		/* Add left buddy to free area */
-		free_page_add(page, order);
+		free_page_add(page, page->order);
 	}
 }
 
