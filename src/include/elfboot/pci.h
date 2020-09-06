@@ -300,6 +300,11 @@ struct pci_dev {
 	uint32_t subdevice;
 
 	/*
+	 * Parent PCI device
+	 */
+	struct pci_dev *parent;
+
+	/*
 	 * List of registered PCI devices
 	 */
 

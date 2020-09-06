@@ -337,6 +337,8 @@ static void pci_alloc_device(struct pci_address *addr, struct pci_dev *parent)
 	pcidev->subvendor = pci_read_config_word(addr, PCI_SUBVENDOR);
 	pcidev->subdevice = pci_read_config_word(addr, PCI_SUBDEVICE);
 
+	pcidev->parent = parent;
+
 	pci_dump_device(pcidev);
 
 	list_add(&pcidev->list, &pci_devs);
