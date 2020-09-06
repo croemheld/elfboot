@@ -40,7 +40,7 @@ int superblock_read_blocks(struct superblock *sb, uint64_t sector,
 		 * trimming of the buffer is done by the caller. This function simply 
 		 * calls superblock_read multiple times.
 		 */
-		if (superblock_read(sb, sector + blk, buffer + (blk * sb->block_size)))
+		if (superblock_read(sb, sector + blk, buffer + (blk * sb->bdev->block_size)))
 			return -EFAULT;
 	}
 
