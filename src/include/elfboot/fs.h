@@ -9,10 +9,10 @@
 
 #define ROOTFS	"ramfs"
 
-#define TREE_NODE_LINE	"\xc3\xc4"
-#define TREE_LEAF_LINE	"\xc0\xc4"
-#define TREE_PIPE_LINE	"\xb3 "
-#define TREE_LINE_SIZE	3
+#define TREE_NODE_LINE	"|--"
+#define TREE_LEAF_LINE	"\\--"
+#define TREE_PIPE_LINE	"|  "
+#define TREE_LINE_SIZE	4
 
 #define for_each_node(pos, root)	\
 	tree_for_each_child_entry((pos), (root), tree)
