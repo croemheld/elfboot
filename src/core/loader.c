@@ -349,7 +349,7 @@ static void loader_timeout_callback(void *info __unused)
 	bfree(boptstr);
 }
 
-struct interrupt_handler loader_interrupt_handler = {
+static struct interrupt_handler loader_interrupt_handler = {
 	.name = "Loader Timeout Handler",
 	.callback = loader_timeout_callback
 };
@@ -455,7 +455,7 @@ static int loader_menu_init_selected(unsigned char c, int prev_choice)
 		return -ENOMEM;
 
 	if (!c || c == CONSOLE_CTRL_ENTER)
-		loader_boot_choice();
+		return loader_boot_choice();
 
 	/*
 	 * Clear out message which contains number of seconds until auto boot.
