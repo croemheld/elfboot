@@ -98,6 +98,9 @@ static int module_resolve_symbols(struct module *mod)
 			if (bsymval) {
 				symtab[symndx].st_value = bsymval;
 				break;
+			} else {
+				bprintln("MOD: Error: Symbol %s not found", name);
+				return -ENOENT;
 			}
 
 			if (!bsymval && ELF_ST_BIND(symtab[symndx].st_info == STB_WEAK))
