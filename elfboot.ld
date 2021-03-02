@@ -13,6 +13,8 @@ SECTIONS
 
 	.text ALIGN(0x10) : {
 		__text_start = .;
+		KEEP(*(.boot*))
+		KEEP(*(.real*))
 		*(.text*)
 		__text_end = .;
 	}
@@ -71,4 +73,21 @@ SECTIONS
 	}
 
 	__bootstrap_end = .;
+
+	/*
+	 * The second stage is loaded at 0x7E00. Since we want to support more
+	 * than one disk sector size (ATA, ATAPI, ...), we have make sure that
+	 * the limit is calculated with the largest block size. This is why we
+	 * we take a 2 KB block size as our base:
+	 *
+	 * 		0x7E00 + (16 * 0x800) = 0xFE00	(  2 KB sectors)
+	 * 		0x7E00 + (32 * 0x400) = 0xFE00	(  1 KB sectors)
+	 * 		0x7E00 + (64 * 0x200) = 0xFE00	(512  B sectors)
+	 *
+	 * That means we support 16 * 2 KB sectors or 64 * 512 Byte sectors as
+	 * the maximum size of our second stage. This is a general limit since
+	 * we want to stay within the first 64 KB of memory.
+	 */
+
+	ASSERT(__bootstrap_end < 0xFE00, "__bootstrap_end >= 0xFE00")
 }

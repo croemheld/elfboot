@@ -46,8 +46,7 @@ boot_idt_prot:
 boot_idt_prot_addr:
 	.long 0
 
-
-.section .text
+.section .real, "ax", @progbits
 
 .code16
 

@@ -3,7 +3,7 @@
 
 .code32
 
-.section .text
+.section .real, "ax", @progbits
 
 GLOBAL(kernel_realmode_jump)
 

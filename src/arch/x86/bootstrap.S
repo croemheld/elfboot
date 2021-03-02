@@ -15,7 +15,7 @@ LOCAL(bios_error_msg)
 # 512 bytes.
 #
 
-.section .text
+.section .boot, "ax", @progbits
 
 #
 # Bootstrap entry point
