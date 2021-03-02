@@ -6,37 +6,28 @@
 
 #include <asm/math.h>
 
-static inline int log2(uint32_t val)
-{
-	return fls(val) - 1;
-}
+int log2(uint32_t val);
 
 /*
  * https://stackoverflow.com/questions/600293
  */
 
-static inline bool is_pow2(uint32_t val)
-{
-	return (val != 0 && ((val & (val - 1)) == 0));
-}
+bool is_pow2(uint32_t val);
 
-static inline uint32_t round_up_pow2(uint32_t val)
-{
-	return (1UL << fls(val - 1));
-}
+uint32_t round_up_pow2(uint32_t val);
 
-static inline uint32_t round_down_pow2(uint32_t val)
-{
-	return (1UL << (fls(val) - 1));
-}
+uint32_t round_down_pow2(uint32_t val);
 
 /*
  * Division with remainder
  */
 
-static inline uint64_t div(uint64_t val, uint32_t div, uint32_t *rem)
-{
-	return arch_div(val, div, rem);
-}
+uint64_t div(uint64_t val, uint32_t div, uint32_t *rem);
+
+/*
+ * Power
+ */
+
+uint64_t pow(uint64_t base, uint64_t exp);
 
 #endif /* __ELFBOOT_MATH_H__ */

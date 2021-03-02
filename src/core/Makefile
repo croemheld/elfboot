@@ -5,6 +5,7 @@ elfboot-y += input.o
 elfboot-y += interrupt.o
 elfboot-y += loader.o
 elfboot-y += main.o
+elfboot-y += math.o
 elfboot-y += module.o
 elfboot-y += pci.o
 elfboot-y += printf.o

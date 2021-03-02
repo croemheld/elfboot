@@ -6,6 +6,7 @@ elfboot-y += copy.o
 elfboot-y += e820.o
 elfboot-y += entry.o
 elfboot-y += idt.o
+elfboot-y += math.o
 elfboot-y += realmode_jmp.o
 elfboot-y += setup.o
 elfboot-y += opmode.o
