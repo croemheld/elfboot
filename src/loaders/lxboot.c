@@ -61,6 +61,15 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 		return -EFAULT;
 
 	/*
+	 * Get the boot protocol version
+	 */
+	file_lseek(kernel, FILE_SET, 0x206);
+	if (!file_read(kernel, sizeof(info->bprotvers), &info->bprotvers))
+		return -EFAULT;
+
+	bprintln(DRIVER_LXBOOT ": Boot protocol version: %04x", info->bprotvers);
+
+	/*
 	 * Get the size of the real-mode code segment
 	 */
 	file_lseek(kernel, FILE_SET, 0x1f1);
@@ -69,15 +78,6 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 
 	if (!info->rmcodesec)
 		info->rmcodesec = 4;
-
-	/*
-	 * Get the boot protocol version
-	 */
-	file_lseek(kernel, FILE_SET, 0x206);
-	if (!file_read(kernel, sizeof(info->bprotvers), &info->bprotvers))
-		return -EFAULT;
-
-	bprintln(DRIVER_LXBOOT ": Boot protocol version: %04x", info->bprotvers);
 
 	/*
 	 * Load the real-mode code into memory
@@ -128,7 +128,7 @@ static int lxboot_prepare_farjmp(struct lxboot_info *info)
 {
 	uint16_t rmcodeseg = RM_SEG(tuint(info->rmcodebuf));
 
-	asm volatile("xchg %bx, %bx");
+	bprintln(DRIVER_LXBOOT ": Jumping to kernel...");
 
 	kernel_realmode_jump(rmcodeseg, rmcodeseg + 0x20);
 
