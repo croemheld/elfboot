@@ -77,7 +77,7 @@ static struct fs_node *isofs_fill_super(struct superblock *sb, const char *name)
 	if (!desc)
 		return NULL;
 
-	if (superblock_read(sb, ISOFS_PRIMARY_SECTOR, desc))
+	if (bdev_read(sb->bdev, ISOFS_PRIMARY_SECTOR, 1, desc))
 		goto isofs_fill_free_desc;
 
 	if (strncmp(desc->id, ISOFS_PRIMARY_VOLUME_ID, 5))
@@ -129,38 +129,12 @@ static void isofs_close(struct fs_node *node)
 static uint32_t isofs_read(struct fs_node *node, uint64_t offset,
 	uint32_t length, void *buffer)
 {
-	void *iblock;
-	uint64_t sector, blknum, blkoff;
-	uint32_t nbsize, ibloff, totlen, remlen = 0, bufoff = 0;
+	uint64_t blkoff = node->sb->block_size * node->inode + offset;
 
-	totlen = length;
-	nbsize = node->sb->block_size;
-	iblock = bmalloc(nbsize);
-	if (!iblock)
+	if (superblock_read_offset(node->sb, blkoff, length, buffer))
 		return -EFAULT;
 
-	sector = sb_sector(node->sb, node->inode, offset);
-	blknum = sb_length(node->sb, offset, length);
-
-	for (blkoff = 0; length && blkoff < blknum; blkoff++) {
-		div(offset, nbsize, &ibloff);
-		if (blkoff)
-			ibloff = 0;
-
-		remlen = min(nbsize - ibloff, length);
-
-		if (superblock_read(node->sb, sector + blkoff, iblock))
-			goto isofs_read_done;
-
-		memcpy(buffer + bufoff, iblock + ibloff, remlen);
-		bufoff += remlen;
-		length -= remlen;
-	}
-
-isofs_read_done:
-	bfree(iblock);
-
-	return totlen - length;
+	return length;
 }
 
 static uint32_t isofs_write(struct fs_node *node, uint64_t offset,

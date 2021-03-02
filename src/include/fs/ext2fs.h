@@ -24,7 +24,7 @@ struct ext2_superblock {
 	uint16_t max_mnt_count;
 	uint16_t magic;
 
-#define EXT2_SUPERBLOCK_MAGIC	0xEF53
+#define EXT2_SB_MAGIC	0xEF53
 
 	uint16_t state;
 	uint16_t errors;
@@ -63,8 +63,8 @@ struct ext2_superblock {
 	uint8_t  unused[780];
 } __packed;
 
-#define EXT2_SUPERBLOCK_OFFSET	1024
-#define EXT2_SUPERBLOCK_LENGTH	sizeof(struct ext2_superblock)
+#define EXT2_SB_OFFSET	1024
+#define EXT2_SB_LENGTH	sizeof(struct ext2_superblock)
 
 struct ext2_block_group_desc {
 	uint32_t block_usage_bitmap_block;

@@ -5,6 +5,7 @@
 #include <elfboot/super.h>
 #include <elfboot/module.h>
 #include <elfboot/bitops.h>
+#include <elfboot/math.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
@@ -48,109 +49,65 @@ static struct superblock_ops ext2fs_superblock_ops = {
  * Utilities for ext2 filesystem nodes
  */
 
-static int ext2fs_lookup_block_group(struct superblock *sb,
-	struct ext2_superblock *esb, struct ext2_block_group_desc *desc,
-	uint32_t ino)
-{
-	uint32_t blkgrp, grprem;
-	uint64_t sector, blknum, offset;
-	void *buffer;
-
-	buffer = bmalloc(sb->block_size);
-	if (!buffer)
-		return -ENOMEM;
-
-	blkgrp = (ino - 1) / esb->inodes_per_group;
-
-	offset = sb->block_size;
-	if (sb->block_size < 2048)
-		offset = sb->block_size * 2;
-
-	offset = offset + (EXT2_BLKGRP_DESC_SIZE * blkgrp);
-
-	sector = sb_sector(sb, 0, offset);
-	blknum = sb_length(sb, 0, sb->block_size);
-
-	if (superblock_read_blocks(sb, sector, blknum, buffer))
-		goto ext2_block_group_free_buffer;
-
-	grprem = (EXT2_BLKGRP_DESC_SIZE * blkgrp) % sb->block_size;
-	memcpy(desc, buffer + grprem, EXT2_BLKGRP_DESC_SIZE);
-
-	bfree(buffer);
-
-	return 0;
-
-ext2_block_group_free_buffer:
-	bfree(buffer);
-
-	return -EFAULT;
-}
-
-static int ext2fs_lookup_inode(struct superblock *sb,
-	struct ext2_superblock *esb, struct ext2_inode *inode,
-	uint32_t ino)
-{
-	struct ext2_block_group_desc desc;
-	uint32_t inoidx, inooff;
-	uint64_t sector, blknum, offset;
-	void *buffer;
-
-	buffer = bmalloc(sb->block_size);
-	if (!buffer)
-		return -EFAULT;
-
-	if (ext2fs_lookup_block_group(sb, esb, &desc, ino))
-		goto ext2_inode_free_buffer;
-
-	inoidx = (ino - 1) % esb->inodes_per_group;
-	offset = desc.inode_table_block * sb->block_size;
-	offset = offset + (inoidx * esb->inode_size);
-
-	sector = sb_sector(sb, 0, offset);
-	blknum = sb_length(sb, 0, esb->inode_size);
-
-	if (superblock_read_blocks(sb, sector, blknum, buffer))
-		goto ext2_inode_free_buffer;
-
-	div(offset, sb->bdev->block_size, &inooff);
-	memcpy(inode, buffer + inooff, esb->inode_size);
-
-	bfree(buffer);
-
-	return 0;
-
-ext2_inode_free_buffer:
-	bfree(buffer);
-
-	return -EFAULT;
-}
-
-static struct ext2_inode *ext2fs_create_inode(struct superblock *sb,
+static struct ext2_inode *ext2fs_inode_find(struct superblock *sb,
 	struct ext2_superblock *esb, uint32_t ino)
 {
+	struct ext2_block_group_desc bdesc;
 	struct ext2_inode *inode;
+	uint32_t inoidx, blkgrp;
+	uint64_t offset;
 
 	inode = bmalloc(esb->inode_size);
 	if (!inode)
 		return NULL;
 
-	if (ext2fs_lookup_inode(sb, esb, inode, ino))
-		goto ext2_inode_free;
+	blkgrp = (ino - 1) / esb->inodes_per_group;
+	offset = sb->block_size;
+	if (sb->block_size < 2048)
+		offset = sb->block_size * 2;
+	offset = offset + (EXT2_BLKGRP_DESC_SIZE * blkgrp);
+
+	if (superblock_read_offset(sb, offset, sizeof(bdesc), &bdesc))
+		goto ext2_inode_error;
+
+	inoidx = (ino - 1) % esb->inodes_per_group;
+	offset = bdesc.inode_table_block * sb->block_size;
+	offset = offset + (inoidx * esb->inode_size);
+
+	if (superblock_read_offset(sb, offset, esb->inode_size, inode))
+		goto ext2_inode_error;
 
 	return inode;
 
-ext2_inode_free:
-	bfree(inode);
+ext2_inode_error:
 
 	return NULL;
+}
+
+static uint32_t indirect_block(struct superblock *sb, uint32_t iblock,
+	uint32_t cblock, uint32_t bdepth, uint32_t *buffer)
+{
+	uint32_t blkibn, blkmlp, blevel, blkidx;
+
+	blkibn = sb->block_size / EXT2_MLP_LEN;
+
+	for (blevel = bdepth; blevel + 1 > 0; blevel--) {
+		blkmlp = pow(blkibn, blevel);
+
+		if (superblock_read_block(sb, iblock, buffer))
+			return 0;
+
+		blkidx = (cblock / blkmlp) % blkibn;
+		iblock = buffer[blkidx];
+	}
+
+	return iblock;
 }
 
 static uint32_t ext2fs_inode_block(struct superblock *sb,
 	struct ext2_inode *inode, uint32_t offset)
 {
-	uint32_t cblock, blkidx, blkdlp, blktlp, blkoff, *buffer;
-	uint64_t sector, blknum;
+	uint32_t cblock, blkidx, blkibn, blkmlp, i, *buffer;
 
 	cblock = offset / sb->block_size;
 
@@ -162,81 +119,25 @@ static uint32_t ext2fs_inode_block(struct superblock *sb,
 	if (!buffer)
 		return 0;
 
-	blknum  = sb_length(sb, 0, sb->block_size);
-	cblock -= EXT2_DLP_NUM;
+	cblock -= (EXT2_DLP_NUM - 1);
+	blkibn  = sb->block_size / EXT2_MLP_LEN;
 
-	/* Indirect block pointers */
-	if (cblock * EXT2_MLP_LEN < sb->block_size) {
-		sector = sb_sector(sb, 0, inode->singly_block * sb->block_size);
-		if (superblock_read_blocks(sb, sector, blknum, buffer))
-			goto ext2fs_inode_free_buffer;
+	for (i = 0, blkmlp = 1; i < 3; i++) {
+		blkmlp *= pow(blkibn, i);
+		cblock -= blkmlp;
+		blkidx  = cblock / blkmlp;
 
-		blkidx = buffer[cblock];
-		bfree(buffer);
+		if (blkidx * EXT2_MLP_LEN >= sb->block_size)
+			continue;
 
-		return blkidx;
+		blkidx = indirect_block(sb, inode->dbp[12 + i], cblock, i, buffer);
+
+		break;
 	}
 
-	blkdlp  = sb->block_size / EXT2_MLP_LEN;
-	cblock -= blkdlp;
-
-	/* Index in doubly indirect block */
-	blkidx  = cblock / blkdlp;
-
-	/* Doubly indirect block pointers */
-	if (blkidx * EXT2_MLP_LEN < sb->block_size) {
-		sector = sb_sector(sb, 0, inode->doubly_block * sb->block_size);
-		if (superblock_read_blocks(sb, sector, blknum, buffer))
-			goto ext2fs_inode_free_buffer;
-
-		/* Block to doubly block list */
-		blkoff = buffer[blkidx];
-
-		sector = sb_sector(sb, 0, blkoff * sb->block_size);
-		if (superblock_read_blocks(sb, sector, blknum, buffer))
-			goto ext2fs_inode_free_buffer;
-
-		blkidx = buffer[cblock % blkdlp];
-		bfree(buffer);
-
-		return blkidx;
-	}
-
-	blktlp  = blkdlp;
-	blktlp *= blktlp;
-	cblock -= blktlp;
-
-	/* Index in triply indirect block */
-	blkidx = cblock / blktlp;
-
-	/* Trebly indirect block pointers */
-	sector = sb_sector(sb, 0, inode->triply_block * sb->block_size);
-	if (superblock_read_blocks(sb, sector, blknum, buffer))
-		goto ext2fs_inode_free_buffer;
-
-	/* Block to doubly block list */
-	blkoff = buffer[blkidx];
-
-	sector = sb_sector(sb, 0, blkoff * sb->block_size);
-	if (superblock_read_blocks(sb, sector, blknum, buffer))
-		goto ext2fs_inode_free_buffer;
-
-	/* Block to triply block list */
-	blkoff = buffer[(cblock / blkdlp) % blkdlp];
-
-	sector = sb_sector(sb, 0, blkoff * sb->block_size);
-	if (superblock_read_blocks(sb, sector, blknum, buffer))
-		goto ext2fs_inode_free_buffer;
-
-	blkidx = buffer[cblock % blkdlp];
 	bfree(buffer);
 
 	return blkidx;
-
-ext2fs_inode_free_buffer:
-	bfree(buffer);
-
-	return 0;
 }
 
 static uint32_t ext2fs_inode_read(struct superblock *sb,
@@ -254,21 +155,18 @@ static uint32_t ext2fs_inode_read(struct superblock *sb,
 		return -ENOMEM;
 
 	sblnum = div(length - 1, nbsize, &remlen) + 1;
+	sector = div(offset, nbsize, &ibloff);
 
 	for (blkoff = 0; length && blkoff < sblnum; blkoff++) {
-		div(offset, nbsize, &ibloff);
 		if (blkoff)
 			ibloff = 0;
 
 		remlen = min(nbsize - ibloff, length);
-		blkidx = ext2fs_inode_block(sb, inode, blkoff * nbsize);
+		blkidx = ext2fs_inode_block(sb, inode, (blkoff + sector) * nbsize);
 		if (!blkidx)
 			goto ext2_inode_read_done;
 
-		sector = sb_sector(sb, 0, blkidx * nbsize);
-		blknum = sb_length(sb, ibloff, remlen);
-
-		if (superblock_read_blocks(sb, sector, blknum, iblock))
+		if (superblock_read_block(sb, blkidx, iblock))
 			goto ext2_inode_read_done;
 
 		memcpy(buffer + bufoff, iblock + ibloff, remlen);
@@ -292,7 +190,7 @@ static struct fs_node *ext2fs_alloc_dent(struct superblock *sb,
 	if (!fnode)
 		return NULL;
 
-	inode = ext2fs_create_inode(sb, sb->private, ino);
+	inode = ext2fs_inode_find(sb, sb->private, ino);
 	if (!inode)
 		goto ext2fs_alloc_free_node;
 
@@ -311,27 +209,27 @@ ext2fs_alloc_free_node:
 static struct fs_node *ext2fs_fill_super(struct superblock *sb, const char *name)
 {
 	struct ext2_superblock *esb;
+	uint64_t sector, secnum;
 	struct fs_node *node;
-	uint64_t sector, blknum;
 
 	if (!sb->bdev)
 		return NULL;
 
-	esb = bmalloc(EXT2_SUPERBLOCK_LENGTH);
+	esb = bmalloc(EXT2_SB_LENGTH);
 	if (!esb)
 		return NULL;
 
-	sector = sb_sector(sb, 0, EXT2_SUPERBLOCK_OFFSET);
-	blknum = sb_length(sb, 0, EXT2_SUPERBLOCK_LENGTH);
+	sector = sb_sector(sb, 0, EXT2_SB_OFFSET);
+	secnum = sb_length(sb, 0, EXT2_SB_LENGTH);
 
-	if (superblock_read_blocks(sb, sector, blknum, esb))
+	if (bdev_read(sb->bdev, sector, secnum, esb))
 		goto ext2fs_fill_free_esb;
 
-	if (esb->magic != cputole16(EXT2_SUPERBLOCK_MAGIC))
+	if (esb->magic != cputole16(EXT2_SB_MAGIC))
 		goto ext2fs_fill_free_esb;
 
-	sb->block_logs = esb->log_block_size;
-	sb->block_size = 1024 << sb->block_logs;
+	sb->block_logs = ffs(1024) + esb->log_block_size;
+	sb->block_size = 1 << sb->block_logs;
 
 	if (esb->revision < 1)
 		esb->inode_size = 128;
