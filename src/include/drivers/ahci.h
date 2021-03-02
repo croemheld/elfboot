@@ -4,6 +4,8 @@
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
 
+#include <drivers/ata.h>
+
 #define DRIVER_AHCI		"AHCI"
 
 #define AHCI_MAX_DEVICES	32
@@ -208,10 +210,12 @@ struct ahci_dev {
 };
 
 struct ahci_cmd {
+	uint8_t fiscmd;
 	void *packet;
 	size_t pkglen;
 	void *buffer;
 	size_t buflen;
+	ata_regs_t reg;
 };
 
 #endif /* __DRIVER_SATA_H__ */

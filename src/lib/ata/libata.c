@@ -80,3 +80,25 @@ uint32_t libata_block_size(uint16_t *params)
 
 	return block_size;
 }
+
+/*
+ * Helper functions for ATA commands
+ */
+
+/*
+void libata_fill_command(struct bdev *bdev, ata_regs_t *regs, uint64_t sector,
+	uint64_t secnum, uint8_t cmd)
+{
+	if (bdev->flags & BDEV_FLAGS_LBA) {
+		regs->sectors48  = (secnum >>  0);
+		regs->lba48_low  = (sector >> 24);
+		regs->lba48_mid  = (sector >> 32);
+		regs->lba48_high = (sector >> 40);
+	}
+
+	regs->sectors  = (secnum >>  0);
+	regs->lba_low  = (sector >>  0);
+	regs->lba_mid  = (sector >>  8);
+	regs->lba_high = (sector >> 16);
+}
+*/
