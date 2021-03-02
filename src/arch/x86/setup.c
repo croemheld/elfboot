@@ -17,6 +17,7 @@
 #include <asm/boot.h>
 #include <asm/bda.h>
 #include <asm/pic.h>
+#include <asm/segment.h>
 
 #include <uapi/asm/bootparam.h>
 

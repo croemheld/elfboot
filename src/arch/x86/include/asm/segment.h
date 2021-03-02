@@ -21,10 +21,20 @@
 
 #else /* !__ASSEMBLER__ */
 
+#include <elfboot/linkage.h>
+
 #define RM_SEG(x)		((x) & 0x000ffff0) >> 4
 #define RM_OFF(x)		((x) & 0x0000000f) >> 0
 
-void kernel_realmode_jump(uint16_t rm_seg, uint16_t kn_seg);
+/*
+ * Force the compiler to reference this function in the final binary even if no
+ * function uses it. This is because the only known reference is in an external
+ * module loaded at runtime.
+ *
+ * TODO CRO: Find workaround for clang, as __attribute__((used)) does not exist
+ * for the clang compiler.
+ */
+void __used kernel_realmode_jump(uint16_t rm_seg, uint16_t kn_seg);
 
 #endif /* __ASSEMBLER__ */
 

@@ -31,6 +31,7 @@ typedef void (*modexit_t)(void);
 /*
  * Structures and functions
  */
+#define __used				__attribute__((used))
 #define __unused			__attribute__((unused))
 #define __packed			__attribute__((packed))
 

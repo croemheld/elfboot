@@ -91,7 +91,7 @@ struct boot_params {
 	/*
 	 * APM table
 	 */
-	//struct apm_info apm_info;
+	// struct apm_info apm_info;
 
 	/*
 	 * VBE information
