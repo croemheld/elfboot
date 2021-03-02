@@ -27,6 +27,7 @@
 *.ini
 *.o
 *.bc
+*.ll
 *.o.d
 *.ebm
 *.elf
