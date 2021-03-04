@@ -54,6 +54,7 @@ struct lxboot_info {
 	uint16_t bprotvers;
 	uint8_t rmcodesec;
 	uint32_t rmcodelen;
+	uint32_t pmcodelen;
 	struct lxboot_rm_header *rmcodehdr;
 	void *rmcodebuf;
 };
