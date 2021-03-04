@@ -21,7 +21,7 @@ GLOBAL(kernel_realmode_jump)
 	movw    %ax, %gs
 	movw    %ax, %ss
 
-	movw    $0xe000, %sp
+	movw    $0x9800, %sp
 
 	pushw   %dx
 	pushw   $0
