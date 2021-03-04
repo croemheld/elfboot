@@ -399,7 +399,7 @@ static int loader_menu_show_entry(int index, struct console_attr *cons_attr)
 	if (!fent)
 		goto loader_free_bent;
 
-	cons_attr->ypos += index;
+	cons_attr->ypos = menu_attr->ypos + index + 3;
 
 	if (loader_menu_font(index, cons_attr))
 		goto loader_free_fent;
@@ -436,11 +436,11 @@ static int loader_init_update(int prev_choice)
 	 * Update boot menu entry selection on the console. We have to get
 	 * the boot entry and redraw both the old and the new selection.
 	 */
-	cons_attr.ypos = menu_attr->ypos + 3;
+	cons_attr.xpos = menu_attr->xpos - 2;
 	if (loader_menu_show_entry(prev_choice, &cons_attr))
 		return -EFAULT;
 
-	cons_attr.ypos = menu_attr->ypos + 3;
+	cons_attr.xpos = menu_attr->xpos - 2;
 	if (loader_menu_show_entry(boot_choice, &cons_attr))
 		return -EFAULT;
 
