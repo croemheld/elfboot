@@ -201,7 +201,8 @@ static int ahci_send_command(struct ahci_dev *ahcidev, struct ahci_cmd *cmd)
 	ctbl->prdt[0].idbc = HBA_IDBC(cmd->buflen - 1, 0);
 	ctbl->prdt[0].dba  = tuint(cmd->buffer);
 
-	memcpy(ctbl->acmd, cmd->packet, cmd->pkglen);
+	if (cmd->packet && cmd->pkglen)
+		memcpy(ctbl->acmd, cmd->packet, cmd->pkglen);
 
 	ahci_port_wait(ahcidev->port);
 	ahcidev->port->ci |= (1UL << slot);
