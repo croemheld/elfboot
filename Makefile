@@ -56,13 +56,13 @@ MODULES			:= modules
 
 ELFTOOL_TARGETS	:= tools
 
-ELFBOOT_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF) toolchain-check
+ELFBOOT_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF)
 ELFBOOT_ROOTDIR := 
 ELFBOOT_BITSIZE := $(ELFBOOT)_bin_len
 ELFBOOT_BFDSIZE := $(BOOTUID)_bfd_len
 
 BOOTIMG			:= bootimg
-BOOTIMG_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF) toolchain-check $(ELFBOOT)
+BOOTIMG_PREREQS := $(ELFTOOL_TARGETS) $(IMGCONF) $(ELFBOOT)
 BOOTIMG_ROOTDIR := arch/$(ELFBOOT_ARCH)/boot
 
 BOOTISO			:= $(ELFBOOT).iso
@@ -104,7 +104,7 @@ BOOTISO_CDFLAGS += -full-iso9660-filenames
 #
 
 PHONY += all
-all: toolchain-check
+all:
 	@echo " Please use one of the following targets:"
 	@echo " $(BUILD)"
 
@@ -140,17 +140,6 @@ $(ELFTOOL_TARGETS):
 BUILD += $(GENCONF)
 $(GENCONF): $(ELFBOOT).config
 	$(Q)$(call genconf)
-
-PHONY += toolchain
-BUILD += toolchain
-toolchain:
-	$(Q)$(MAKE) ELFBOOT_TARGET=$(ELFBOOT_TARGET) -C $(ELFBOOT_TCHAIN)
-
-PHONY += toolchain-check
-toolchain-check:
-ifeq (, $(shell type $(CC) 2> /dev/null))
-	$(error Please run 'make toolchain' first)
-endif
 
 build:
 	$(Q)mkdir -p build/$(MODULES)
@@ -194,12 +183,6 @@ CLEAN += clean-$(ELFTOOL_TARGETS)
 clean-$(ELFTOOL_TARGETS):
 	@echo "  CLEAN   $(ELFTOOL_TARGETS)"
 	$(Q)$(MAKE) -C $(ELFTOOL_TARGETS) clean
-
-PHONY += clean-toolchain
-CLEAN += clean-toolchain
-clean-toolchain:
-	@echo "  CLEAN   $(ELFBOOT_TCHAIN)"
-	$(Q)$(MAKE) -C $(ELFBOOT_TCHAIN) clean
 
 PHONY += clean-iso
 CLEAN += clean-iso

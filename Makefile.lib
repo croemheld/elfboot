@@ -16,10 +16,10 @@ LD 		:= ld.lld
 STRIP 	:= llvm-strip
 OBJCOPY := llvm-objcopy
 else
-CC		:= $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
-LD 		:= $(ELFBOOT_TARGET)-$(ELFBOOT)-gcc
-STRIP 	:= $(ELFBOOT_TARGET)-$(ELFBOOT)-strip
-OBJCOPY := $(ELFBOOT_TARGET)-$(ELFBOOT)-objcopy
+CC		:= i686-pc-linux-gnu-gcc
+LD 		:= i686-pc-linux-gnu-gcc
+STRIP 	:= i686-pc-linux-gnu-strip
+OBJCOPY := i686-pc-linux-gnu-objcopy
 endif
 
 #

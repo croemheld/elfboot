@@ -8,7 +8,7 @@ objtree	:= .
 rootdir	:= $(if $(dir),src/$(dir),src)
 
 include $(srctree)/Makefile.lib
-include $(srctree)/auto.conf
+-include $(srctree)/auto.conf
 
 #
 # Compile template

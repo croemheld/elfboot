@@ -27,7 +27,7 @@ Even the screen is managed by a module, which depends on the screen resolution u
 
 ### Building elfboot-toolchain ###
 
-![elfboot](images/elfboot-logo-inline.png) can be built with both a custom GCC toolchain included as a git submodule in this project as well as [clang](https://github.com/llvm/llvm-project). The steps to prepare each toolchain is described below.
+![elfboot](images/elfboot-logo-inline.png) can be built with both a custom GCC toolchain as well as [clang](https://github.com/llvm/llvm-project). The steps to prepare each toolchain is described below.
 
 #### clang ####
 
@@ -64,11 +64,7 @@ After `cmake` finishes, you can `cd` into the `build` directory created by this 
 
 #### GCC toolchain ####
 
-If you want to use the GCC toolchain, the steps you have to take are mostly done for you already. This project includes the toolchain as a git submodule. The toolchain is generated simply by typing
-
-```
-make toolchain
-```
+For building the project via GCC, we recommend using [crosstool-ng](https://crosstool-ng.github.io/) to build a compatible cross-compiler for the i686 architecture. Please refer to the official documentation on the crosstool-ng website for further information.
 
 ### Configuring and building elfboot ###
 
