@@ -86,6 +86,7 @@ struct boot_params {
 	/*
 	 * E820 memory map
 	 */
+	uint32_t mmap_size;
 	struct e820_table e820_table;
 
 	/*

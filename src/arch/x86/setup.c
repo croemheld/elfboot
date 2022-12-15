@@ -18,10 +18,36 @@
 #include <asm/bda.h>
 #include <asm/pic.h>
 #include <asm/segment.h>
+#include <asm/memory.h>
 
 #include <uapi/asm/bootparam.h>
 
-static struct boot_params boot_params = { 0 };
+struct boot_params boot_params = { 0 };
+
+/*
+ * Functions for returning boot specific arguments and system parameters. We do
+ * this here since we do not want to expose the structure to all files.
+ */
+
+uint32_t arch_memory_lower_size(void)
+{
+	return boot_params.memory_lower;
+}
+
+uint32_t arch_memory_upper_size(void)
+{
+	return boot_params.memory_upper;
+}
+
+uint32_t arch_bootdev_partitions(void) {
+	return boot_params.disk_drive;
+}
+
+
+
+/*
+ * Architecture-specific initialization functions.
+ */
 
 static int arch_init_boot_verify(struct bdev *bdev)
 {
@@ -61,7 +87,7 @@ verify_free_buffer:
 	return -EFAULT;
 }
 
-static int arch_init_bootdevice(struct boot_params *boot_params)
+static int arch_init_bootdevice(void)
 {
 	struct fs_node *node, *npos;
 
@@ -119,7 +145,7 @@ int arch_init_late(void)
 	 * Initialize boot device and load the appropiate disk driver
 	 * from it by using the information stored in boot info table
 	 */
-	if (arch_init_bootdevice(&boot_params))
+	if (arch_init_bootdevice())
 		return -EFAULT;
 
 	/* Detect and set video modes */
@@ -157,7 +183,9 @@ static void bootmem_reserve_regions(void)
 int arch_setup(uint16_t disk_drive, struct boot_info_table *bit)
 {
 	boot_params.boot_table = bit;
-	boot_params.disk_drive = disk_drive;
+
+	/* Adjust value for multiboot specification */
+	boot_params.disk_drive = disk_drive << 24;
 
 	/*
 	 * The most important thing first: We need memory!

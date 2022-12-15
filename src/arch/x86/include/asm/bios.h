@@ -64,4 +64,10 @@ static inline void initregs(struct biosregs *reg)
 
 void bioscall(uint8_t int_no, struct biosregs *ireg, struct biosregs *oreg);
 
+/*
+ * Boot device identification
+ */
+
+uint32_t arch_bootdev_partitions(void);
+
 #endif /* __X86_BIOS_H__ */
