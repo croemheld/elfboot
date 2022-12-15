@@ -28,6 +28,13 @@ ifndef VERBOSE
   VERBOSE = 0
 endif
 
+ifeq ("$(origin B)", "command line")
+  BITCODE = $(B)
+endif
+ifndef BITCODE
+  BITCODE = 0
+endif
+
 ifeq ($(VERBOSE),1)
   quiet =
   Q =
@@ -36,7 +43,7 @@ else
   Q = @
 endif
 
-export quiet Q VERBOSE
+export quiet Q VERBOSE BITCODE
 
 srctree	:= .
 objtree	:= .
