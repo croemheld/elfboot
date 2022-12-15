@@ -1,6 +1,7 @@
 #include <elfboot/core.h>
 #include <elfboot/string.h>
 #include <elfboot/memblock.h>
+#include <elfboot/printf.h>
 
 #include <asm/boot.h>
 #include <asm/bios.h>
@@ -40,6 +41,34 @@ static uint16_t detect_memory_e820(struct e820_table *table)
 	return count;
 }
 
+static uint32_t detect_memory_lower(struct e820_table *table)
+{
+	uint32_t i;
+
+	for(i = 0; i < table->nr_entries; i++) {
+		if (table->entries[i].addr_32 == 0)
+			return min(table->entries[i].size_32, 0xa0000);
+	}
+
+	return 0;
+}
+
+static uint32_t detect_memory_upper(struct e820_table *table)
+{
+	uint32_t i, base, size, upper = 0;
+
+	for(i = 0; i < table->nr_entries; i++) {
+		base = table->entries[i].addr_32;
+		size = table->entries[i].size_32;
+
+		if (base <= MEMORY_LIMIT && base + size > MEMORY_LIMIT) {
+			upper = base + size - MEMORY_LIMIT;
+		}
+	}
+
+	return upper;
+}
+
 static void e820_memblock_setup(struct e820_table *table)
 {
 	uint32_t i, base, size;
@@ -61,9 +90,6 @@ static void e820_memblock_setup(struct e820_table *table)
 		if (entry->addr_32 + entry->size_32 <= MEMBLOCK_START)
 			continue;
 
-		if (entry->addr_32 >= MEMBLOCK_LIMIT)
-			continue;
-
 		base = max(entry->addr_32, MEMBLOCK_START);
 		size = entry->addr_32 + entry->size_32 - base;
 
@@ -71,18 +97,25 @@ static void e820_memblock_setup(struct e820_table *table)
 		 * Add chunk of free memory to memblock allocator.
 		 */
 
-		memblock_add(base, size);
+		if (entry->addr_32 >= MEMBLOCK_LIMIT)
+			memblock_add_kernel(base, size);
+		else
+			memblock_add(base, size);
 	}
 }
 
 int detect_memory(struct boot_params *boot_params)
 {
-	uint16_t nr_entries = detect_memory_e820(&boot_params->e820_table);
+	struct e820_table *table = &boot_params->e820_table;
+	uint16_t nr_entries = detect_memory_e820(table);
 
 	if (!nr_entries)
 		return -ENOMEM;
 
-	boot_params->e820_table.nr_entries = nr_entries;
+	table->nr_entries = nr_entries;
+
+	boot_params->memory_lower = detect_memory_lower(table) / 1024;
+	boot_params->memory_upper = detect_memory_upper(table) / 1024;
 
 	/*
 	 * Initialize memblock allocator with the entries stores in the previously
@@ -90,7 +123,7 @@ int detect_memory(struct boot_params *boot_params)
 	 * because the kernel will later simply override already filled regions.
 	 */
 	
-	e820_memblock_setup(&boot_params->e820_table);
+	e820_memblock_setup(table);
 
 	return 0;
 }
