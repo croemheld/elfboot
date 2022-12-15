@@ -16,6 +16,7 @@
 # Ignore build directory
 #
 
+/boot/*
 /build/*
 
 #
