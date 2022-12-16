@@ -3,7 +3,7 @@
 
 #include <elfboot/core.h>
 #include <elfboot/linkage.h>
-#include <elfboot/elf.h>
+#include <elfboot/libelf.h>
 #include <elfboot/list.h>
 
 #ifndef MODULE

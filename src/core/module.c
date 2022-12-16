@@ -1,10 +1,10 @@
 #include <elfboot/core.h>
 #include <elfboot/mm.h>
-#include <elfboot/elf.h>
 #include <elfboot/file.h>
 #include <elfboot/module.h>
 #include <elfboot/symbol.h>
 #include <elfboot/sections.h>
+#include <elfboot/libelf.h>
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
@@ -29,7 +29,9 @@ static Elf32_Sym *module_find_symbol(struct module *mod, const char *name)
 
 static int module_find_sections(struct module *mod)
 {
-	mod->shdr = elf32_get_shdr(mod->ehdr);
+	Elf32_Shdr *shdr;
+
+	mod->shdr = libelf32_shdr(mod->ehdr, 0);
 
 	/* 
 	 * Assign .shstrtab section first to search for sections by name. This is
@@ -37,20 +39,23 @@ static int module_find_sections(struct module *mod)
 	 * times. Since this is a bootloader, we don't care about performance too
 	 * much...
 	 */
-	mod->shstrtab = elf32_section_addr(mod->ehdr, mod->ehdr->e_shstrndx);
+	mod->shstrtab = libelf32_section(mod->ehdr, mod->ehdr->e_shstrndx);
 
 	/* 
 	 * Search for ".symtab" and ".strtab" section by name by using the macros
 	 * ELF_SYMTAB and ELF_STRTAB. This needs to happen as soon as the section
 	 * ".shstrtab" has been assigned.
 	 */
-	mod->symtab = elf32_find_section(mod->ehdr, ELF_SYMTAB, &mod->numsyms);
-	if (!mod->symtab)
+	shdr = libelf32_find_shdr(mod->ehdr, ELF_SYMTAB);
+	if (!shdr)
 		return -ENOENT;
 
-	mod->strtab = elf32_find_section(mod->ehdr, ELF_STRTAB, NULL);
+	mod->symtab = libelf32_find_section(mod->ehdr, ELF_SYMTAB);
+	mod->strtab = libelf32_find_section(mod->ehdr, ELF_STRTAB);
 	if (!mod->strtab)
 		return -ENOENT;
+
+	mod->numsyms = shdr->sh_size / shdr->sh_entsize;
 
 	return 0;
 }
@@ -61,7 +66,7 @@ static int module_load_sections(struct module *mod)
 	Elf32_Half shndx;
 
 	for (shndx = 0; shndx < mod->ehdr->e_shnum; shndx++) {
-		shdr = elf32_get_shdr_shndx(mod->ehdr, shndx);
+		shdr = libelf32_shdr(mod->ehdr, shndx);
 
 		if (shdr->sh_type == SHT_NOBITS) {
 			shdr->sh_addr = tuint(bmalloc(shdr->sh_size));
@@ -152,7 +157,7 @@ static int module_resolve_relocations(struct module *mod)
 	int ret;
 
 	for (shndx = 1; shndx < mod->ehdr->e_shnum; shndx++) {
-		shdr = elf32_get_shdr_shndx(mod->ehdr, shndx);
+		shdr = libelf32_shdr(mod->ehdr, shndx);
 
 		if (shdr->sh_info >= mod->ehdr->e_shnum)
 			continue;
