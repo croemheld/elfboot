@@ -63,8 +63,9 @@ static char *boptstr = NULL;
  * Helper array for loading the appropiate loader module.
  */
 static const char *loader_modules[] = {
-	[LOADER_PROTOCOL_MULTIBOOT] = "mbboot",
-	[LOADER_PROTOCOL_LINUX] 	= "lxboot"
+	[LOADER_PROTOCOL_MULTIBOOT1] = "mboot1",
+	[LOADER_PROTOCOL_MULTIBOOT2] = "mboot2",
+	[LOADER_PROTOCOL_LINUX] 	 = "lxboot"
 };
 
 /*
@@ -131,8 +132,11 @@ static int loader_parse_kernel(struct boot_entry *boot_entry, char *option)
 	char *lopt, *topt = strtok_r(option, WORD_DELIMITER, &lopt);
 
 	while (topt) {
-		if (!strcmp(topt, "multiboot")) {
-			boot_entry->prot = LOADER_PROTOCOL_MULTIBOOT;
+		if (!strcmp(topt, "multiboot1")) {
+			boot_entry->prot = LOADER_PROTOCOL_MULTIBOOT1;
+			goto parse_next_kernel_option;
+		} else if (!strcmp(topt, "multiboot2")) {
+			boot_entry->prot = LOADER_PROTOCOL_MULTIBOOT2;
 			goto parse_next_kernel_option;
 		} else if (!strcmp(topt, "linux")) {
 			boot_entry->prot = LOADER_PROTOCOL_LINUX;

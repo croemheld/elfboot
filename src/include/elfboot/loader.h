@@ -15,8 +15,9 @@
 
 #define C(x)						x[0]
 
-#define LOADER_PROTOCOL_MULTIBOOT	1
-#define LOADER_PROTOCOL_LINUX		2
+#define LOADER_PROTOCOL_MULTIBOOT1	1
+#define LOADER_PROTOCOL_MULTIBOOT2	2
+#define LOADER_PROTOCOL_LINUX		3
 
 struct boot_entry {
 	char *name;
