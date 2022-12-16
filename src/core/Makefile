@@ -1,6 +1,5 @@
 elfboot-y += bdev.o
 elfboot-y += cdev.o
-elfboot-y += elf.o
 elfboot-y += input.o
 elfboot-y += interrupt.o
 elfboot-y += loader.o

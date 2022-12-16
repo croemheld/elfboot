@@ -1,5 +1,5 @@
-#ifndef __BOOT_ELF_H__
-#define __BOOT_ELF_H__
+#ifndef __ELFBOOT_LIBELF_H__
+#define __ELFBOOT_LIBELF_H__
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -476,18 +476,22 @@ typedef struct elf64_note {
 	Elf64_Word n_type;
 } Elf64_Nhdr;
 
-bool is_elf_file(Elf32_Ehdr *ehdr);
+/*
+ * libelf functions for both ELF32 and ELF64 objects.
+ */
 
-bool is_elf_sane(Elf32_Ehdr *ehdr);
+bool libelf_compare_magic(void *ehdr);
 
-Elf32_Shdr *elf32_get_shdr(Elf32_Ehdr *ehdr);
+bool libelf_compare_class(void *ehdr, unsigned char class);
 
-Elf32_Shdr *elf32_get_shdr_shndx(Elf32_Ehdr *ehdr, Elf32_Half shndx);
+Elf32_Shdr *libelf32_shdr(Elf32_Ehdr *ehdr, Elf32_Half shndx);
 
-void *elf32_section_addr(Elf32_Ehdr *ehdr, Elf32_Half shndx);
+Elf32_Shdr *libelf32_find_shdr(Elf32_Ehdr *ehdr, const char *name);
 
-char *elf32_section_name(Elf32_Ehdr *ehdr, Elf32_Word shname);
+void *libelf32_section(Elf32_Ehdr *ehdr, Elf32_Half shndx);
 
-void *elf32_find_section(Elf32_Ehdr *ehdr, const char *name, uint32_t *entnum);
+void *libelf32_find_section(Elf32_Ehdr *ehdr, const char *name);
 
-#endif /* __BOOT_ELF_H__ */
+char *libelf32_section_name(Elf32_Ehdr *ehdr, Elf32_Half shndx);
+
+#endif /* __ELFBOOT_LIBELF_H__ */
