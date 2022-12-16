@@ -8,6 +8,8 @@
 
 #include <uapi/elfboot/const.h>
 
+#include <asm/memory.h>
+
 #define MEMORY_START			0x010000
 #define MEMORY_LIMIT			0x100000
 
@@ -18,6 +20,24 @@ void page_dump(void);
 void slab_dump(void);
 
 #endif /* CONFIG_DEBUG */
+
+/*
+ * Memory information
+ */
+
+static inline uint32_t memory_lower_size(void)
+{
+	return arch_memory_lower_size();
+}
+
+static inline uint32_t memory_upper_size(void)
+{
+	return arch_memory_upper_size();
+}
+
+/*
+ * Memory management
+ */
 
 void bfree(void *dptr);
 

@@ -291,7 +291,7 @@ static void page_map_free_bootmem(void)
 	struct memblock_region *region;
 	uint32_t ridx;
 
-	for_each_free_memblock(ridx, region) {
+	for_each_boot_memblock(ridx, region) {
 
 		/*
 		 * For now we restrict the maximum range

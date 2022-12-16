@@ -3,7 +3,7 @@
 
 #include <elfboot/mm.h>
 
-#define MEMBLOCK_MAX_REGIONS	16
+#define MEMBLOCK_MAX_REGIONS	8
 
 #define MEMBLOCK_START			MEMORY_START
 #define MEMBLOCK_LIMIT			MEMORY_LIMIT
@@ -26,7 +26,8 @@ struct memblock_type {
 };
 
 struct memblock {
-	struct memblock_type memory;
+	struct memblock_type bootmem;
+	struct memblock_type kernmem;
 };
 
 extern struct memblock memblock;
@@ -36,13 +37,20 @@ extern struct memblock memblock;
 	     i < type->cnt;					\
 	     i++, region = &type->regions[i])
 
-#define for_each_free_memblock(i, region)			\
-	for_each_memblock_type(i, (&memblock.memory), region)
+#define for_each_boot_memblock(i, region)			\
+	for_each_memblock_type(i, (&memblock.bootmem), region)
+
+#define for_each_kern_memblock(i, region)			\
+	for_each_memblock_type(i, (&memblock.kernmem), region)
 
 void memblock_add(uint32_t base, uint32_t size);
+
+void memblock_add_kernel(uint32_t base, uint32_t size);
 
 int memblock_reserve(uint32_t base, uint32_t size);
 
 void *memblock_alloc(uint32_t size, uint32_t align);
+
+void *memblock_alloc_kernel(uint32_t size, uint32_t align);
 
 #endif /* __ELFBOOT_MEMBLOCK_H__ */

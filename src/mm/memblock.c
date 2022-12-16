@@ -4,12 +4,16 @@
 #include <elfboot/string.h>
 #include <elfboot/printf.h>
 
-static struct memblock_region memory[MEMBLOCK_MAX_REGIONS];
+static struct memblock_region bootmem[MEMBLOCK_MAX_REGIONS];
+static struct memblock_region kernmem[MEMBLOCK_MAX_REGIONS];
 
 struct memblock memblock = {
-	.memory.cnt = 1,
-	.memory.max = MEMBLOCK_MAX_REGIONS,
-	.memory.regions = memory
+	.bootmem.cnt = 1,
+	.bootmem.max = MEMBLOCK_MAX_REGIONS,
+	.bootmem.regions = bootmem,
+	.kernmem.cnt = 1,
+	.kernmem.max = MEMBLOCK_MAX_REGIONS,
+	.kernmem.regions = kernmem
 };
 
 #ifdef CONFIG_DEBUG_MM
@@ -32,7 +36,7 @@ static void __memblock_dump(struct memblock_type *type)
 
 void memblock_dump(void)
 {
-	__memblock_dump(&memblock.memory);
+	__memblock_dump(&memblock.bootmem);
 }
 
 #endif /* CONFIG_DEBUG_MM */
@@ -210,22 +214,33 @@ static int memblock_del_region(struct memblock_type *type, uint32_t base,
 
 void memblock_add(uint32_t base, uint32_t size)
 {
-	memblock_add_region(&memblock.memory, base, size);
+	memblock_add_region(&memblock.bootmem, base, size);
+}
+
+void memblock_add_kernel(uint32_t base, uint32_t size)
+{
+	memblock_add_region(&memblock.kernmem, base, size);
+}
+
+static int __memblock_reserve(struct memblock_type *type,
+	uint32_t base, uint32_t size)
+{
+	return memblock_del_region(type, base, size) != MEMBLOCK_INVLD;
 }
 
 int memblock_reserve(uint32_t base, uint32_t size)
 {
-	return memblock_del_region(&memblock.memory, base, size) != MEMBLOCK_INVLD;
+	return memblock_del_region(&memblock.bootmem, base, size) != MEMBLOCK_INVLD;
 }
 
-static uint32_t memblock_find_in_range(uint32_t size, uint32_t align,
-				       uint32_t start, uint32_t end)
+static uint32_t memblock_find_in_range(struct memblock_type *type, 
+	uint32_t size, uint32_t align, uint32_t start, uint32_t end)
 {
 	uint32_t rbeg, rend, cand;
 	struct memblock_region *region;
 	uint32_t i;
 
-	for_each_free_memblock(i, region) {
+	for_each_memblock_type(i, type, region) {
 		rbeg = clamp(memblock_beg(region), start, end);
 		rend = clamp(memblock_end(region), start, end);
 
@@ -237,21 +252,21 @@ static uint32_t memblock_find_in_range(uint32_t size, uint32_t align,
 	return 0;
 }
 
-static uint32_t memblock_alloc_range(uint32_t size, uint32_t align,
-	uint32_t start, uint32_t end)
+static uint32_t memblock_alloc_range(struct memblock_type *type, 
+	uint32_t size, uint32_t align, uint32_t start, uint32_t end)
 {
-	uint32_t base = memblock_find_in_range(size, align, start, end);
+	uint32_t base = memblock_find_in_range(type, size, align, start, end);
 
-	if (base && memblock_reserve(base, size))
+	if (base && __memblock_reserve(type, base, size))
 		return base;
 
 	return 0;
 }
 
-static void *memblock_alloc_internal(uint32_t size, uint32_t align,
-	uint32_t start, uint32_t end)
+static void *memblock_alloc_internal(struct memblock_type *type, 
+	uint32_t size, uint32_t align, uint32_t start, uint32_t end)
 {
-	uint32_t base = memblock_alloc_range(size, align, start, end);
+	uint32_t base = memblock_alloc_range(type, size, align, start, end);
 
 	if (!base)
 		return NULL;
@@ -266,5 +281,17 @@ void *memblock_alloc(uint32_t size, uint32_t align)
 	 * want to load kernels starting at addresses > 1MB.
 	 */
 	
-	return memblock_alloc_internal(size, align, MEMBLOCK_START, MEMBLOCK_LIMIT);
+	return memblock_alloc_internal(&memblock.bootmem, size, align,
+		MEMBLOCK_START, MEMBLOCK_LIMIT);
+}
+
+void *memblock_alloc_kernel(uint32_t size, uint32_t align)
+{
+	/*
+	 * This function is intented to be used for the allocation
+	 * of kernel and kernel module pages only.
+	 */
+
+	return memblock_alloc_internal(&memblock.kernmem, size, align,
+		MEMBLOCK_LIMIT, MEMBLOCK_INVLD);
 }
