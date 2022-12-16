@@ -12,7 +12,7 @@ struct file {
 	uint32_t length;
 };
 
-enum file_lseek {
+enum file_seek {
 	FILE_SET,
 	FILE_CUR,
 	FILE_END
@@ -26,7 +26,7 @@ int file_read(struct file *file, uint32_t length, void *buffer);
 
 int file_write(struct file *file, uint32_t length, const void *buffer);
 
-int file_lseek(struct file *file, int pos, uint32_t offset);
+int file_seek(struct file *file, int pos, uint32_t offset);
 
 int file_ioctl(struct file *file, int request, void *args);
 

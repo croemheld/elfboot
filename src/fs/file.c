@@ -67,7 +67,7 @@ int file_write(struct file *file, uint32_t length, const void *buffer)
 	return vfs_write(file->node, file->offset, length, buffer);
 }
 
-int file_lseek(struct file *file, int pos, uint32_t offset)
+int file_seek(struct file *file, int pos, uint32_t offset)
 {
 	uint32_t fpos;
 

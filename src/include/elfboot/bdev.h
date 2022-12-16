@@ -7,6 +7,8 @@
 
 #include <uapi/elfboot/const.h>
 
+#include <asm/bdev.h>
+
 #define BDEV_FLAGS_BOOT	_BITUL(0)
 #define BDEV_FLAGS_LBA	_BITUL(1)
 
@@ -84,6 +86,15 @@ struct bdev {
 	 */
 	struct list_head list;
 };
+
+/*
+ * Boot device information
+ */
+
+static inline uint32_t bootdev_partitions(void)
+{
+	return arch_bootdev_partitions();
+}
 
 /*
  * Block device functions

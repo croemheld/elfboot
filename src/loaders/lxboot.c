@@ -47,13 +47,12 @@ static int lxboot_prepare_fields(struct boot_entry *boot_entry,
 static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 	struct file *kernel, struct lxboot_info *info)
 {
-	struct lxboot_rm_header *rmcodehdr;
-
-	rmcodehdr = bmalloc(sizeof(*rmcodehdr));
+	struct lxboot_rm_header *rmcodehdr = bmalloc(sizeof(*rmcodehdr));
+	
 	if (!rmcodehdr)
 		return -EFAULT;
 
-	file_lseek(kernel, FILE_SET, 0x1f1);
+	file_seek(kernel, FILE_SET, 0x1f1);
 	if (!file_read(kernel, sizeof(*rmcodehdr), rmcodehdr))
 		return -EFAULT;
 
@@ -73,7 +72,7 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 	if (!info->rmcodebuf)
 		return -ENOMEM;
 
-	file_lseek(kernel, FILE_SET, 0);
+	file_seek(kernel, FILE_SET, 0);
 	if (!file_read(kernel, info->rmcodelen, info->rmcodebuf))
 		return -EFAULT;
 
@@ -84,7 +83,7 @@ static int lxboot_prepare_kernel(struct boot_entry *boot_entry,
 	info->rmcodehdr->vid_mode = 0xffff;
 	info->pmcodelen = kernel->length - info->rmcodelen;
 
-	file_lseek(kernel, FILE_SET, info->rmcodelen);
+	file_seek(kernel, FILE_SET, info->rmcodelen);
 	if (!file_read(kernel, info->pmcodelen, tvptr(LXBOOT_KERNEL_ADDR)))
 		return -EFAULT;
 
